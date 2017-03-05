@@ -54,6 +54,9 @@ GRANT SELECT ON sys.dba_identifiers TO plscope WITH GRANT OPTION;
 GRANT SELECT ON sys.dba_statements TO plscope WITH GRANT OPTION;
 GRANT SELECT ON sys.dba_tables TO plscope WITH GRANT OPTION;
 GRANT SELECT ON sys.dba_dependencies TO plscope WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_synonyms TO plscope WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_objects TO plscope WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_tab_columns TO plscope WITH GRANT OPTION;
 
 PROMPT ====================================================================
 PROMPT Enable PL/Scope on this instance
