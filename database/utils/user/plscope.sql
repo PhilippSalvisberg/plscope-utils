@@ -17,7 +17,7 @@
 SET DEFINE OFF
 SET SCAN OFF
 SET ECHO OFF
-SPOOL create_user_plscope.log
+SPOOL plscope.log
 
 PROMPT ====================================================================
 PROMPT This script creates the user PLSCOPE with all required privileges. 
@@ -46,8 +46,11 @@ GRANT UNLIMITED TABLESPACE to plscope;
 -- to get access to DBA-views
 GRANT SELECT_CATALOG_ROLE TO plscope;
 
--- to allow creation of views using DBA-views
-GRANT SELECT ANY DICTIONARY TO plscope; 
+-- to create views using DBA-views
+GRANT SELECT ANY DICTIONARY TO plscope;
+
+-- to parse queries in PL/SQL packages
+GRANT EXECUTE ON sys.utl_xml TO plscope;
 
 -- direct grants required for grant option
 GRANT SELECT ON sys.dba_identifiers TO plscope WITH GRANT OPTION;
