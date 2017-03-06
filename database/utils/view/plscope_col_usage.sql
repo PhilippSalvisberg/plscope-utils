@@ -16,7 +16,7 @@
 
 CREATE OR REPLACE VIEW plscope_col_usage AS
 WITH
-   cols AS (
+   scope_cols AS (
       SELECT ids.owner,
              ids.object_type,
              ids.object_name,
@@ -58,7 +58,7 @@ WITH
         LEFT JOIN dba_objects o 
           ON o.owner            = s.table_owner 
             AND o.object_name   = s.table_name
-        LEFT JOIN cols c
+        LEFT JOIN scope_cols c
           ON t.owner                                        = c.owner
              AND t.object_type                              = c.object_type
              AND t.object_name                              = c.object_name
@@ -72,6 +72,35 @@ WITH
        WHERE direct_dependency = 'YES' 
          AND c.owner IS NULL
          AND t.operation IN ('INSERT', 'SELECT')
+   ),
+   base_cols AS (
+      SELECT owner,
+             object_type,
+             object_name,
+             line,
+             col,
+             procedure_name,
+             operation,
+             ref_owner,
+             ref_object_type,
+             ref_object_name,
+             column_name,
+             'YES' AS direct_dependency
+        FROM scope_cols
+      UNION ALL
+      SELECT owner,
+             object_type,
+             object_name,
+             line,
+             col,
+             procedure_name,
+             operation,
+             ref_owner,
+             ref_object_type,
+             ref_object_name,
+             column_name,
+             'NO' AS direct_dependency
+        FROM missing_cols
    )
 SELECT owner,
        object_type,
@@ -84,20 +113,26 @@ SELECT owner,
        ref_object_type,
        ref_object_name,
        column_name,
-       'YES' AS direct_dependency
-  FROM cols
+       direct_dependency
+  FROM base_cols
 UNION ALL
-SELECT owner,
-       object_type,
-       object_name,
-       line,
-       col,
-       procedure_name,
-       operation,
-       ref_owner,
-       ref_object_type,
-       ref_object_name,
-       column_name,
+SELECT c.owner,
+       c.object_type,
+       c.object_name,
+       c.line,
+       c.col,
+       c.procedure_name,
+       c.operation,
+       d.owner       AS ref_owner,
+       d.object_type AS ref_object_type,
+       d.object_name AS ref_object_name,
+       d.column_name,
        'NO' AS direct_dependency
-  FROM missing_cols
-ORDER BY 1, 2, 3, 4, 5, 8, 9, 10, 11;
+  FROM base_cols c,
+       coldep.dissolve(
+          in_owner       => c.ref_owner, 
+          in_object_name => c.ref_object_name, 
+          in_column_name => c.column_name
+       ) d
+ WHERE c.ref_object_type = 'VIEW'
+ ORDER BY 1, 2, 3, 4, 5, 8, 9, 10, 11;
