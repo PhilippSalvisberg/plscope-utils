@@ -127,30 +127,35 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
                       AND o.object_type IN ('SYNONYM', 'VIEW', 'TABLE', 'MATERIALIZED VIEW')
                       AND (o.owner = d.schema_name OR d.schema_name IS NULL)
             )
-         SELECT DISTINCT
-                LAST_VALUE(owner) OVER (
-                   PARTITION BY object_name, column_name 
-                   ORDER BY CASE object_type
-                               WHEN 'SYNONYM' THEN 
-                                  1
-                               ELSE
-                                  2
-                               END
-                   ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
-                ) AS owner,
-                LAST_VALUE(object_type) OVER (
-                   PARTITION BY object_name, column_name 
-                   ORDER BY CASE object_type
-                               WHEN 'SYNONYM' THEN 
-                                  1
-                               ELSE
-                                  2
-                               END
-                   ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
-                ) AS object_type,
+         SELECT owner,
+                object_type,
                 object_name,
                 column_name
            FROM dep
+          WHERE (       owner = in_owner 
+                    AND (object_name, column_name) IN (
+                           SELECT object_name, column_name
+                             FROM dep
+                            WHERE owner = in_owner)  
+                 OR
+                        owner != in_owner
+                    AND (object_name, column_name) NOT IN (
+                           SELECT object_name, column_name
+                             FROM dep
+                            WHERE owner = in_owner)
+                )
+           AND (        object_type = 'SYNONYM'
+                    AND (object_name, column_name) NOT IN (
+                           SELECT object_name, column_name
+                             FROM dep
+                            WHERE object_type != 'SYNONYM')
+                OR
+                        object_type != 'SYNONYM'
+                    AND (object_name, column_name) IN (
+                           SELECT object_name, column_name
+                             FROM dep
+                            WHERE object_type != 'SYNONYM')
+               )
       ) LOOP
          t_coldep.extend;
          t_coldep(t_coldep.count) := coldep_type(
