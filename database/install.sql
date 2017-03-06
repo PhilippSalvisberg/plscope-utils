@@ -28,6 +28,25 @@ PROMPT See ./utils/user/create_user_plscope.sql for required privileges.
 PROMPT ====================================================================
 
 PROMPT ====================================================================
+PROMPT Types
+PROMPT ====================================================================
+
+@./utils/type/coldep_type.sql
+SHOW ERRORS
+@./utils/type/t_coldep_type.sql
+SHOW ERRORS
+
+PROMPT ====================================================================
+PROMPT Packages
+PROMPT ====================================================================
+
+@./utils/package/coldep.pks
+SHOW ERRORS
+@./utils/package/coldep.pkb
+SHOW ERRORS
+
+
+PROMPT ====================================================================
 PROMPT Views
 PROMPT ====================================================================
 
