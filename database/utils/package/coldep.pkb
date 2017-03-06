@@ -32,6 +32,11 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
       l_xml := xmltype.createxml(l_clob);
       dbms_lob.freetemporary(l_clob);
       RETURN l_xml;
+   EXCEPTION
+      WHEN OTHERS THEN
+         -- TODO: Fix "LPX-00229: input source is empty" 
+         -- TODO: log error or return Pseudo result?
+         RETURN NULL;
    END parse_query;
    
    --
@@ -48,135 +53,137 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
       -- parse query
       l_xml := parse_query(in_owner => in_owner, in_query => in_query);
 
-      <<first_level_dependencies>>
-      FOR r_dep IN (
-         WITH
-            dep AS (
-               SELECT o.owner,
-                      o.object_type,
-                      o.object_name,
-                      d.column_name
-                 FROM xmltable(q'{
-                                    declare function local:analyze-col($col as element()) as element()* {
-                                       let $tableAlias := $col/ancestor::QUERY[1]//FROM_ITEM//TABLE_ALIAS[local-name(..) != 'COLUMN_REF' 
-                                                                                                          and text() = $col/TABLE_ALIAS/text()]
-                                       let $tableAliasTable := if ($tableAlias) then (
-                                                                  $tableAlias/preceding::TABLE[1]
-                                                               ) else (
-                                                               )
-                                       let $queryAlias := $col/ancestor::QUERY[1]//FROM_ITEM//QUERY_ALIAS[local-name(..) != 'COLUMN_REF' 
-                                                                                                          and text() = $col/TABLE_ALIAS/text()]
-                                       let $column := $col/COLUMN
-                                       let $ret := if ($queryAlias) then (
-                                                      for $rcol in $col/ancestor::QUERY//WITH_ITEM[QUERY_ALIAS/text() = $queryAlias/text()]
-                                                                   //SELECT_LIST_ITEM//COLUMN_REF[ancestor::SELECT_LIST_ITEM/COLUMN_ALIAS/text() = $column/text() 
-                                                                                                  or COLUMN/text = $column/text()]
-                                                      let $rret := if ($rcol) then (
-                                                                      local:analyze-col($rcol)
-                                                                   ) else (
-                                                                   )
-                                                      return $rret
-                                                   ) else (
-                                                      let $tables := if ($tableAliasTable) then (
-                                                                        $tableAliasTable
-                                                                     ) else (
-                                                                        for $tab in $col/ancestor::QUERY[1]//FROM_ITEM//*[self::TABLE or self::QUERY_ALIAS]
-                                                                        return $tab
-                                                                     )
-                                                      for $tab in $tables
-                                                      return
-                                                         typeswitch($tab)
-                                                         case element(QUERY_ALIAS)
-                                                            return
-                                                               let $rcol := $col/ancestor::QUERY//WITH_ITEM[QUERY_ALIAS/text() = $tab/text()]
-                                                                            //SELECT_LIST_ITEM//COLUMN_REF[ancestor::SELECT_LIST_ITEM/COLUMN_ALIAS/text() = $column/text() 
-                                                                                                           or COLUMN/text = $column/text()]
-                                                               let $rret := if ($rcol) then (
-                                                                               local:analyze-col($rcol) 
-                                                                            ) else (
-                                                                            )
-                                                               return $rret
-                                                         default
-                                                            return
-                                                               <column>
-                                                                  <schemaName>
-                                                                     {$tab/../SCHEMA/text()}
-                                                                  </schemaName>
-                                                                  <tableName>
-                                                                     {$tab/text()}
-                                                                  </tableName>
-                                                                  <columnName>
-                                                                     {$column/text()}
-                                                                  </columnName>
-                                                               </column>
-                                                   )
-                                       return $ret
-                                    };
-                                    
-                                    for $col in //SELECT_LIST_ITEM[not (ancestor::FROM) and not (ancestor::WITH)][$columnPos]//COLUMN_REF
-                                    let $res := local:analyze-col($col)
-                                    return $res
-                                 }'
-                         PASSING l_xml, in_column_pos AS "columnPos"
-                         COLUMNS schema_name VARCHAR2(128) PATH '/column/schemaName',
-                                 table_name  VARCHAR2(128) PATH '/column/tableName',
-                                 column_name VARCHAR2(128) PATH '/column/columnName'
-                      ) d
-                 JOIN dba_objects o
-                   ON o.object_name = d.table_name
-                      AND o.object_type IN ('SYNONYM', 'VIEW', 'TABLE', 'MATERIALIZED VIEW')
-                      AND (o.owner = d.schema_name OR d.schema_name IS NULL)
-            )
-         SELECT owner,
-                object_type,
-                object_name,
-                column_name
-           FROM dep
-          WHERE (       owner = in_owner 
-                    AND (object_name, column_name) IN (
-                           SELECT object_name, column_name
-                             FROM dep
-                            WHERE owner = in_owner)  
-                 OR
-                        owner != in_owner
-                    AND (object_name, column_name) NOT IN (
-                           SELECT object_name, column_name
-                             FROM dep
-                            WHERE owner = in_owner)
-                )
-           AND (        object_type = 'SYNONYM'
-                    AND (object_name, column_name) NOT IN (
-                           SELECT object_name, column_name
-                             FROM dep
-                            WHERE object_type != 'SYNONYM')
-                OR
-                        object_type != 'SYNONYM'
-                    AND (object_name, column_name) IN (
-                           SELECT object_name, column_name
-                             FROM dep
-                            WHERE object_type != 'SYNONYM')
+      IF l_xml IS NOT NULL THEN
+         <<first_level_dependencies>>
+         FOR r_dep IN (
+            WITH
+               dep AS (
+                  SELECT o.owner,
+                         o.object_type,
+                         o.object_name,
+                         d.column_name
+                    FROM xmltable(q'{
+                                       declare function local:analyze-col($col as element()) as element()* {
+                                          let $tableAlias := $col/ancestor::QUERY[1]//FROM_ITEM//TABLE_ALIAS[local-name(..) != 'COLUMN_REF' 
+                                                                                                             and text() = $col/TABLE_ALIAS/text()]
+                                          let $tableAliasTable := if ($tableAlias) then (
+                                                                     $tableAlias/preceding::TABLE[1]
+                                                                  ) else (
+                                                                  )
+                                          let $queryAlias := $col/ancestor::QUERY[1]//FROM_ITEM//QUERY_ALIAS[local-name(..) != 'COLUMN_REF' 
+                                                                                                             and text() = $col/TABLE_ALIAS/text()]
+                                          let $column := $col/COLUMN
+                                          let $ret := if ($queryAlias) then (
+                                                         for $rcol in $col/ancestor::QUERY//WITH_ITEM[QUERY_ALIAS/text() = $queryAlias/text()]
+                                                                      //SELECT_LIST_ITEM//COLUMN_REF[ancestor::SELECT_LIST_ITEM/COLUMN_ALIAS/text() = $column/text() 
+                                                                                                     or COLUMN/text = $column/text()]
+                                                         let $rret := if ($rcol) then (
+                                                                         local:analyze-col($rcol)
+                                                                      ) else (
+                                                                      )
+                                                         return $rret
+                                                      ) else (
+                                                         let $tables := if ($tableAliasTable) then (
+                                                                           $tableAliasTable
+                                                                        ) else (
+                                                                           for $tab in $col/ancestor::QUERY[1]//FROM_ITEM//*[self::TABLE or self::QUERY_ALIAS]
+                                                                           return $tab
+                                                                        )
+                                                         for $tab in $tables
+                                                         return
+                                                            typeswitch($tab)
+                                                            case element(QUERY_ALIAS)
+                                                               return
+                                                                  let $rcol := $col/ancestor::QUERY//WITH_ITEM[QUERY_ALIAS/text() = $tab/text()]
+                                                                               //SELECT_LIST_ITEM//COLUMN_REF[ancestor::SELECT_LIST_ITEM/COLUMN_ALIAS/text() = $column/text() 
+                                                                                                              or COLUMN/text = $column/text()]
+                                                                  let $rret := if ($rcol) then (
+                                                                                  local:analyze-col($rcol) 
+                                                                               ) else (
+                                                                               )
+                                                                  return $rret
+                                                            default
+                                                               return
+                                                                  <column>
+                                                                     <schemaName>
+                                                                        {$tab/../SCHEMA/text()}
+                                                                     </schemaName>
+                                                                     <tableName>
+                                                                        {$tab/text()}
+                                                                     </tableName>
+                                                                     <columnName>
+                                                                        {$column/text()}
+                                                                     </columnName>
+                                                                  </column>
+                                                      )
+                                          return $ret
+                                       };
+                                       
+                                       for $col in //SELECT_LIST_ITEM[not (ancestor::FROM) and not (ancestor::WITH)][$columnPos]//COLUMN_REF
+                                       let $res := local:analyze-col($col)
+                                       return $res
+                                    }'
+                            PASSING l_xml, in_column_pos AS "columnPos"
+                            COLUMNS schema_name VARCHAR2(128) PATH '/column/schemaName',
+                                    table_name  VARCHAR2(128) PATH '/column/tableName',
+                                    column_name VARCHAR2(128) PATH '/column/columnName'
+                         ) d
+                    JOIN dba_objects o
+                      ON o.object_name = d.table_name
+                         AND o.object_type IN ('SYNONYM', 'VIEW', 'TABLE', 'MATERIALIZED VIEW')
+                         AND (o.owner = d.schema_name OR d.schema_name IS NULL)
                )
-      ) LOOP
-         t_coldep.extend;
-         t_coldep(t_coldep.count) := coldep_type(
-                                       r_dep.owner,
-                                       r_dep.object_type,
-                                       r_dep.object_name,
-                                       r_dep.column_name
-                                    );
-         <<second_level_dependencies>>
-         FOR r_dep2 IN (
-            SELECT value(p) AS coldep
-              FROM coldep.dissolve(
-                      in_owner       => r_dep.owner,
-                      in_object_name => r_dep.object_name,
-                      in_column_name => r_dep.column_name
-                   ) p
+            SELECT owner,
+                   object_type,
+                   object_name,
+                   column_name
+              FROM dep
+             WHERE (       owner = in_owner 
+                       AND (object_name, column_name) IN (
+                              SELECT object_name, column_name
+                                FROM dep
+                               WHERE owner = in_owner)  
+                    OR
+                           owner != in_owner
+                       AND (object_name, column_name) NOT IN (
+                              SELECT object_name, column_name
+                                FROM dep
+                               WHERE owner = in_owner)
+                   )
+              AND (        object_type = 'SYNONYM'
+                       AND (object_name, column_name) NOT IN (
+                              SELECT object_name, column_name
+                                FROM dep
+                               WHERE object_type != 'SYNONYM')
+                   OR
+                           object_type != 'SYNONYM'
+                       AND (object_name, column_name) IN (
+                              SELECT object_name, column_name
+                                FROM dep
+                               WHERE object_type != 'SYNONYM')
+                  )
          ) LOOP
             t_coldep.extend;
-            t_coldep(t_coldep.count) := r_dep2.coldep;
-         END LOOP second_level_dependencies;
-      END LOOP first_level_dependencies;
+            t_coldep(t_coldep.count) := coldep_type(
+                                          r_dep.owner,
+                                          r_dep.object_type,
+                                          r_dep.object_name,
+                                          r_dep.column_name
+                                       );
+            <<second_level_dependencies>>
+            FOR r_dep2 IN (
+               SELECT value(p) AS coldep
+                 FROM coldep.dissolve(
+                         in_owner       => r_dep.owner,
+                         in_object_name => r_dep.object_name,
+                         in_column_name => r_dep.column_name
+                      ) p
+            ) LOOP
+               t_coldep.extend;
+               t_coldep(t_coldep.count) := r_dep2.coldep;
+            END LOOP second_level_dependencies;
+         END LOOP first_level_dependencies;
+      END IF;
 
       RETURN t_coldep;      
    END dissolve;
