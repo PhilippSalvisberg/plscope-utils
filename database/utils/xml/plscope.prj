@@ -1,0 +1,45 @@
+
+<project type="cont" name="plscope" expanded="yes" catalog="no" pluginOwner="-1">
+	<file plugId="9" URL="query1.xquery">
+		<scenarios>
+			<scenario default="no" name="source_view" userelativepaths="yes" externalpreview="no" useresolver="yes" url="source_view.xml" outputurl="" processortype="datadirect" tcpport="0" profilemode="0" profiledepth="" profilelength="" urlprofilexml=""
+			          commandline="" additionalpath="" additionalclasspath="" postprocessortype="none" postprocesscommandline="" postprocessadditionalpath="" postprocessgeneratedext="" host="" port="-1996891896" user="" password="" validateoutput="no"
+			          validator="internal" customvalidator="">
+				<advancedProperties name="CollectionURIResolver" value=""/>
+				<advancedProperties name="ModuleURIResolver" value=""/>
+				<advancedProperties name="DocumentURIResolver" value=""/>
+			</scenario>
+			<scenario default="yes" name="plscope_tab_usage" userelativepaths="yes" externalpreview="no" useresolver="yes" url="plscope_tab_usage.xml" outputurl="" processortype="datadirect" tcpport="0" profilemode="0" profiledepth="" profilelength=""
+			          urlprofilexml="" commandline="" additionalpath="" additionalclasspath="" postprocessortype="none" postprocesscommandline="" postprocessadditionalpath="" postprocessgeneratedext="" host="" port="0" user="" password=""
+			          validateoutput="no" validator="internal" customvalidator="">
+				<advancedProperties name="CollectionURIResolver" value=""/>
+				<advancedProperties name="ModuleURIResolver" value=""/>
+				<advancedProperties name="DocumentURIResolver" value=""/>
+			</scenario>
+		</scenarios>
+		<MapperMetaTag>
+			<MapperInfo srcSchemaPathIsRelative="yes" srcSchemaInterpretAsXML="no" destSchemaPath="" destSchemaRoot="" destSchemaPathIsRelative="yes" destSchemaInterpretAsXML="no">
+				<SourceSchema srcSchemaPath="plscope_tab_usage.xml" srcSchemaRoot="QUERY" AssociatedInstance="" loaderFunction="document" loaderFunctionUsesURI="no"/>
+			</MapperInfo>
+			<MapperBlockPosition>
+				<template name="xquery_body">
+					<block path="flwr" x="460" y="18"/>
+				</template>
+			</MapperBlockPosition>
+			<TemplateContext></TemplateContext>
+			<MapperFilter side="source"></MapperFilter>
+		</MapperMetaTag>
+	</file>
+	<file plugId="3" URL="source_view.xml" catalog="no">
+		<queries>
+			<query xpath="//FROM_ITEM//TABLE_ALIAS&#xD;&#xA;"/>
+		</queries>
+		<namespaces/>
+	</file>
+	<file plugId="3" URL="plscope_tab_usage.xml" catalog="no">
+		<queries>
+			<query xpath="//QUERY//WITH_ITEM[QUERY_ALIAS/text() = 'DEP']&#xD;&#xA;&#x9;  //SELECT_LIST_ITEM//COLUMN_REF[ancestor::SELECT_LIST_ITEM/&#xD;&#xA;&#x9;  COLUMN_ALIAS/text() = 'NAME' or COLUMN/text = 'NAME']"/>
+		</queries>
+		<namespaces/>
+	</file>
+</project>
