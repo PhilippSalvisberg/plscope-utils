@@ -61,6 +61,21 @@ GRANT SELECT ON sys.dba_synonyms TO plscope WITH GRANT OPTION;
 GRANT SELECT ON sys.dba_objects TO plscope WITH GRANT OPTION;
 GRANT SELECT ON sys.dba_tab_columns TO plscope WITH GRANT OPTION;
 
+-- to debug in SQL Developer
+GRANT DEBUG CONNECT SESSION, DEBUG ANY PROCEDURE TO plscope;
+GRANT EXECUTE ON dbms_debug_jdwp to plscope;
+BEGIN
+  dbms_network_acl_admin.append_host_ace (
+     host =>'*', 
+     ace  => sys.xs$ace_type(
+                privilege_list => sys.xs$name_list('JDWP') , 
+                principal_name => 'PLSCOPE', 
+                principal_type => sys.xs_acl.ptype_db
+             ) 
+  );
+END;
+/
+
 PROMPT ====================================================================
 PROMPT Enable PL/Scope on this instance
 PROMPT ====================================================================
