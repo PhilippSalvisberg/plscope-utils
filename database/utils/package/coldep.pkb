@@ -27,6 +27,7 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
    BEGIN
       dbms_lob.createtemporary(l_clob, TRUE);
       -- parse query and get XML as CLOB
+      -- TODO: identify required privileges for correct results from other users
       sys.utl_xml.parsequery(in_owner, in_query, l_clob);
       -- create XMLTYPE from CLOB 
       l_xml := xmltype.createxml(l_clob);
