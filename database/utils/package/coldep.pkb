@@ -220,23 +220,15 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
       in_object_name IN VARCHAR2,
       in_column_name IN VARCHAR2
    ) RETURN t_coldep_type IS
-      l_view_owner   sys.dba_objects.owner%TYPE       := in_owner;
-      l_view_name    sys.dba_objects.object_name%TYPE := in_object_name;
-      t_coldep       t_coldep_type                    := t_coldep_type();
-      t_final_coldep t_coldep_type                    := t_coldep_type();
+      l_view_owner   sys.dba_views.owner%TYPE     := in_owner;
+      l_view_name    sys.dba_views.view_name%TYPE := in_object_name;
+      t_coldep       t_coldep_type                := t_coldep_type();
+      t_final_coldep t_coldep_type                := t_coldep_type();
    BEGIN
       -- resolve synonym into view
       resolve_synonym(io_owner => l_view_owner, io_object_name => l_view_name);
       
-      IF l_view_owner IS NULL THEN
-         t_coldep.extend;
-         t_coldep(t_coldep.count) := coldep_type (
-                                        in_owner,
-                                        'TABLE',
-                                        in_object_name,
-                                        in_column_name
-                                     );
-      ELSE
+      IF l_view_owner IS NOT NULL THEN
          <<view_columns>>
          FOR r_view_col IN (
             SELECT vc.column_id, 
