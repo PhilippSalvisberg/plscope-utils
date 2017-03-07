@@ -78,12 +78,4 @@ SELECT ids.owner,
        AND dep_graph.object_type = ids.ref_object_type
        AND dep_graph.object_name = ids.ref_object_name
  WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
-   AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'))
- ORDER BY ids.owner,
-          ids.object_type,
-          ids.object_name,
-          ids.line,
-          ids.col,
-          dep_graph.path_len,
-          dep_graph.owner,
-          dep_graph.object_name;
+   AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'));

@@ -134,5 +134,4 @@ SELECT c.owner,
           in_object_name => c.ref_object_name, 
           in_column_name => c.column_name
        ) d
- WHERE c.ref_object_type = 'VIEW'
- ORDER BY 1, 2, 3, 4, 5, 8, 9, 10, 11;
+ WHERE c.ref_object_type = 'VIEW';

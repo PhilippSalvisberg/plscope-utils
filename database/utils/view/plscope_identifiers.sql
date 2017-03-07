@@ -80,10 +80,4 @@ WITH
 CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
         AND PRIOR ids.owner       = ids.owner
         AND PRIOR ids.object_type = ids.object_type
-        AND PRIOR ids.object_name = ids.object_name
-  ORDER BY ids.owner,
-           ids.object_name, 
-           ids.object_type, 
-           ids.line, 
-           ids.col,
-           path_len;
+        AND PRIOR ids.object_name = ids.object_name;
