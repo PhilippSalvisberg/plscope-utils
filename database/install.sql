@@ -67,6 +67,7 @@ GRANT SELECT ON plscope_identifiers TO PUBLIC;
 GRANT SELECT ON plscope_statements TO PUBLIC;
 GRANT SELECT ON plscope_tab_usage TO PUBLIC;
 GRANT SELECT ON plscope_col_usage TO PUBLIC;
+GRANT EXECUTE ON coldep TO PUBLIC;
 
 PROMPT ====================================================================
 PROMPT Synonyms
@@ -88,6 +89,7 @@ BEGIN
    cre_syn('plscope_statements');
    cre_syn('plscope_tab_usage');
    cre_syn('plscope_col_usage');
+   cre_syn('coldep');
 END;
 /
 
