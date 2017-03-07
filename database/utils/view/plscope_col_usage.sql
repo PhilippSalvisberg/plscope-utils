@@ -38,6 +38,7 @@ WITH
              AND refs.object_type = ids.object_type
              AND refs.object_name = ids.object_name
        WHERE ids.type = 'COLUMN'
+         AND ids.usage != 'DECLARATION'
    ),
    missing_cols AS (
       SELECT t.owner,
