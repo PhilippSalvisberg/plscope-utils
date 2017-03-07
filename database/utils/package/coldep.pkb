@@ -22,38 +22,21 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
       in_owner IN VARCHAR2, 
       in_query IN VARCHAR2
    ) RETURN xmltype IS
-      l_user_id INTEGER;
-      l_cursor  INTEGER;
-      l_count   INTEGER;
-      l_stmt    VARCHAR2(4000);
       l_clob    CLOB;
       l_xml     xmltype;
    BEGIN
-      dbms_lob.createtemporary(l_clob, TRUE);
+      sys.dbms_lob.createtemporary(l_clob, TRUE);
       
-      -- get user_id of SYS
-      SELECT user_id
-        INTO l_user_id
-        FROM all_users
-       WHERE username = 'SYS';
-       
-      -- execute as user SYS
-      l_cursor := sys.dbms_sys_sql.open_cursor();
-      l_stmt := 'BEGIN sys.utl_xml.parsequery(:in_owner, :in_query, :out_clob); END;';
-      sys.dbms_sys_sql.parse_as_user(l_cursor, l_stmt, sys.dbms_sys_sql.native, l_user_id);
-      sys.dbms_sys_sql.bind_variable(l_cursor, 'in_owner', in_owner);
-      sys.dbms_sys_sql.bind_variable(l_cursor, 'in_query', in_query);
-      sys.dbms_sys_sql.bind_variable(l_cursor, 'out_clob', l_clob);
-      l_count := sys.dbms_sys_sql.execute(l_cursor);
-      sys.dbms_sys_sql.variable_value(l_cursor, 'out_clob', l_clob);
-      sys.dbms_sys_sql.close_cursor(l_cursor);
+      -- parse query and get XML as CLOB
+      -- calling user must have access to objects in query
+      sys.utl_xml.parsequery(in_owner, in_query, l_clob);
 
       -- create XMLTYPE from CLOB
       IF sys.dbms_lob.getlength(l_clob) > 0 THEN
          -- parse successful, calling user has rights to access underlying objects
-         l_xml := xmltype.createxml(l_clob);
+         l_xml := sys.xmltype.createxml(l_clob);
       END IF;
-      dbms_lob.freetemporary(l_clob);
+      sys.dbms_lob.freetemporary(l_clob);
       RETURN l_xml;
    END parse_query;
    
@@ -158,25 +141,25 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
               FROM dep
              WHERE (       owner = in_owner 
                        AND (object_name, column_name) IN (
-                              SELECT object_name, column_name
+                              SELECT dep.object_name, dep.column_name
                                 FROM dep
                                WHERE owner = in_owner)  
                     OR
                            owner != in_owner
                        AND (object_name, column_name) NOT IN (
-                              SELECT object_name, column_name
+                              SELECT dep.object_name, dep.column_name
                                 FROM dep
                                WHERE owner = in_owner)
                    )
               AND (        object_type = 'SYNONYM'
                        AND (object_name, column_name) NOT IN (
-                              SELECT object_name, column_name
+                              SELECT dep.object_name, dep.column_name
                                 FROM dep
                                WHERE object_type != 'SYNONYM')
                    OR
                            object_type != 'SYNONYM'
                        AND (object_name, column_name) IN (
-                              SELECT object_name, column_name
+                              SELECT dep.object_name, dep.column_name
                                 FROM dep
                                WHERE object_type != 'SYNONYM')
                   )
@@ -191,11 +174,11 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
             <<second_level_dependencies>>
             FOR r_dep2 IN (
                SELECT value(p) AS coldep
-                 FROM coldep.dissolve(
+                 FROM TABLE(coldep.dissolve(
                          in_owner       => r_dep.owner,
                          in_object_name => r_dep.object_name,
                          in_column_name => r_dep.column_name
-                      ) p
+                      )) p
             ) LOOP
                t_coldep.extend;
                t_coldep(t_coldep.count) := r_dep2.coldep;
@@ -224,6 +207,9 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
    EXCEPTION
       WHEN NO_DATA_FOUND THEN
          NULL;
+      WHEN TOO_MANY_ROWS THEN
+         -- this must not happen
+         RAISE;
    END resolve_synonym;
 
    --
@@ -234,10 +220,10 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
       in_object_name IN VARCHAR2,
       in_column_name IN VARCHAR2
    ) RETURN t_coldep_type IS
-      l_view_owner   VARCHAR2(128) := in_owner;
-      l_view_name    VARCHAR2(128) := in_object_name;
-      t_coldep       t_coldep_type := t_coldep_type();
-      t_final_coldep t_coldep_type := t_coldep_type();
+      l_view_owner   sys.dba_objects.owner%TYPE       := in_owner;
+      l_view_name    sys.dba_objects.object_name%TYPE := in_object_name;
+      t_coldep       t_coldep_type                    := t_coldep_type();
+      t_final_coldep t_coldep_type                    := t_coldep_type();
    BEGIN
       -- resolve synonym into view
       resolve_synonym(io_owner => l_view_owner, io_object_name => l_view_name);
@@ -268,11 +254,11 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
                <<column_dendencies>>
                FOR r_coldep IN (
                   SELECT value(p) AS coldep
-                    FROM coldep.dissolve(
+                    FROM TABLE(coldep.dissolve(
                             in_column_pos => r_view_col.column_id,
                             in_owner => r_view_col.owner,
                             in_query => r_view_col.text
-                         ) p
+                         )) p
                ) LOOP
                   t_coldep.extend;
                   t_coldep(t_coldep.count) := r_coldep.coldep;
