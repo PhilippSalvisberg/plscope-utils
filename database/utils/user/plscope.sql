@@ -51,6 +51,7 @@ GRANT SELECT ANY DICTIONARY TO plscope;
 
 -- to parse queries in PL/SQL packages
 GRANT EXECUTE ON sys.utl_xml TO plscope;
+GRANT EXECUTE ON sys.dbms_sys_sql TO plscope;
 
 -- direct grants required for grant option
 GRANT SELECT ON sys.dba_identifiers TO plscope WITH GRANT OPTION;

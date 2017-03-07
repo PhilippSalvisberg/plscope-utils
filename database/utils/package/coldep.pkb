@@ -22,22 +22,39 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
       in_owner IN VARCHAR2, 
       in_query IN VARCHAR2
    ) RETURN xmltype IS
-      l_clob CLOB;
-      l_xml  xmltype;
+      l_user_id INTEGER;
+      l_cursor  INTEGER;
+      l_count   INTEGER;
+      l_stmt    VARCHAR2(4000);
+      l_clob    CLOB;
+      l_xml     xmltype;
    BEGIN
       dbms_lob.createtemporary(l_clob, TRUE);
-      -- parse query and get XML as CLOB
-      -- TODO: identify required privileges for correct results from other users
-      sys.utl_xml.parsequery(in_owner, in_query, l_clob);
-      -- create XMLTYPE from CLOB 
-      l_xml := xmltype.createxml(l_clob);
+      
+      -- get user_id of SYS
+      SELECT user_id
+        INTO l_user_id
+        FROM all_users
+       WHERE username = 'SYS';
+       
+      -- execute as user SYS
+      l_cursor := sys.dbms_sys_sql.open_cursor();
+      l_stmt := 'BEGIN sys.utl_xml.parsequery(:in_owner, :in_query, :out_clob); END;';
+      sys.dbms_sys_sql.parse_as_user(l_cursor, l_stmt, sys.dbms_sys_sql.native, l_user_id);
+      sys.dbms_sys_sql.bind_variable(l_cursor, 'in_owner', in_owner);
+      sys.dbms_sys_sql.bind_variable(l_cursor, 'in_query', in_query);
+      sys.dbms_sys_sql.bind_variable(l_cursor, 'out_clob', l_clob);
+      l_count := sys.dbms_sys_sql.execute(l_cursor);
+      sys.dbms_sys_sql.variable_value(l_cursor, 'out_clob', l_clob);
+      sys.dbms_sys_sql.close_cursor(l_cursor);
+
+      -- create XMLTYPE from CLOB
+      IF sys.dbms_lob.getlength(l_clob) > 0 THEN
+         -- parse successful, calling user has rights to access underlying objects
+         l_xml := xmltype.createxml(l_clob);
+      END IF;
       dbms_lob.freetemporary(l_clob);
       RETURN l_xml;
-   EXCEPTION
-      WHEN OTHERS THEN
-         -- TODO: Fix "LPX-00229: input source is empty" 
-         -- TODO: log error or return Pseudo result?
-         RETURN NULL;
    END parse_query;
    
    --
