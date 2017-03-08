@@ -76,20 +76,4 @@ BEGIN
 END;
 /
 
-PROMPT ====================================================================
-PROMPT Enable PL/Scope on this instance
-PROMPT ====================================================================
-
-ALTER SYSTEM SET plscope_settings='identifiers:all, statements:all' SCOPE=BOTH;
-
-PROMPT ====================================================================
-PROMPT Recompile DBMS_OUTPUT package and its synonym for demo purposes
-PROMPT ====================================================================
-
-ALTER PACKAGE dbms_output COMPILE;
-
--- without recompile the result result in PLSCOPE_IDENTIFIERS is incomplete
-ALTER PUBLIC SYNONYM dbms_output COMPILE;
-ALTER PUBLIC SYNONYM v$mystat COMPILE;
-
 SPOOL OFF
