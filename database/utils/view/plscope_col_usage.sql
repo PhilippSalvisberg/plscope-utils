@@ -130,9 +130,9 @@ SELECT c.owner,
        d.column_name,
        'NO' AS direct_dependency
   FROM base_cols c,
-       coldep.dissolve(
+       TABLE(coldep.dissolve(
           in_owner       => c.ref_owner, 
           in_object_name => c.ref_object_name, 
           in_column_name => c.column_name
-       ) d
+       )) d
  WHERE c.ref_object_type = 'VIEW';
