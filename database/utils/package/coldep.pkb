@@ -65,19 +65,19 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
                          d.column_name
                     FROM xmltable(q'{
                                        declare function local:analyze-col($col as element()) as element()* {
-                                          let $tableAlias := $col/ancestor::QUERY[1]//FROM_ITEM//TABLE_ALIAS[local-name(..) != 'COLUMN_REF' 
-                                                                                                             and text() = $col/TABLE_ALIAS/text()]
+                                          let $tableAlias := $col/ancestor::QUERY[1]/FROM/FROM_ITEM//TABLE_ALIAS[local-name(..) != 'COLUMN_REF' 
+                                                                                                                 and text() = $col/TABLE_ALIAS/text()]
                                           let $tableAliasTable := if ($tableAlias) then (
                                                                      $tableAlias/preceding::TABLE[1]
                                                                   ) else (
                                                                   )
-                                          let $queryAlias := $col/ancestor::QUERY[1]//FROM_ITEM//QUERY_ALIAS[local-name(..) != 'COLUMN_REF' 
-                                                                                                             and text() = $col/TABLE_ALIAS/text()]
+                                          let $queryAlias := $col/ancestor::QUERY[1]/FROM/FROM_ITEM//QUERY_ALIAS[local-name(..) != 'COLUMN_REF' 
+                                                                                                                 and text() = $col/TABLE_ALIAS/text()]
                                           let $column := $col/COLUMN
                                           let $ret := if ($queryAlias) then (
-                                                         for $rcol in $col/ancestor::QUERY//WITH_ITEM[QUERY_ALIAS/text() = $queryAlias/text()]
+                                                         for $rcol in $col/ancestor::QUERY/WITH/WITH_ITEM[QUERY_ALIAS/text() = $queryAlias/text()]
                                                                       //SELECT_LIST_ITEM//COLUMN_REF[ancestor::SELECT_LIST_ITEM/COLUMN_ALIAS/text() = $column/text() 
-                                                                                                     or COLUMN/text = $column/text()]
+                                                                                                     or COLUMN/text() = $column/text()]
                                                          let $rret := if ($rcol) then (
                                                                          local:analyze-col($rcol)
                                                                       ) else (
@@ -87,7 +87,7 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
                                                          let $tables := if ($tableAliasTable) then (
                                                                            $tableAliasTable
                                                                         ) else (
-                                                                           for $tab in $col/ancestor::QUERY[1]//FROM_ITEM//*[self::TABLE or self::QUERY_ALIAS]
+                                                                           for $tab in $col/ancestor::QUERY[1]/FROM/FROM_ITEM//*[self::TABLE or self::QUERY_ALIAS]
                                                                            return $tab
                                                                         )
                                                          for $tab in $tables
@@ -95,11 +95,12 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
                                                             typeswitch($tab)
                                                             case element(QUERY_ALIAS)
                                                                return
-                                                                  let $rcol := $col/ancestor::QUERY//WITH_ITEM[QUERY_ALIAS/text() = $tab/text()]
+                                                                  let $rcol := $col/ancestor::QUERY/WITH/WITH_ITEM[QUERY_ALIAS/text() = $tab/text()]
                                                                                //SELECT_LIST_ITEM//COLUMN_REF[ancestor::SELECT_LIST_ITEM/COLUMN_ALIAS/text() = $column/text() 
-                                                                                                              or COLUMN/text = $column/text()]
+                                                                                                              or COLUMN/text() = $column/text()]
                                                                   let $rret := if ($rcol) then (
-                                                                                  local:analyze-col($rcol) 
+                                                                                  for $c in $rcol 
+                                                                                  return local:analyze-col($c) 
                                                                                ) else (
                                                                                )
                                                                   return $rret
@@ -120,7 +121,7 @@ CREATE OR REPLACE PACKAGE BODY coldep IS
                                           return $ret
                                        };
                                        
-                                       for $col in //SELECT_LIST_ITEM[not (ancestor::FROM) and not (ancestor::WITH)][$columnPos]//COLUMN_REF
+                                       for $col in //SELECT/SELECT_LIST/SELECT_LIST_ITEM[not(ancestor::SELECT_LIST_ITEM)][$columnPos]//COLUMN_REF
                                        let $res := local:analyze-col($col)
                                        return $res
                                     }'

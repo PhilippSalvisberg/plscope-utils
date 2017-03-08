@@ -1,20 +1,88 @@
 
 <project type="cont" name="plscope" expanded="yes" catalog="no" pluginOwner="-1">
+	<file plugId="3" URL="dba_objects.xml" catalog="no">
+		<queries>
+			<query xpath="//SELECT/SELECT_LIST/SELECT_LIST_ITEM[not(ancestor::SELECT_LIST_ITEM)][1]//COLUMN_REF"/>
+		</queries>
+		<namespaces/>
+	</file>
+	<file plugId="3" URL="dba_tab_cols_v$.xml" catalog="no">
+		<queries/>
+		<namespaces/>
+	</file>
 	<file plugId="9" URL="query1.xquery">
 		<scenarios>
-			<scenario default="no" name="source_view" userelativepaths="yes" externalpreview="no" useresolver="yes" url="source_view.xml" outputurl="" processortype="datadirect" tcpport="0" profilemode="0" profiledepth="" profilelength="" urlprofilexml=""
-			          commandline="" additionalpath="" additionalclasspath="" postprocessortype="none" postprocesscommandline="" postprocessadditionalpath="" postprocessgeneratedext="" host="" port="-1996891896" user="" password="" validateoutput="no"
+			<scenario default="no" name="source_view" userelativepaths="yes" externalpreview="no" useresolver="yes" url="source_view.xml" outputurl="" processortype="saxon" tcpport="0" profilemode="0" profiledepth="" profilelength="" urlprofilexml=""
+			          commandline="" additionalpath="" additionalclasspath="" postprocessortype="none" postprocesscommandline="" postprocessadditionalpath="" postprocessgeneratedext="" host="" port="0" user="" password="" validateoutput="no"
 			          validator="internal" customvalidator="">
+				<advancedProperties name="bSchemaAware" value="true"/>
 				<advancedProperties name="CollectionURIResolver" value=""/>
 				<advancedProperties name="ModuleURIResolver" value=""/>
+				<advancedProperties name="schemaCache" value="||"/>
+				<advancedProperties name="bXml11" value="false"/>
+				<advancedProperties name="bUseDTD" value="false"/>
+				<advancedProperties name="bWarnings" value="true"/>
+				<advancedProperties name="iWhitespace" value="0"/>
 				<advancedProperties name="DocumentURIResolver" value=""/>
+				<advancedProperties name="bTinyTree" value="true"/>
+				<advancedProperties name="bGenerateByteCode" value="true"/>
+				<advancedProperties name="iValidation" value="0"/>
+				<advancedProperties name="bExtensions" value="true"/>
+				<advancedProperties name="xQueryVersion" value="1.0"/>
 			</scenario>
-			<scenario default="yes" name="plscope_tab_usage" userelativepaths="yes" externalpreview="no" useresolver="yes" url="plscope_tab_usage.xml" outputurl="" processortype="datadirect" tcpport="0" profilemode="0" profiledepth="" profilelength=""
+			<scenario default="no" name="plscope_tab_usage" userelativepaths="yes" externalpreview="no" useresolver="yes" url="plscope_tab_usage.xml" outputurl="" processortype="saxon" tcpport="0" profilemode="0" profiledepth="" profilelength=""
 			          urlprofilexml="" commandline="" additionalpath="" additionalclasspath="" postprocessortype="none" postprocesscommandline="" postprocessadditionalpath="" postprocessgeneratedext="" host="" port="0" user="" password=""
 			          validateoutput="no" validator="internal" customvalidator="">
+				<advancedProperties name="bSchemaAware" value="true"/>
 				<advancedProperties name="CollectionURIResolver" value=""/>
 				<advancedProperties name="ModuleURIResolver" value=""/>
+				<advancedProperties name="schemaCache" value="||"/>
+				<advancedProperties name="bXml11" value="false"/>
+				<advancedProperties name="bUseDTD" value="false"/>
+				<advancedProperties name="bWarnings" value="true"/>
+				<advancedProperties name="iWhitespace" value="0"/>
 				<advancedProperties name="DocumentURIResolver" value=""/>
+				<advancedProperties name="bTinyTree" value="true"/>
+				<advancedProperties name="bGenerateByteCode" value="true"/>
+				<advancedProperties name="iValidation" value="0"/>
+				<advancedProperties name="bExtensions" value="true"/>
+				<advancedProperties name="xQueryVersion" value="1.0"/>
+			</scenario>
+			<scenario default="no" name="dba_tab_col_v$" userelativepaths="yes" externalpreview="no" useresolver="yes" url="dba_tab_cols_v$.xml" outputurl="" processortype="saxon" tcpport="0" profilemode="0" profiledepth="" profilelength=""
+			          urlprofilexml="" commandline="" additionalpath="" additionalclasspath="" postprocessortype="none" postprocesscommandline="" postprocessadditionalpath="" postprocessgeneratedext="" host="" port="0" user="" password=""
+			          validateoutput="no" validator="internal" customvalidator="">
+				<advancedProperties name="bSchemaAware" value="true"/>
+				<advancedProperties name="CollectionURIResolver" value=""/>
+				<advancedProperties name="ModuleURIResolver" value=""/>
+				<advancedProperties name="schemaCache" value="||"/>
+				<advancedProperties name="bXml11" value="false"/>
+				<advancedProperties name="bUseDTD" value="false"/>
+				<advancedProperties name="bWarnings" value="true"/>
+				<advancedProperties name="iWhitespace" value="0"/>
+				<advancedProperties name="DocumentURIResolver" value=""/>
+				<advancedProperties name="bTinyTree" value="true"/>
+				<advancedProperties name="bGenerateByteCode" value="true"/>
+				<advancedProperties name="iValidation" value="0"/>
+				<advancedProperties name="bExtensions" value="true"/>
+				<advancedProperties name="xQueryVersion" value="1.0"/>
+			</scenario>
+			<scenario default="yes" name="dba_objects" userelativepaths="yes" externalpreview="no" useresolver="yes" url="dba_objects.xml" outputurl="" processortype="saxon" tcpport="0" profilemode="0" profiledepth="" profilelength="" urlprofilexml=""
+			          commandline="" additionalpath="" additionalclasspath="" postprocessortype="none" postprocesscommandline="" postprocessadditionalpath="" postprocessgeneratedext="" host="" port="0" user="" password="" validateoutput="no"
+			          validator="internal" customvalidator="">
+				<advancedProperties name="bSchemaAware" value="true"/>
+				<advancedProperties name="CollectionURIResolver" value=""/>
+				<advancedProperties name="ModuleURIResolver" value=""/>
+				<advancedProperties name="schemaCache" value="||"/>
+				<advancedProperties name="bXml11" value="false"/>
+				<advancedProperties name="bUseDTD" value="false"/>
+				<advancedProperties name="bWarnings" value="true"/>
+				<advancedProperties name="iWhitespace" value="0"/>
+				<advancedProperties name="DocumentURIResolver" value=""/>
+				<advancedProperties name="bTinyTree" value="true"/>
+				<advancedProperties name="bGenerateByteCode" value="true"/>
+				<advancedProperties name="iValidation" value="0"/>
+				<advancedProperties name="bExtensions" value="true"/>
+				<advancedProperties name="xQueryVersion" value="1.0"/>
 			</scenario>
 		</scenarios>
 		<MapperMetaTag>
