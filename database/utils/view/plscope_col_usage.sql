@@ -130,9 +130,12 @@ SELECT c.owner,
        d.column_name,
        'NO' AS direct_dependency
   FROM base_cols c,
-       TABLE(coldep.dissolve(
-          in_owner       => c.ref_owner, 
-          in_object_name => c.ref_object_name, 
-          in_column_name => c.column_name
-       )) d
+       TABLE(
+          lineage_util.get_dep_cols_from_view(
+             in_owner       => c.ref_owner, 
+             in_object_name => c.ref_object_name, 
+             in_column_name => c.column_name,
+             in_recursive   => 1
+          )
+       ) d
  WHERE c.ref_object_type = 'VIEW';
