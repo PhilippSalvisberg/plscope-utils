@@ -42,7 +42,7 @@ SELECT t.*
 
 -- 5. get subquery from insert statement
 SELECT s.full_text, 
-       regexp_substr(s.full_text, '(\t|\n|\r|\ )+SELECT(\t|\n|\r|\ )+(.)+',1,1,'i') AS subquery 
+       regexp_substr(s.full_text, '(\s|\()+SELECT\s+(.+)', 1, 1, 'i') AS subquery 
   FROM all_statements s,
        TABLE(dd_util.get_objects(s.owner, parse_util.get_insert_targets(s.owner, s.full_text))) t
  WHERE s.type = 'INSERT'

@@ -89,18 +89,14 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
    FUNCTION get_insert_subquery(in_sql IN CLOB) RETURN CLOB IS
       l_sql CLOB;
    BEGIN
-      -- look for WITH...
-      l_sql := regexp_substr(in_sql, '(\t|\n|\r|\ )+WITH(\t|\n|\r|\ )+(.)+', 1, 1, 'i');
+      -- look for " WITH..."
+      l_sql := regexp_substr(in_sql, '\s+WITH\s+(.+)', 1, 1, 'i');
       IF l_sql IS NULL OR sys.dbms_lob.getlength(l_sql) = 0 THEN
-         -- look for SELECT...
-         l_sql := regexp_substr(in_sql, '(\t|\n|\r|\ )+SELECT(\t|\n|\r|\ )+(.)+', 1, 1, 'i');
-         IF l_sql IS NULL OR sys.dbms_lob.getlength(l_sql) = 0 THEN
-            -- look for (SELECT...
-            l_sql := regexp_substr(in_sql, '(\t|\n|\r|\ |\()+SELECT(\t|\n|\r|\ )+(.)+', 1, 1, 'i');
-         END IF;
+         -- look for "(SELECT..." or "SELECT..."
+         l_sql := regexp_substr(in_sql, '(\s|\()+SELECT\s+(.+)', 1, 1, 'i');
       END IF;
       -- remove error_logging_clause
-      l_sql := regexp_replace(l_sql, '(.+)(LOG)(\t|\n|\r|\ )(ERRORS.+)', '\1', 1, 1, 'i');
+      l_sql := regexp_replace(l_sql, '(.+)(LOG\s+ERRORS.+)', '\1', 1, 1, 'i');
       RETURN l_sql;
    END get_insert_subquery;
    
