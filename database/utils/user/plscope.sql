@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 
-SET DEFINE OFF
-SET SCAN OFF
-SET ECHO OFF
+SET DEFINE ON
+SET ECHO ON
 SPOOL plscope.log
+DEFINE username = PLSCOPE
 
 PROMPT ====================================================================
-PROMPT This script creates the user PLSCOPE with all required privileges. 
+PROMPT This script creates the user &&username with all required privileges. 
 PROMPT Run this script as SYS.
 PROMPT Please change default tablespace and password.
 PROMPT ====================================================================
@@ -29,7 +29,7 @@ PROMPT ====================================================================
 PROMPT User
 PROMPT ====================================================================
 
-CREATE USER plscope IDENTIFIED BY plscope
+CREATE USER &&username IDENTIFIED BY plscope
   DEFAULT TABLESPACE USERS
   TEMPORARY TABLESPACE TEMP;
   
@@ -37,39 +37,39 @@ PROMPT ====================================================================
 PROMPT Grants
 PROMPT ====================================================================
 
-GRANT CONNECT, RESOURCE to plscope;
-GRANT CREATE VIEW TO plscope;
-GRANT CREATE SYNONYM TO plscope;
-GRANT CREATE PUBLIC SYNONYM TO plscope;
-GRANT UNLIMITED TABLESPACE to plscope;
+GRANT CONNECT, RESOURCE to &&username;
+GRANT CREATE VIEW TO &&username;
+GRANT CREATE SYNONYM TO &&username;
+GRANT CREATE PUBLIC SYNONYM TO &&username;
+GRANT UNLIMITED TABLESPACE to &&username;
 
 -- to get access to DBA-views
-GRANT SELECT_CATALOG_ROLE TO plscope;
+GRANT SELECT_CATALOG_ROLE TO &&username;
 
 -- to create views using DBA-views
-GRANT SELECT ANY DICTIONARY TO plscope;
+GRANT SELECT ANY DICTIONARY TO &&username;
 
 -- to parse queries in PL/SQL packages
-GRANT EXECUTE ON sys.utl_xml TO plscope;
+GRANT EXECUTE ON sys.utl_xml TO &&username;
 
 -- direct grants required for grant option
-GRANT SELECT ON sys.dba_identifiers TO plscope WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_statements TO plscope WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_tables TO plscope WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_dependencies TO plscope WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_synonyms TO plscope WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_objects TO plscope WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_tab_columns TO plscope WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_identifiers  TO &&username WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_statements   TO &&username WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_tables       TO &&username WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_dependencies TO &&username WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_synonyms     TO &&username WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_objects      TO &&username WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_tab_columns  TO &&username WITH GRANT OPTION;
 
 -- to debug in SQL Developer
-GRANT DEBUG CONNECT SESSION, DEBUG ANY PROCEDURE TO plscope;
-GRANT EXECUTE ON dbms_debug_jdwp to plscope;
+GRANT DEBUG CONNECT SESSION, DEBUG ANY PROCEDURE TO &&username;
+GRANT EXECUTE ON dbms_debug_jdwp to &&username;
 BEGIN
   dbms_network_acl_admin.append_host_ace (
      host =>'*', 
      ace  => sys.xs$ace_type(
                 privilege_list => sys.xs$name_list('JDWP') , 
-                principal_name => 'PLSCOPE', 
+                principal_name => '&&username', 
                 principal_type => sys.xs_acl.ptype_db
              ) 
   );
