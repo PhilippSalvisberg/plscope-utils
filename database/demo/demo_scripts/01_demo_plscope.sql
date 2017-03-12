@@ -90,3 +90,23 @@ SELECT line, col, name, name_path, type, usage,
  WHERE object_name = 'LOAD_FROM_TAB'
    AND owner = USER
  ORDER BY line, col;
+
+-- 6. query all columns in plscope-utils identifiers
+SELECT *
+  FROM plscope_identifiers
+ WHERE object_name = 'LOAD_FROM_TAB'
+   AND owner = USER
+ ORDER BY line, col;
+ 
+-- 7. query plscope-utils statements (adds a is_duplicate column)
+SELECT * 
+  FROM plscope_statements
+ WHERE object_name = 'LOAD_FROM_TAB'
+   AND owner = USER
+ ORDER BY owner, object_type, object_name, line, col;
+   
+-- 8. query duplicate statements
+SELECT * 
+  FROM plscope_statements
+ WHERE owner = USER
+   AND is_duplicate = 'YES';
