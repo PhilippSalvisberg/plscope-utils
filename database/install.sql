@@ -28,23 +28,42 @@ PROMPT See ./utils/user/create_user_plscope.sql for required privileges.
 PROMPT ====================================================================
 
 PROMPT ====================================================================
+PROMPT Disable PL/Scope for this session
+PROMPT ====================================================================
+
+ALTER SESSION SET plscope_settings='identifiers:all, statements:all';
+
+PROMPT ====================================================================
 PROMPT Types
 PROMPT ====================================================================
 
-@./utils/type/coldep_type.sql
-SHOW ERRORS
-@./utils/type/t_coldep_type.sql
-SHOW ERRORS
+@./utils/type/obj_type.sql
+@./utils/type/col_type.sql
+@./utils/type/col_lineage_type.sql
+@./utils/type/t_obj_type.sql
+@./utils/type/t_col_type.sql
+@./utils/type/t_col_lineage_type.sql
 
 PROMPT ====================================================================
 PROMPT Packages
 PROMPT ====================================================================
 
-@./utils/package/coldep.pks
+@./utils/package/dd_util.pks
 SHOW ERRORS
-@./utils/package/coldep.pkb
+@./utils/package/lineage_util.pks
 SHOW ERRORS
-
+@./utils/package/parse_util.pks
+SHOW ERRORS
+@./utils/package/type_util.pks
+SHOW ERRORS
+@./utils/package/dd_util.pkb
+SHOW ERRORS
+@./utils/package/lineage_util.pkb
+SHOW ERRORS
+@./utils/package/parse_util.pkb
+SHOW ERRORS
+@./utils/package/type_util.pkb
+SHOW ERRORS
 
 PROMPT ====================================================================
 PROMPT Views
@@ -58,6 +77,8 @@ SHOW ERRORS
 SHOW ERRORS
 @./utils/view/plscope_col_usage.sql
 SHOW ERRORS
+@./utils/view/plscope_ins_lineage.sql
+SHOW ERRORS
 
 PROMPT ====================================================================
 PROMPT Grants
@@ -67,7 +88,11 @@ GRANT SELECT ON plscope_identifiers TO PUBLIC;
 GRANT SELECT ON plscope_statements TO PUBLIC;
 GRANT SELECT ON plscope_tab_usage TO PUBLIC;
 GRANT SELECT ON plscope_col_usage TO PUBLIC;
-GRANT EXECUTE ON coldep TO PUBLIC;
+GRANT SELECT ON plscope_ins_lineage TO PUBLIC;
+GRANT EXECUTE ON dd_util TO PUBLIC;
+GRANT EXECUTE ON lineage_util TO PUBLIC;
+GRANT EXECUTE ON parse_util TO PUBLIC;
+GRANT EXECUTE ON type_util TO PUBLIC;
 
 PROMPT ====================================================================
 PROMPT Synonyms
@@ -89,7 +114,11 @@ BEGIN
    cre_syn('plscope_statements');
    cre_syn('plscope_tab_usage');
    cre_syn('plscope_col_usage');
-   cre_syn('coldep');
+   cre_syn('plscope_ins_lineage');
+   cre_syn('dd_util');
+   cre_syn('lineage_util');
+   cre_syn('parse_util');
+   cre_syn('type_util');
 END;
 /
 
@@ -101,12 +130,16 @@ PROMPT ====================================================================
 @./demo/table/dept.sql
 @./demo/table/emp.sql
 @./demo/table/deptsal.sql
+@./demo/table/deptsal_err.sql
 @./demo/view/source_view.sql
 SHOW ERRORS
+
+ALTER SESSION SET plscope_settings='identifiers:all, statements:all';
 @./demo/synonym/source_syn.sql
 @./demo/package/etl.pks
 SHOW ERRORS
 @./demo/package/etl.pkb
 SHOW ERRORS
+ALTER SESSION SET plscope_settings='identifiers:none, statements:none';
 
 SPOOL OFF
