@@ -4,7 +4,8 @@ CREATE OR REPLACE PACKAGE BODY etl AS
    PROCEDURE clear_deptsal IS
    BEGIN
       DELETE FROM deptsal;
-      dbms_output.put_line('deptsal deleted.'); -- use synonym
+      DELETE FROM deptsal_err;
+      dbms_output.put_line('deptsal an deptsal_err deleted.'); -- use synonym
    END clear_deptsal;
    
    PROCEDURE load_from_tab IS
@@ -16,7 +17,7 @@ CREATE OR REPLACE PACKAGE BODY etl AS
         LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
           ON e.deptno = d.deptno
        GROUP BY d.deptno, d.dname;
-       COMMIT;
+      COMMIT;
       sys.dbms_output.put_line('deptsal loaded and commited (from table).');
    END load_from_tab;
 
@@ -26,7 +27,7 @@ CREATE OR REPLACE PACKAGE BODY etl AS
       INSERT INTO deptsal (dept_no, dept_name, salary)
       SELECT dept_no, dept_name, salary
         FROM source_view;
-       COMMIT;
+      COMMIT;
       sys.dbms_output.put_line('deptsal loaded and commited (from view).');
    END load_from_view;
 
@@ -36,21 +37,73 @@ CREATE OR REPLACE PACKAGE BODY etl AS
       INSERT INTO deptsal (dept_no, dept_name, salary)
       SELECT dept_no, dept_name, salary
         FROM source_syn;
-       COMMIT;
+      COMMIT;
       sys.dbms_output.put_line('deptsal loaded and commited (from view via synonym).');
    END load_from_syn;
-
 
    PROCEDURE load_from_syn_wild IS
    BEGIN
       clear_deptsal;
       INSERT INTO deptsal  -- no column list
-      SELECT *             -- all-column wildcard
-        FROM source_syn;
-       COMMIT;
+      SELECT t.*           -- all-column wildcard
+        FROM source_syn t;
+      COMMIT;
       sys.dbms_output.put_line('deptsal loaded and commited' ||
          ' (from view via synonym without explicit column references).');
    END load_from_syn_wild;
+   
+   PROCEDURE load_from_syn_log IS
+   BEGIN
+      clear_deptsal;
+      INSERT INTO deptsal (dept_no, dept_name, salary)
+      SELECT dept_no, dept_name, salary
+        FROM source_syn
+      LOG ERRORS INTO deptsal_err REJECT LIMIT 10;
+      COMMIT;
+      sys.dbms_output.put_line('deptsal loaded and commited (with log errors).');
+   END load_from_syn_log;
+
+   PROCEDURE load_multi_table IS
+   BEGIN
+      clear_deptsal;
+      INSERT ALL
+         WHEN dept_no <= 20 THEN
+            INTO deptsal  -- no column list
+         ELSE
+            INTO deptsal_err (dept_no, dept_name, salary) 
+      SELECT dept_no, dept_name, salary
+        FROM source_syn;
+      COMMIT;
+      sys.dbms_output.put_line('deptsal loaded and commited (from via multi-table-insert).');
+   END load_multi_table;
+
+   PROCEDURE load_from_implicit_cursor IS
+   BEGIN
+      clear_deptsal;
+      FOR r_src IN (
+         SELECT dept_no, dept_name, salary
+           FROM source_syn
+      ) LOOP
+         INSERT INTO deptsal (dept_no, dept_name, salary)
+         VALUES (r_src.dept_no, r_src.dept_name, r_src.salary);
+      END LOOP;
+      COMMIT;
+      sys.dbms_output.put_line('deptsal loaded and commited (from implicit cursor).');
+   END load_from_implicit_cursor;
+
+   PROCEDURE load_from_explicit_cursor IS
+      CURSOR c_src IS
+         SELECT dept_no, dept_name, salary
+           FROM source_syn;      
+   BEGIN
+      clear_deptsal;
+      FOR r_src IN c_src LOOP
+         INSERT INTO deptsal (dept_no, dept_name, salary)
+         VALUES (r_src.dept_no, r_src.dept_name, r_src.salary);
+      END LOOP;
+      COMMIT;
+      sys.dbms_output.put_line('deptsal loaded and commited (from explicit cursor).');
+   END load_from_explicit_cursor;   
 
 END etl;
 /
