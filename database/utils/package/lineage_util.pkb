@@ -157,6 +157,7 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
    ) RETURN t_col_lineage_type IS
       l_query     CLOB;
       l_column_id INTEGER;
+      l_prev_obj  VARCHAR2(512 CHAR) := '.';
       t_col       t_col_type := t_col_type();
       t_result    t_col_lineage_type := t_col_lineage_type();
       CURSOR c_insert IS
@@ -181,11 +182,12 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
                    )
                 ) 
       ) LOOP
-         l_column_id := dd_util.get_column_id(
-                           in_owner       => r_col.owner,
-                           in_object_name => r_col.object_name,
-                           in_column_name => r_col.column_name
-                        );
+         IF l_prev_obj != r_col.owner || '.' || r_col.object_type || '.' || r_col.object_name THEN
+            l_column_id := 1;
+            l_prev_obj := r_col.owner || '.' || r_col.object_type || '.' || r_col.object_name;
+         ELSE
+            l_column_id := l_column_id + 1;
+         END IF;
          IF l_column_id IS NOT NULL THEN
             t_col.DELETE;
             <<column_dendencies>>
