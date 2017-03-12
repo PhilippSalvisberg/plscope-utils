@@ -90,16 +90,17 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
       l_sql CLOB;
    BEGIN
       -- look for WITH...
-      l_sql := regexp_substr(in_sql, '(\t|\n|\r|\ )+WITH(\t|\n|\r|\ )+(.)+',1,1,'i');
+      l_sql := regexp_substr(in_sql, '(\t|\n|\r|\ )+WITH(\t|\n|\r|\ )+(.)+', 1, 1, 'i');
       IF l_sql IS NULL OR sys.dbms_lob.getlength(l_sql) = 0 THEN
          -- look for SELECT...
-         l_sql := regexp_substr(in_sql, '(\t|\n|\r|\ )+SELECT(\t|\n|\r|\ )+(.)+',1,1,'i');
+         l_sql := regexp_substr(in_sql, '(\t|\n|\r|\ )+SELECT(\t|\n|\r|\ )+(.)+', 1, 1, 'i');
          IF l_sql IS NULL OR sys.dbms_lob.getlength(l_sql) = 0 THEN
             -- look for (SELECT...
-            l_sql := regexp_substr(in_sql, '(\t|\n|\r|\ |\()+SELECT(\t|\n|\r|\ )+(.)+',1,1,'i');
+            l_sql := regexp_substr(in_sql, '(\t|\n|\r|\ |\()+SELECT(\t|\n|\r|\ )+(.)+', 1, 1, 'i');
          END IF;
       END IF;
-      -- TODO: remove error_logging_clause
+      -- remove error_logging_clause
+      l_sql := regexp_replace(l_sql, '(.+)(LOG)(\t|\n|\r|\ )(ERRORS.+)', '\1', 1, 1, 'i');
       RETURN l_sql;
    END get_insert_subquery;
    
