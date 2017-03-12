@@ -18,5 +18,6 @@ BEGIN
    drop_if_exists('emp');
    drop_if_exists('dept');
    drop_if_exists('deptsal');
+   drop_if_exists('deptsal_err');
 END;
 /
