@@ -1,4 +1,3 @@
-
 -- 1. parse the insert statement using sys.utl_xml.parsequery
 SELECT full_text, parse_util.parse_query(s.owner, s.full_text) 
   FROM all_statements s
