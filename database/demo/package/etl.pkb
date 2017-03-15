@@ -67,7 +67,7 @@ CREATE OR REPLACE PACKAGE BODY etl AS
    BEGIN
       clear_deptsal;
       INSERT ALL
-         WHEN dept_no <= 20 THEN
+         WHEN dept_no <= 100 THEN
             INTO deptsal  -- no column list
          ELSE
             INTO deptsal_err (dept_no, dept_name, salary) 
@@ -103,7 +103,44 @@ CREATE OR REPLACE PACKAGE BODY etl AS
       END LOOP;
       COMMIT;
       sys.dbms_output.put_line('deptsal loaded and commited (from explicit cursor).');
-   END load_from_explicit_cursor;   
+   END load_from_explicit_cursor; 
+   
+   PROCEDURE load_from_dyn_sql IS
+      l_sql VARCHAR2(4000) := q'[
+            INSERT INTO deptsal (dept_no, dept_name, salary)
+            SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
+              FROM dept d
+              LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
+                ON e.deptno = d.deptno
+             GROUP BY d.deptno, d.dname
+         ]';
+   BEGIN
+      clear_deptsal;
+      EXECUTE IMMEDIATE l_sql;
+      COMMIT;
+      sys.dbms_output.put_line('deptsal loaded and commited (from dynamic SQL).');
+   END load_from_dyn_sql;
+   
+   FUNCTION sal_of_dept (in_deptno dept.deptno%TYPE) RETURN deptsal.salary%TYPE IS 
+      l_salary deptsal.salary%TYPE;
+   BEGIN
+      SELECT SUM(sal + NVL(comm, 0))
+        INTO l_salary
+        FROM emp 
+       WHERE deptno = in_deptno
+         AND hiredate > DATE '1980-01-01';
+      RETURN l_salary;
+   END sal_of_dept;
+
+   PROCEDURE load_from_app_join IS
+   BEGIN
+      clear_deptsal;
+      INSERT INTO deptsal (dept_no, dept_name, salary)
+      SELECT deptno, dname, etl.sal_of_dept(deptno)
+        FROM dept;
+      COMMIT;
+      sys.dbms_output.put_line('deptsal loaded and commited (from application join).');
+   END load_from_app_join;
 
 END etl;
 /
