@@ -172,7 +172,6 @@ SELECT *
   FROM plscope_ins_lineage
  ORDER BY owner, object_type, object_name, line, col, to_object_name, to_column_name;
 
-
 -- 13. where-linage of all insert statements without recursive column analysis
 EXEC lineage_util.set_recursive(0);
 SELECT *
