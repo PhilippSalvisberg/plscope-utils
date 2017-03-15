@@ -7,5 +7,8 @@ CREATE OR REPLACE PACKAGE etl AS
    PROCEDURE load_multi_table;
    PROCEDURE load_from_implicit_cursor;
    PROCEDURE load_from_explicit_cursor;
+   PROCEDURE load_from_dyn_sql;
+   FUNCTION sal_of_dept (in_deptno dept.deptno%TYPE) RETURN deptsal.salary%TYPE;
+   PROCEDURE load_from_app_join;
 END etl;
 /
