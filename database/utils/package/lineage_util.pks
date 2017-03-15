@@ -16,6 +16,22 @@ CREATE OR REPLACE PACKAGE lineage_util IS
    */
 
    /**
+   * Sets the default value for the in_recursive parameter in get_dep_cals_from_insert calls.
+   * This procedure is used to control the behaviour of the plscope_ins_lineage view.
+   * The default value is 1 (true).
+   *
+   * @param in_recursive 1=true, 0=false
+   */
+   PROCEDURE set_recursive (in_recursive IN INTEGER);
+
+   /**
+   * Gets the current default value of the in_recursive parameter in get_dep_cals_from_insert calls.
+   *
+   * @returns 1=true, 0=false
+   */
+   FUNCTION get_recursive RETURN INTEGER;
+
+   /**
    * Gets the dependent columns of a given column in a query.
    *
    * @param in_parse_user parsing user
@@ -56,7 +72,7 @@ CREATE OR REPLACE PACKAGE lineage_util IS
    */
    FUNCTION get_dep_cols_from_insert(
       in_signature IN VARCHAR2,
-      in_recursive IN INTEGER DEFAULT 1
+      in_recursive IN INTEGER DEFAULT get_recursive()
    ) RETURN t_col_lineage_type;
 
    /**

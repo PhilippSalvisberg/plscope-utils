@@ -16,6 +16,31 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
    */
    
    --
+   -- global variable recursive, used by get_dep_cols_from_insert
+   --
+   g_recursive INTEGER DEFAULT 1;
+
+   --
+   -- set_recursive
+   --
+   PROCEDURE set_recursive (in_recursive IN INTEGER) IS
+   BEGIN
+      IF in_recursive = 0 THEN
+         g_recursive := in_recursive;
+      ELSE
+         g_recursive := 1; -- the default value anyway
+      END IF;
+   END set_recursive;
+
+   --
+   -- get_recursive
+   --
+   FUNCTION get_recursive RETURN INTEGER IS
+   BEGIN
+      RETURN g_recursive;
+   END get_recursive;
+   
+   --
    -- get_dep_cols_from_query
    --
    FUNCTION get_dep_cols_from_query(
@@ -153,7 +178,7 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
    --
    FUNCTION get_dep_cols_from_insert(
       in_signature IN VARCHAR2,
-      in_recursive IN INTEGER DEFAULT 1
+      in_recursive IN INTEGER DEFAULT get_recursive()
    ) RETURN t_col_lineage_type IS
       l_query     CLOB;
       l_column_id INTEGER;
