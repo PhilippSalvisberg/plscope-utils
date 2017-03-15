@@ -69,3 +69,30 @@ SELECT parse_util.parse_query(user, q'[
          END;
        ]')
   FROM dual;
+
+-- 7. parse a select statement with a function using sys.utl_xml.parsequery - empty!
+SELECT parse_util.parse_query(user, q'[
+         WITH 
+            FUNCTION my_add(in_a IN NUMBER, in_b IN NUMBER) RETURN NUMBER IS
+            BEGIN
+               RETURN NVL(in_a, 0) + NVL(in_b, 0);
+            END my_add;
+         SELECT /*+ordered */ d.deptno, d.dname, SUM(my_add(e.sal, e.comm)) AS sal
+           FROM dept d
+           LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
+             ON e.deptno = d.deptno
+          GROUP BY d.deptno, d.dname
+       ]') 
+  FROM dual;
+
+-- 8. parse a select statement with a 12.2 features using sys.utl_xml.parsequer
+SELECT parse_util.parse_query(user, q'[
+         SELECT CAST('x' AS NUMBER DEFAULT 0 ON CONVERSION ERROR)       AS cast_col,
+                VALIDATE_CONVERSION('$29.99' AS BINARY_FLOAT, '$99D99') AS validate_col,
+                LISTAGG(
+                   ename || ' (' || job || ')', 
+                   ', ' ON OVERFLOW TRUNCATE WITH COUNT
+                )  WITHIN GROUP (ORDER BY deptno)                       AS enames
+           FROM emp
+       ]') 
+  FROM dual;
