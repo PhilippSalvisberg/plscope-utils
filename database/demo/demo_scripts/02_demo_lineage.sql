@@ -48,7 +48,7 @@ SELECT s.full_text,
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB';
    
--- 6. get subquery from function, handling more cases such as WITH and optional parenthesis    
+-- 6. get subquery from function, handling more cases (e.g. with_clause, error_logging_clause)    
 SELECT s.full_text, 
        parse_util.get_insert_subquery(s.full_text) AS subquery 
   FROM all_statements s,
