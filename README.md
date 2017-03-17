@@ -91,7 +91,7 @@ Column Name           | Description
 #### Query
 
 	SELECT procedure_name, line, col, name, name_path, path_len, type, usage, 
-		   ref_owner, ref_object_type, ref_object_name
+	       ref_owner, ref_object_type, ref_object_name
 	  FROM plscope_identifiers
 	 WHERE object_name = 'LOAD_FROM_TAB'
 	   AND owner = USER
@@ -251,8 +251,8 @@ The example below shows that the ```salary``` column in the table ```deptsal``` 
 	  FROM plscope_ins_lineage
 	 WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
 	 ORDER BY owner, object_type, object_name, line, col, 
-		   to_object_name, to_column_name, 
-		   from_owner, from_object_type, from_object_name, from_column_name;
+	       to_object_name, to_column_name, 
+	       from_owner, from_object_type, from_object_name, from_column_name;
 
 #### Result (default)
 
