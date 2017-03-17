@@ -101,7 +101,7 @@ Column Name           | Description
 
 	PROCEDURE_NAME LINE  COL NAME          NAME_PATH                                            PATH_LEN TYPE      USAGE        REF_OWNER REF_OBJECT_TYPE REF_OBJECT_NAME
 	-------------- ---- ---- ------------- ---------------------------------------------------- -------- --------- ------------ --------- --------------- ---------------
-					  1   11 LOAD_FROM_TAB /LOAD_FROM_TAB                                              1 PROCEDURE DECLARATION  PLSCOPE   PROCEDURE       LOAD_FROM_TAB  
+	                  1   11 LOAD_FROM_TAB /LOAD_FROM_TAB                                              1 PROCEDURE DECLARATION  PLSCOPE   PROCEDURE       LOAD_FROM_TAB  
 	LOAD_FROM_TAB     1   11 LOAD_FROM_TAB /LOAD_FROM_TAB/LOAD_FROM_TAB                                2 PROCEDURE DEFINITION   PLSCOPE   PROCEDURE       LOAD_FROM_TAB  
 	LOAD_FROM_TAB     3    4 3nyyhcpmwxcgz /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz                  3 INSERT    EXECUTE                                               
 	LOAD_FROM_TAB     3   16 DEPTSAL       /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTSAL          4 TABLE     REFERENCE    PLSCOPE   TABLE           DEPTSAL        
