@@ -296,7 +296,7 @@ The example below shows that the ```salary``` column in the table ```deptsal``` 
 
 ## Releases
 
-There are no binary releases for this project, since the source is installed in the Oracle Database. However releases are published [here](https://github.com/oddgen/oddgen/releases). They are just git repository tags for a certain degree of completeness. 
+There are no binary releases for this project, since the source is installed in the Oracle Database. However releases are published [here](https://github.com/PhilippSalvisberg/plscope-utils/releases). They are just git repository tags for a certain degree of completeness. 
 
 ## Issues
 
