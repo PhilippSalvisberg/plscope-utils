@@ -64,13 +64,13 @@ These examples are based on these objects.
 	BEGIN
 	   INSERT INTO deptsal (dept_no, dept_name, salary)
 	   SELECT /*+ordered */
-			  d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
-		 FROM dept d
-		 LEFT JOIN (SELECT * 
+	          d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
+	     FROM dept d
+	     LEFT JOIN (SELECT * 
 	                  FROM emp 
 	                 WHERE hiredate > DATE '1980-01-01') e
-		   ON e.deptno = d.deptno
-		GROUP BY d.deptno, d.dname;
+	       ON e.deptno = d.deptno
+	    GROUP BY d.deptno, d.dname;
 	   COMMIT;
 	END load_from_tab;
 	/
