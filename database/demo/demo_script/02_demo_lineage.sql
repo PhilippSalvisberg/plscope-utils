@@ -170,17 +170,23 @@ SELECT line, col,
 -- 12. where-lineage of all insert statements collected by PL/Scope (default behaviour)
 SELECT *
   FROM plscope_ins_lineage
- ORDER BY owner, object_type, object_name, line, col, to_object_name, to_column_name;
+ ORDER BY owner, object_type, object_name, line, col, 
+       to_object_name, to_column_name, 
+       from_owner, from_object_type, from_object_name, from_column_name;
 
 -- 13. where-linage of all insert statements without recursive column analysis
 EXEC lineage_util.set_recursive(0);
 SELECT *
   FROM plscope_ins_lineage
- ORDER BY owner, object_type, object_name, line, col, to_object_name, to_column_name;
+ ORDER BY owner, object_type, object_name, line, col, 
+       to_object_name, to_column_name, 
+       from_owner, from_object_type, from_object_name, from_column_name;
 
 -- 14. where-linage of all insert statements with recursive column analysis, but show table source only
 EXEC lineage_util.set_recursive(1);
 SELECT *
   FROM plscope_ins_lineage
  WHERE from_object_type = 'TABLE'
- ORDER BY owner, object_type, object_name, line, col, to_object_name, to_column_name;
+ ORDER BY owner, object_type, object_name, line, col, 
+       to_object_name, to_column_name, 
+       from_owner, from_object_type, from_object_name, from_column_name;
