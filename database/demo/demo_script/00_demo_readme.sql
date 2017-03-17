@@ -84,8 +84,9 @@ SELECT *
 
 -- ## View PLSCOPE_INS_LINEAGE
 
--- ### Query
+-- ### Query (default, recursive)
 
+COLUMN OWNER FORMAT A7
 COLUMN FROM_OWNER FORMAT A10
 COLUMN FROM_OBJECT_TYPE FORMAT A16
 COLUMN FROM_OBJECT_NAME FORMAT A16
@@ -95,9 +96,23 @@ COLUMN TO_OBJECT_TYPE FORMAT A14
 COLUMN TO_OBJECT_NAME FORMAT A14
 COLUMN TO_COLUMN_NAME FORMAT A14
 COLUMN PROCEDURE_NAME FORMAT A18
+
+EXEC lineage_util.set_recursive(1);
 SELECT *
   FROM plscope_ins_lineage
  WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
  ORDER BY owner, object_type, object_name, line, col, 
        to_object_name, to_column_name, 
        from_owner, from_object_type, from_object_name, from_column_name;
+
+-- ### Query (non-recursive)
+
+EXEC lineage_util.set_recursive(0);
+SELECT *
+  FROM plscope_ins_lineage
+ WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ ORDER BY owner, object_type, object_name, line, col, 
+       to_object_name, to_column_name, 
+       from_owner, from_object_type, from_object_name, from_column_name;
+
+EXEC lineage_util.set_recursive(1);
