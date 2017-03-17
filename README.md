@@ -142,11 +142,11 @@ The [etl](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/databas
 	LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT                                       
 	---- ---- --------- ------------- ------------ -------------------------------------------------
 	   3    4 INSERT    3nyyhcpmwxcgz YES          INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) 
-												   SELECT /*+ordered */ D.DEPTNO, D.DNAME, SUM(E.SAL
-													+ NVL(E.COMM, 0)) AS SAL FROM DEPT D LEFT JOIN (
-												   SELECT * FROM EMP WHERE HIREDATE > DATE '1980-01-
-												   01') E ON E.DEPTNO = D.DEPTNO GROUP BY D.DEPTNO, 
-												   D.DNAME
+	                                               SELECT /*+ordered */ D.DEPTNO, D.DNAME, SUM(E.SAL
+	                                                + NVL(E.COMM, 0)) AS SAL FROM DEPT D LEFT JOIN (
+	                                               SELECT * FROM EMP WHERE HIREDATE > DATE '1980-01-
+	                                               01') E ON E.DEPTNO = D.DEPTNO GROUP BY D.DEPTNO, 
+	                                               D.DNAME
 
 	  12    4 COMMIT                  NO           
 
