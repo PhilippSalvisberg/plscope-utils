@@ -24,14 +24,14 @@ PROMPT ====================================================================
 PROMPT This script installs plscope-utils.
 PROMPT
 PROMPT Connect to the target user (schema) of your choice.
-PROMPT See ./utils/user/create_user_plscope.sql for required privileges.
+PROMPT See utils/user/plscope.sql for required privileges.
 PROMPT ====================================================================
 
 PROMPT ====================================================================
 PROMPT Disable PL/Scope for this session
 PROMPT ====================================================================
 
-ALTER SESSION SET plscope_settings='identifiers:all, statements:all';
+ALTER SESSION SET plscope_settings='identifiers:none, statements:none';
 
 PROMPT ====================================================================
 PROMPT Types
