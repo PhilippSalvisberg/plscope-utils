@@ -31,18 +31,18 @@ WITH
              origin_con_id
         FROM dba_identifiers
       UNION ALL
-       SELECT owner, 
-              NVL(sql_id, type) AS name, 
-              signature, 
-              type, 
-              object_name, 
-              object_type, 
-              'EXECUTE' AS usage, -- new, artificial usage
-              usage_id, 
-              line, 
-              col, 
-              usage_context_id,
-              origin_con_id            
+      SELECT owner, 
+             NVL(sql_id, type) AS name, 
+             signature, 
+             type, 
+             object_name, 
+             object_type, 
+             'EXECUTE' AS usage, -- new, artificial usage
+             usage_id, 
+             line, 
+             col, 
+             usage_context_id,
+             origin_con_id            
         FROM dba_statements
    )
  SELECT ids.owner,
@@ -52,7 +52,9 @@ WITH
         ids.col, 
         last_value (
            CASE 
-              WHEN ids.type in ('PROCEDURE', 'FUNCTION') AND level = 2  THEN 
+              WHEN ids.object_type = 'PACKAGE BODY'
+                   AND ids.type in ('PROCEDURE', 'FUNCTION')
+                   AND level = 2 THEN
                  ids.name 
            END
         ) IGNORE NULLS OVER (
@@ -60,11 +62,49 @@ WITH
            ORDER BY ids.line, ids.col, level
            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
         ) AS procedure_name,
+        last_value (
+           CASE 
+              WHEN ids.object_type = 'PACKAGE BODY'
+                   AND ids.type in ('PROCEDURE', 'FUNCTION')
+                   AND level = 2 THEN
+                 CASE ids.usage
+                    WHEN 'DECLARATION' THEN
+                       'PRIVATE'
+                    WHEN 'DEFINITION' THEN
+                       'PUBLIC'
+                 END
+           END
+        ) IGNORE NULLS OVER (
+           PARTITION BY ids.owner, ids.object_name, ids.object_type 
+           ORDER BY ids.line, ids.col, level
+           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS procedure_scope,       
         ids.name,
         sys_connect_by_path(ids.name, '/') AS name_path,
         level as path_len,
         ids.type,
-        ids.usage, 
+        ids.usage,
+        CASE 
+           WHEN ids.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
+                AND ids.type IN ('VARIABLE', 'CONSTANT', 'CURSOR')
+                AND ids.usage = 'DECLARATION'
+           THEN
+              CASE
+                 WHEN 
+                    count(
+                       CASE 
+                          WHEN ids.usage NOT IN ('DECLARATION', 'ASSIGNMENT') THEN 
+                             1 
+                       END
+                    ) OVER (
+                       PARTITION BY ids.owner, ids.object_name, ids.object_type, ids.signature
+                    ) = 0
+                 THEN
+                    'NO'
+                 ELSE
+                    'YES'
+              END
+        END AS is_used, -- wrong result if hierarchy is incomplete, e.g. variable used in function not compiled with PL/Scope
         refs.owner AS ref_owner,
         refs.object_type AS ref_object_type,
         refs.object_name AS ref_object_name,
