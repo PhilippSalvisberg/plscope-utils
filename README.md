@@ -1,13 +1,7 @@
 # plscope-utils
 
 ## Introduction
-Oracle defines PL/Scope in the [Oracle Database Development Guide](http://docs.oracle.com/database/122/ADFNS/plscope.htm#ADFNS022) as follows:
-
->PL/Scope is a compiler-driven tool that collects PL/SQL and SQL identifiers as well as SQL statements usage in PL/SQL source code.> PL/Scope lets you develop powerful and effective PL/Scope source code tools that increase PL/SQL developer productivity by minimizing time spent browsing andunderstanding source code.PL/Scope could be therefore categorized as a software development kit (SDK) for source code analysis.
-
-plscope-utils is based on PL/Scope and provides some relational views and utilties as PL/SQL packages to simplify common source code analysis tasks. 
-
-The views are easy to use and that's what you want.
+plscope-utils is based on PL/Scope and provides relational views and PL/SQL packages to simplify common source code analysis tasks.
 
 ## Prerequisites
 
@@ -47,11 +41,6 @@ The views are easy to use and that's what you want.
 
 ## Usage
 
-plscope-utils installs some [tables](https://github.com/PhilippSalvisberg/plscope-utils/tree/master/database/demo/table), [views](https://github.com/PhilippSalvisberg/plscope-utils/tree/master/database/demo/view), [synonyms](https://github.com/PhilippSalvisberg/plscope-utils/tree/master/database/demo/synonym) and [PL/SQL packages](https://github.com/PhilippSalvisberg/plscope-utils/tree/master/database/demo/package) for demonstration purposes.
-
-These examples are based on these objects.
-
-
 ### Compile with PL/Scope
 
 #### Enable PL/Scope in the current session
@@ -59,6 +48,8 @@ These examples are based on these objects.
 	ALTER SESSION SET plscope_settings='identifiers:all, statements:all';
 
 #### Create/compile a procedure
+
+The following example is based on demo [tables](https://github.com/PhilippSalvisberg/plscope-utils/tree/master/database/demo/table) installed by plscope-utils.
 
 	CREATE OR REPLACE PROCEDURE load_from_tab IS
 	BEGIN
