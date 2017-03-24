@@ -71,6 +71,8 @@ PROMPT ====================================================================
 
 @./utils/view/plscope_identifiers.sql
 SHOW ERRORS
+@./utils/view/plscope_identifiers2.sql
+SHOW ERRORS
 @./utils/view/plscope_statements.sql
 SHOW ERRORS
 @./utils/view/plscope_tab_usage.sql
