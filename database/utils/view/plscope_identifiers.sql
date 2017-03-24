@@ -54,7 +54,8 @@ WITH
            CASE 
               WHEN ids.object_type = 'PACKAGE BODY'
                    AND ids.type in ('PROCEDURE', 'FUNCTION')
-                   AND level = 2 THEN
+                   AND level = 2 
+              THEN
                  ids.name 
            END
         ) IGNORE NULLS OVER (
@@ -66,7 +67,8 @@ WITH
            CASE 
               WHEN ids.object_type = 'PACKAGE BODY'
                    AND ids.type in ('PROCEDURE', 'FUNCTION')
-                   AND level = 2 THEN
+                   AND level = 2 
+              THEN
                  CASE ids.usage
                     WHEN 'DECLARATION' THEN
                        'PRIVATE'
@@ -86,14 +88,16 @@ WITH
         ids.usage,
         CASE 
            WHEN ids.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
-                AND ids.type IN ('VARIABLE', 'CONSTANT', 'CURSOR')
                 AND ids.usage = 'DECLARATION'
            THEN
               CASE
                  WHEN 
                     count(
                        CASE 
-                          WHEN ids.usage NOT IN ('DECLARATION', 'ASSIGNMENT') THEN 
+                          WHEN ids.usage NOT IN ('DECLARATION', 'ASSIGNMENT') 
+                               OR (ids.type IN ('FORMAL OUT', 'FORMAL IN OUT')
+                                   AND ids.usage = 'ASSIGNMENT')
+                          THEN 
                              1 
                        END
                     ) OVER (
