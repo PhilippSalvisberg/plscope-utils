@@ -43,7 +43,7 @@ WITH
              col, 
              usage_context_id,
              origin_con_id            
-        FROM dba_statements
+       FROM dba_statements
    )
  SELECT ids.owner,
         ids.object_type,
@@ -52,10 +52,7 @@ WITH
         ids.col, 
         last_value (
            CASE 
-              WHEN ids.object_type = 'PACKAGE BODY'
-                   AND ids.type in ('PROCEDURE', 'FUNCTION')
-                   AND level = 2 
-              THEN
+              WHEN ids.type in ('PROCEDURE', 'FUNCTION') AND level = 2  THEN 
                  ids.name 
            END
         ) IGNORE NULLS OVER (
@@ -63,52 +60,11 @@ WITH
            ORDER BY ids.line, ids.col, level
            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
         ) AS procedure_name,
-        last_value (
-           CASE 
-              WHEN ids.object_type = 'PACKAGE BODY'
-                   AND ids.type in ('PROCEDURE', 'FUNCTION')
-                   AND level = 2 
-              THEN
-                 CASE ids.usage
-                    WHEN 'DECLARATION' THEN
-                       'PRIVATE'
-                    WHEN 'DEFINITION' THEN
-                       'PUBLIC'
-                 END
-           END
-        ) IGNORE NULLS OVER (
-           PARTITION BY ids.owner, ids.object_name, ids.object_type 
-           ORDER BY ids.line, ids.col, level
-           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-        ) AS procedure_scope,       
         ids.name,
         sys_connect_by_path(ids.name, '/') AS name_path,
         level as path_len,
         ids.type,
-        ids.usage,
-        CASE 
-           WHEN ids.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
-                AND ids.usage = 'DECLARATION'
-           THEN
-              CASE
-                 WHEN 
-                    count(
-                       CASE 
-                          WHEN ids.usage NOT IN ('DECLARATION', 'ASSIGNMENT') 
-                               OR (ids.type IN ('FORMAL OUT', 'FORMAL IN OUT')
-                                   AND ids.usage = 'ASSIGNMENT')
-                          THEN 
-                             1 
-                       END
-                    ) OVER (
-                       PARTITION BY ids.owner, ids.object_name, ids.object_type, ids.signature
-                    ) = 0
-                 THEN
-                    'NO'
-                 ELSE
-                    'YES'
-              END
-        END AS is_used, -- wrong result if hierarchy is incomplete, e.g. variable used in function not compiled with PL/Scope
+        ids.usage, 
         refs.owner AS ref_owner,
         refs.object_type AS ref_object_type,
         refs.object_name AS ref_object_name,
