@@ -130,7 +130,6 @@ WITH
               AND PRIOR ids.owner       = ids.owner
               AND PRIOR ids.object_type = ids.object_type
               AND PRIOR ids.object_name = ids.object_name
-
    )
 SELECT owner,
        object_type,
