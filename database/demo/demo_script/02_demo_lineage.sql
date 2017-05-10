@@ -123,7 +123,7 @@ SELECT schema_name,
                                                 </column>
                                     )
                         return $ret
-                     };
+                     }; (: avoid premature statement termination in SQL*Plus et al. :)
                      
                      for $col in //SELECT/SELECT_LIST/SELECT_LIST_ITEM[not(ancestor::SELECT_LIST_ITEM)][$columnPos]//COLUMN_REF
                      let $res := local:analyze-col($col)
