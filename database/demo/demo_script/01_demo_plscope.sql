@@ -17,7 +17,8 @@ END load_from_tab;
 /
 
 -- 2. query original PL/Scope identifiers 
-SELECT line, col, name, type, usage, signature, usage_id, usage_context_id
+SELECT line, col, name, type, usage, signature, -- SELECT * FROM all_identifiers WHERE type = 'TABLE' AND usage = 'DECLARATION'
+       usage_id, usage_context_id
   FROM all_identifiers
  WHERE object_name = 'LOAD_FROM_TAB'
    AND owner = USER
