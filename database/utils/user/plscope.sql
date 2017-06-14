@@ -60,6 +60,7 @@ GRANT SELECT ON sys.dba_dependencies TO &&username WITH GRANT OPTION;
 GRANT SELECT ON sys.dba_synonyms     TO &&username WITH GRANT OPTION;
 GRANT SELECT ON sys.dba_objects      TO &&username WITH GRANT OPTION;
 GRANT SELECT ON sys.dba_tab_columns  TO &&username WITH GRANT OPTION;
+GRANT SELECT ON sys.dba_source       TO &&username WITH GRANT OPTION;
 
 -- to debug in SQL Developer
 GRANT DEBUG CONNECT SESSION, DEBUG ANY PROCEDURE TO &&username;
