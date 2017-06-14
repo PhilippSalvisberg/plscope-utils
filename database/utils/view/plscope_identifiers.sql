@@ -86,19 +86,6 @@ WITH
         tree.path_len,
         tree.type,
         tree.usage,
-        CASE 
-           WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
-              -- ensure that this is really a child of a statement
-              last_value (
-                 CASE 
-                    WHEN tree.usage = 'EXECUTE' THEN 
-                       tree.type 
-                 END
-              ) IGNORE NULLS OVER (
-                 PARTITION BY tree.owner, tree.object_name, tree.object_type 
-                 ORDER BY tree.line, tree.col, tree.path_len
-              )
-        END AS parent_statement_type,
         refs.owner AS ref_owner,
         refs.object_type AS ref_object_type,
         refs.object_name AS ref_object_name,
@@ -112,7 +99,19 @@ WITH
               AND src.name = tree.object_name
               AND src.line = tree.line
         ) AS text,
-        tree.signature,
+        CASE 
+           WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
+              -- ensure that this is really a child of a statement
+              last_value (
+                 CASE 
+                    WHEN tree.usage = 'EXECUTE' THEN 
+                       tree.type 
+                 END
+              ) IGNORE NULLS OVER (
+                 PARTITION BY tree.owner, tree.object_name, tree.object_type 
+                 ORDER BY tree.line, tree.col, tree.path_len
+              )
+        END AS parent_statement_type,
         CASE 
            WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
               -- ensure that this is really a child of a statement
@@ -126,6 +125,7 @@ WITH
                  ORDER BY tree.line, tree.col, tree.path_len
               )
         END AS parent_statement_signature,
+        tree.signature,
         tree.usage_id, 
         tree.usage_context_id,
         tree.origin_con_id
