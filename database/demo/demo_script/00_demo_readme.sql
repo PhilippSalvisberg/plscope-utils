@@ -26,6 +26,7 @@ END load_from_tab;
 -- ### Query
 
 SET PAGESIZE 50
+SET LINESIZE 500
 COLUMN PROCEDURE_NAME FORMAT A14
 COLUMN LINE FORMAT 999
 COLUMN COL FORMAT 999
@@ -37,8 +38,13 @@ COLUMN USAGE FORMAT A12
 COLUMN REF_OWNER FORMAT A9
 COLUMN REF_OBJECT_TYPE FORMAT A15
 COLUMN REF_OBJECT_NAME FORMAT A15
+COLUMN TEXT FORMAT A63
+COLUMN PARENT_STATEMENT_TYPE FORMAT A21
+COLUMN PARENT_STATEMENT_SIGNATURE FORMAT A32
+COLUMN SIGNATURE FORMAT A32
 SELECT procedure_name, line, col, name, name_path, path_len, type, usage, 
-       ref_owner, ref_object_type, ref_object_name
+       ref_owner, ref_object_type, ref_object_name,
+       text, parent_statement_type, parent_statement_signature, signature
   FROM plscope_identifiers
  WHERE object_name = 'LOAD_FROM_TAB'
    AND owner = USER
