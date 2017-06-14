@@ -81,7 +81,7 @@ WITH
            PARTITION BY tree.owner, tree.object_name, tree.object_type 
            ORDER BY tree.line, tree.col, tree.path_len
         ) AS procedure_name,
-        tree.name,
+        REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
         REPLACE(tree.name_path, ':', NULL) AS name_path, -- remove intermediate statement marker
         tree.path_len,
         tree.type,
