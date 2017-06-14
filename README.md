@@ -68,7 +68,7 @@ The following example is based on demo [tables](https://github.com/PhilippSalvis
 
 ### View PLSCOPE\_IDENTIFIERS
 
-This view combines the ```dba_identifiers``` and ```dba_statements``` views. It provides all columns from ```dba_identifiers``` plus the following:
+This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_source``` views. It provides all columns from ```dba_identifiers``` plus the following:
 
 Column Name           | Description
 --------------------- | -------------
@@ -78,11 +78,15 @@ Column Name           | Description
 ```ref_owner```       | ```owner``` of the object referenced by the ```signature``` column
 ```ref_object_type``` | ```object_type``` of the object referenced by the ```signature``` column
 ```ref_object_name``` | ```object_name``` of the object referenced by the ```signature``` column
+```text``` | ```text``` of the referenced source code line
+```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if parent is not a SQL statement) 
+```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if parent is not a SQL statement)  
 
 #### Query
 
 	SELECT procedure_name, line, col, name, name_path, path_len, type, usage, 
-	       ref_owner, ref_object_type, ref_object_name
+	       ref_owner, ref_object_type, ref_object_name,
+	       text, parent_statement_type, parent_statement_signature, signature
 	  FROM plscope_identifiers
 	 WHERE object_name = 'LOAD_FROM_TAB'
 	   AND owner = USER
@@ -90,29 +94,30 @@ Column Name           | Description
 
 #### Result
 
-	PROCEDURE_NAME LINE  COL NAME          NAME_PATH                                            PATH_LEN TYPE      USAGE        REF_OWNER REF_OBJECT_TYPE REF_OBJECT_NAME
-	-------------- ---- ---- ------------- ---------------------------------------------------- -------- --------- ------------ --------- --------------- ---------------
-	                  1   11 LOAD_FROM_TAB /LOAD_FROM_TAB                                              1 PROCEDURE DECLARATION  PLSCOPE   PROCEDURE       LOAD_FROM_TAB  
-	LOAD_FROM_TAB     1   11 LOAD_FROM_TAB /LOAD_FROM_TAB/LOAD_FROM_TAB                                2 PROCEDURE DEFINITION   PLSCOPE   PROCEDURE       LOAD_FROM_TAB  
-	LOAD_FROM_TAB     3    4 3nyyhcpmwxcgz /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz                  3 INSERT    EXECUTE                                               
-	LOAD_FROM_TAB     3   16 DEPTSAL       /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTSAL          4 TABLE     REFERENCE    PLSCOPE   TABLE           DEPTSAL        
-	LOAD_FROM_TAB     3   25 DEPT_NO       /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT_NO          4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL        
-	LOAD_FROM_TAB     3   34 DEPT_NAME     /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT_NAME        4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL        
-	LOAD_FROM_TAB     3   45 SALARY        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/SALARY           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL        
-	LOAD_FROM_TAB     5   11 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT           
-	LOAD_FROM_TAB     5   21 DNAME         /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DNAME            4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT           
-	LOAD_FROM_TAB     5   34 SAL           /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/SAL              4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP            
-	LOAD_FROM_TAB     5   46 COMM          /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/COMM             4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP            
-	LOAD_FROM_TAB     6   10 DEPT          /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT             4 TABLE     REFERENCE    PLSCOPE   TABLE           DEPT           
-	LOAD_FROM_TAB     8   20 EMP           /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/EMP              4 TABLE     REFERENCE    PLSCOPE   TABLE           EMP            
-	LOAD_FROM_TAB     9   20 HIREDATE      /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/HIREDATE         4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP            
-	LOAD_FROM_TAB    10   12 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP            
-	LOAD_FROM_TAB    10   23 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT           
-	LOAD_FROM_TAB    11   15 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT           
-	LOAD_FROM_TAB    11   25 DNAME         /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DNAME            4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT           
-	LOAD_FROM_TAB    12    4 COMMIT        /LOAD_FROM_TAB/LOAD_FROM_TAB/COMMIT                         3 COMMIT    EXECUTE                                               
-
-	 19 rows selected 
+	PROCEDURE_NAME LINE  COL NAME          NAME_PATH                                            PATH_LEN TYPE      USAGE        REF_OWNER REF_OBJECT_TYPE REF_OBJECT_NAME TEXT                                                            PARENT_STATEMENT_TYPE PARENT_STATEMENT_SIGNATURE       SIGNATURE                       
+	-------------- ---- ---- ------------- ---------------------------------------------------- -------- --------- ------------ --------- --------------- --------------- --------------------------------------------------------------- --------------------- -------------------------------- --------------------------------
+	                  1   11 LOAD_FROM_TAB /LOAD_FROM_TAB                                              1 PROCEDURE DECLARATION  PLSCOPE   PROCEDURE       LOAD_FROM_TAB   PROCEDURE load_from_tab IS                                                                                             95BB10518161E6977D1AAAE904795B9B
+	LOAD_FROM_TAB     1   11 LOAD_FROM_TAB /LOAD_FROM_TAB/LOAD_FROM_TAB                                2 PROCEDURE DEFINITION   PLSCOPE   PROCEDURE       LOAD_FROM_TAB   PROCEDURE load_from_tab IS                                                                                             95BB10518161E6977D1AAAE904795B9B
+	LOAD_FROM_TAB     3    4 3nyyhcpmwxcgz /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz                  3 INSERT    EXECUTE                                                   INSERT INTO deptsal (dept_no, dept_name, salary)                                                                    0F66407F96683E82288B47C4A3692141
+	LOAD_FROM_TAB     3   16 DEPTSAL       /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTSAL          4 TABLE     REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 842CE56AC592888B175F02BB44BD5B94
+	LOAD_FROM_TAB     3   25 DEPT_NO       /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT_NO          4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 0E36BB98CA1380341FCA76D468AC332C
+	LOAD_FROM_TAB     3   34 DEPT_NAME     /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT_NAME        4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 4C400D0DF6CC5BD98ADBFEF88EEBC69D
+	LOAD_FROM_TAB     3   45 SALARY        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/SALARY           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 8F86A093162D45F0949E56BA145A1FE3
+	LOAD_FROM_TAB     5   13 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                      d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
+	LOAD_FROM_TAB     5   23 DNAME         /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DNAME            4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                      d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 FECE4914A162E52126C5E631734692DA
+	LOAD_FROM_TAB     5   36 SAL           /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/SAL              4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                       d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 60535C7D73128F4E1E99B404D740FE16
+	LOAD_FROM_TAB     5   48 COMM          /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/COMM             4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                       d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 0DD90A25A7835C18B4B81A9F4C6FB6BA
+	LOAD_FROM_TAB     6   11 DEPT          /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT             4 TABLE     REFERENCE    PLSCOPE   TABLE           DEPT                 FROM dept d                                                INSERT                0F66407F96683E82288B47C4A3692141 26739DBA3E26CBADF8B2E1FBB35428F5
+	LOAD_FROM_TAB     8   24 EMP           /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/EMP              4 TABLE     REFERENCE    PLSCOPE   TABLE           EMP                               FROM emp                                      INSERT                0F66407F96683E82288B47C4A3692141 68FD9773CC24CA5C61FCE1CE2F27D0F8
+	LOAD_FROM_TAB     9   24 HIREDATE      /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/HIREDATE         4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                              WHERE hiredate > DATE '1980-01-01') e          INSERT                0F66407F96683E82288B47C4A3692141 7FDA2E553A30FF9773C84EBED43A686E
+	LOAD_FROM_TAB    10   13 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                    ON e.deptno = d.deptno                                   INSERT                0F66407F96683E82288B47C4A3692141 B99231DD1C6931BB3728106289DDBE98
+	LOAD_FROM_TAB    10   24 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                   ON e.deptno = d.deptno                                   INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
+	LOAD_FROM_TAB    11   16 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                GROUP BY d.deptno, d.dname;                                 INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
+	LOAD_FROM_TAB    11   26 DNAME         /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DNAME            4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                GROUP BY d.deptno, d.dname;                                 INSERT                0F66407F96683E82288B47C4A3692141 FECE4914A162E52126C5E631734692DA
+	LOAD_FROM_TAB    12    4 COMMIT        /LOAD_FROM_TAB/LOAD_FROM_TAB/COMMIT                         3 COMMIT    EXECUTE                                                   COMMIT;                                                                                                             CCF976813EB05E9A94A09443EF466860
+	
+	19 rows selected. 
+ 
 
 ### View PLSCOPE\_STATEMENTS
 
