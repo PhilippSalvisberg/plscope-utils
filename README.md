@@ -15,14 +15,14 @@ plscope-utils is based on PL/Scope and provides relational views and PL/SQL pack
 2. Open a terminal window and change to the directory containing this README.md file
 
 		cd (...)
-   
-3. Create an oracle user for the plscope-utils database objects. The default username and password is ```plscope```. 
+
+3. Create an oracle user for the plscope-utils database objects. The default username and password is ```plscope```.
    * optionally change username, password and tablespace in the installation script [database/utils/user/plscope.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/user/plscope.sql)
-   
+
    * connect as sys to the target database
 
 			sqlplus / as sysdba
-   
+
    * execute the script [database/utils/user/plscope.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/user/plscope.sql)
 
 			@database/utils/user/plscope.sql
@@ -57,8 +57,8 @@ The following example is based on demo [tables](https://github.com/PhilippSalvis
 	   SELECT /*+ordered */
 	          d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
 	     FROM dept d
-	     LEFT JOIN (SELECT * 
-	                  FROM emp 
+	     LEFT JOIN (SELECT *
+	                  FROM emp
 	                 WHERE hiredate > DATE '1980-01-01') e
 	       ON e.deptno = d.deptno
 	    GROUP BY d.deptno, d.dname;
@@ -73,18 +73,20 @@ This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_so
 Column Name           | Description
 --------------------- | -------------
 ```procedure_name```  | Name of the function/procedure in a PL/SQL package (same as ```object_name``` for standalone procedures and functions)
+```procedure_scope```| ```PRIVATE``` or ```PUBLIC``` scope of a function/procedure in a PL/SQL package, children inherit the procedure scope.
 ```name_path```       | Context of the identifier represented as path
 ```path_len```        | Hierarchy level of the identifier (number of forward slashes in ```name_path```)
 ```ref_owner```       | ```owner``` of the object referenced by the ```signature``` column
 ```ref_object_type``` | ```object_type``` of the object referenced by the ```signature``` column
 ```ref_object_name``` | ```object_name``` of the object referenced by the ```signature``` column
 ```text``` | ```text``` of the referenced source code line
-```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if parent is not a SQL statement) 
-```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if parent is not a SQL statement)  
+```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if parent is not a SQL statement)
+```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if parent is not a SQL statement)
+```is_used``` | ```YES``` if a declared identifier has been referenced, otherwise ```NO```. ```NULL``` when ```is_used``` is not applicable for an identifier (e.g. SQL statements).
 
 #### Query
 
-	SELECT procedure_name, line, col, name, name_path, path_len, type, usage, 
+	SELECT procedure_name, line, col, name, name_path, path_len, type, usage,
 	       ref_owner, ref_object_type, ref_object_name,
 	       text, parent_statement_type, parent_statement_signature, signature
 	  FROM plscope_identifiers
@@ -115,13 +117,13 @@ Column Name           | Description
 	LOAD_FROM_TAB    11   16 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                GROUP BY d.deptno, d.dname;                                 INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
 	LOAD_FROM_TAB    11   26 DNAME         /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DNAME            4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                GROUP BY d.deptno, d.dname;                                 INSERT                0F66407F96683E82288B47C4A3692141 FECE4914A162E52126C5E631734692DA
 	LOAD_FROM_TAB    12    4 COMMIT        /LOAD_FROM_TAB/LOAD_FROM_TAB/COMMIT                         3 COMMIT    EXECUTE                                                   COMMIT;                                                                                                             CCF976813EB05E9A94A09443EF466860
-	
-	19 rows selected. 
- 
+
+	19 rows selected.
+
 
 ### View PLSCOPE\_STATEMENTS
 
-This view is based on the ```dba_statements``` view and adds a ```is_duplicate``` column. 
+This view is based on the ```dba_statements``` view and adds a ```is_duplicate``` column.
 
 The [etl](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/demo/package/etl.pkb) package body contains various variants to load the ```deptsal``` target table. And the reported duplicate insert statement is used there as well.
 
@@ -137,22 +139,22 @@ The [etl](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/databas
 
 	LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT                                       
 	---- ---- --------- ------------- ------------ -------------------------------------------------
-	   3    4 INSERT    3nyyhcpmwxcgz YES          INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) 
+	   3    4 INSERT    3nyyhcpmwxcgz YES          INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY)
 	                                               SELECT /*+ordered */ D.DEPTNO, D.DNAME, SUM(E.SAL
 	                                                + NVL(E.COMM, 0)) AS SAL FROM DEPT D LEFT JOIN (
 	                                               SELECT * FROM EMP WHERE HIREDATE > DATE '1980-01-
-	                                               01') E ON E.DEPTNO = D.DEPTNO GROUP BY D.DEPTNO, 
+	                                               01') E ON E.DEPTNO = D.DEPTNO GROUP BY D.DEPTNO,
 	                                               D.DNAME
 
 	  12    4 COMMIT                  NO           
 
 ### View PLSCOPE\_TAB\_USAGE
 
-This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```. Usages of synonyms and views are resolved and reporteded with a ```NO``` in the column ```DIRECT_DEPENDENCY```. 
+This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```. Usages of synonyms and views are resolved and reporteded with a ```NO``` in the column ```DIRECT_DEPENDENCY```.
 
 #### Query
 
-	SELECT * 
+	SELECT *
 	  FROM plscope_tab_usage
 	 WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
 	   AND owner = USER
@@ -174,7 +176,7 @@ This view reports table usages. It is based on the views ```dba_tables```, ```db
 	PLSCOPE PROCEDURE    LOAD_FROM_TAB    6   10 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            YES              
 	PLSCOPE PROCEDURE    LOAD_FROM_TAB    8   20 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             YES              
 
-	 11 rows selected 
+	 11 rows selected
 
 ### View PLSCOPE\_COL\_USAGE
 
@@ -182,7 +184,7 @@ This view reports column usages. It is based on the views ```plscope_identifiers
 
 #### Query
 
-	SELECT * 
+	SELECT *
 	  FROM plscope_col_usage
 	 WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
 	   AND owner = USER
@@ -246,8 +248,8 @@ The example below shows that the ```salary``` column in the table ```deptsal``` 
 	SELECT *
 	  FROM plscope_ins_lineage
 	 WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
-	 ORDER BY owner, object_type, object_name, line, col, 
-	       to_object_name, to_column_name, 
+	 ORDER BY owner, object_type, object_name, line, col,
+	       to_object_name, to_column_name,
 	       from_owner, from_object_type, from_object_name, from_column_name;
 
 #### Result (default)
@@ -270,7 +272,7 @@ The example below shows that the ```salary``` column in the table ```deptsal``` 
 	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
 	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
 
-	 15 rows selected 
+	 15 rows selected
 
 #### Result (after calling ```EXEC lineage_util.set_recursive(0);```)
 
@@ -288,15 +290,15 @@ The example below shows that the ```salary``` column in the table ```deptsal``` 
 	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
 	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
 
-	 11 rows selected 
+	 11 rows selected
 
 ## Releases
 
-There are no binary releases for this project, since the source is installed in the Oracle Database. However releases are published [here](https://github.com/PhilippSalvisberg/plscope-utils/releases). They are just git repository tags for a certain degree of completeness. 
+There are no binary releases for this project, since the source is installed in the Oracle Database. However releases are published [here](https://github.com/PhilippSalvisberg/plscope-utils/releases). They are just git repository tags for a certain degree of completeness.
 
 ## Issues
 
-Please file your bug reports, enhancement requests, questions and other support requests within [Github's issue tracker](https://help.github.com/articles/about-issues/): 
+Please file your bug reports, enhancement requests, questions and other support requests within [Github's issue tracker](https://help.github.com/articles/about-issues/):
 
 * [Existing issues](https://github.com/PhilippSalvisberg/plscope-utils/issues)
 * [submit new issue](https://github.com/PhilippSalvisberg/plscope-utils/issues/new)
@@ -310,4 +312,4 @@ Please file your bug reports, enhancement requests, questions and other support 
 
 ## License
 
-plscope-utils is licensed under the Apache License, Version 2.0. You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>. 
+plscope-utils is licensed under the Apache License, Version 2.0. You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>.
