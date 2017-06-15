@@ -106,6 +106,23 @@ WITH
            PARTITION BY tree.owner, tree.object_name, tree.object_type
            ORDER BY tree.line, tree.col, tree.path_len
         ) AS procedure_name,
+        last_value (
+           CASE 
+              WHEN tree.object_type = 'PACKAGE BODY'
+                AND tree.type in ('PROCEDURE', 'FUNCTION')
+                AND tree.path_len = 2
+              THEN
+                 CASE tree.usage
+                    WHEN 'DECLARATION' THEN
+                       'PRIVATE'
+                    WHEN 'DEFINITION' THEN
+                       'PUBLIC'
+                 END
+           END
+        ) IGNORE NULLS OVER (
+           PARTITION BY tree.owner, tree.object_name, tree.object_type 
+           ORDER BY tree.line, tree.col, tree.path_len
+        ) AS procedure_scope,
         REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
         REPLACE(tree.name_path, ':', NULL) AS name_path, -- remove intermediate statement marker
         tree.path_len,
@@ -150,6 +167,30 @@ WITH
                  ORDER BY tree.line, tree.col, tree.path_len
               )
         END AS parent_statement_signature,
+        CASE 
+           WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
+              AND tree.usage = 'DECLARATION'
+              AND tree.type NOT IN ('LABEL')
+           THEN
+              CASE
+                 WHEN 
+                    count(
+                       CASE 
+                          WHEN tree.usage NOT IN ('DECLARATION', 'ASSIGNMENT') 
+                             OR (tree.type IN ('FORMAL OUT', 'FORMAL IN OUT')
+                                 AND tree.usage = 'ASSIGNMENT')
+                          THEN 
+                             1 
+                       END
+                    ) OVER (
+                       PARTITION BY tree.owner, tree.object_name, tree.object_type, tree.signature
+                    ) = 0
+                 THEN
+                    'NO'
+                 ELSE
+                    'YES'
+              END
+        END AS is_used, -- wrong result, if used in statements which do not register usage, such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE. Bug?
         tree.signature,
         tree.usage_id,
         tree.usage_context_id,
