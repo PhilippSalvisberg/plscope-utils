@@ -71,8 +71,6 @@ PROMPT ====================================================================
 
 @./utils/view/plscope_identifiers.sql
 SHOW ERRORS
-@./utils/view/plscope_identifiers2.sql
-SHOW ERRORS
 @./utils/view/plscope_statements.sql
 SHOW ERRORS
 @./utils/view/plscope_tab_usage.sql
@@ -103,7 +101,7 @@ PROMPT ====================================================================
 -- anonymous PL/SQL block to handle target user
 DECLARE
    PROCEDURE cre_syn (in_name IN VARCHAR2) IS
-      l_templ VARCHAR2(4000) := 
+      l_templ VARCHAR2(4000) :=
          'CREATE OR REPLACE PUBLIC SYNONYM ${name} FOR ${user}.${name}';
       l_sql VARCHAR2(4000);
    BEGIN
