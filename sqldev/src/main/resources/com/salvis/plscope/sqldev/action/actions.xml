@@ -1,0 +1,51 @@
+<items xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://xmlns.oracle.com/sqldeveloper/3_1/dialogs
+                        http://xmlns.oracle.com/sqldeveloper/3_1/dialogs.xsd"
+	xmlns="http://xmlns.oracle.com/sqldeveloper/3_1/dialogs">
+
+	<!-- first item based on title is considered independent of minversion/maxversion -->
+	<item connType="Oracle" type="CONNECTION" reload="true" minversion="11.1">
+		<title>Compile code with PL/Scope...</title>
+		<prompt type="radio">
+			<label>Identifiers</label>
+			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
+		</prompt>
+		<prompt type="radio">
+			<label>Statements</label>
+			<value><![CDATA[STATIC:ALL:NONE]]></value>
+		</prompt>
+		<sql>
+			<![CDATA[BEGIN
+   IF dbms_db_version.version <= 11 OR
+      dbms_db_version.version = 12 and dbms_db_version.release = 1
+   THEN
+      /* PL/Scope identifiers since 11.1 */
+      EXECUTE IMMEDIATE q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#']';
+   ELSE
+      /* PL/Scope statements since 12.2 */
+      EXECUTE IMMEDIATE q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
+   END IF;
+   IF NOT (dbms_db_version.version = 11 and dbms_db_version.version = 1) THEN
+      /* Compilation of synonyms have been introduced with EBR in 11.2 */
+      <<synonyms>>
+      FOR r IN (
+         SELECT synonym_name
+           FROM user_synonyms
+      ) LOOP
+         EXECUTE IMMEDIATE 'ALTER SYNONYM ' || r.synonym_name || ' COMPILE';
+      END loop synonyms;
+   END IF;
+   dbms_utility.compile_schema(
+      schema         => USER,
+      compile_all    => TRUE,
+      reuse_settings => FALSE
+   );
+END;]]>
+		</sql>
+		<confirmation>
+			<title>Confirmation</title>
+			<prompt>Code compiled with PL/Scope.</prompt>
+		</confirmation>
+	</item>
+
+</items>

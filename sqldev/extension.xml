@@ -1,0 +1,34 @@
+<extension id="com.salvis.plscope.sqldev" version="#EXTENSION_VERSION#"
+	esdk-version="1.0" xmlns="http://jcp.org/jsr/198/extension-manifest"
+	rsbundle-class="com.salvis.plscope.sqldev.PlscopeResources">
+	<name rskey="EXTENSION_NAME" />
+	<owner rskey="EXTENSION_OWNER" />
+
+	<!-- features may be used to enable/disable extensions without uninstalling them -->
+	<feature id="com.salvis.plscope.sqldev" xmlns="http://xmlns.oracle.com/ide/extension">
+		<category-id>db-category</category-id>
+		<name>#EXTENSION_NAME#</name>
+		<description><![CDATA[#EXTENSION_DESCRIPTION#]]></description>
+		<type>
+			<service can-user-disable="true" reload-if-used="true"/>
+		</type>
+	</feature>
+
+	<!-- register actions, triggering extension load -->
+	<trigger-hooks xmlns="http://xmlns.oracle.com/ide/extension">
+		<triggers xmlns:c="http://xmlns.oracle.com/ide/customization">
+			<sqldev-action-hook
+				xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-actions">
+				<actionDescriptor package="com.salvis.plscope.sqldev.action" />
+			</sqldev-action-hook>
+		</triggers>
+	</trigger-hooks>
+
+	<!-- views (editors) used by in database navigator -->
+	<hooks>
+		<sqldev-viewer-hook 
+			xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-viewers">
+			<viewerDescriptor package="com.salvis.plscope.sqldev.view"/>
+		</sqldev-viewer-hook>
+	</hooks>
+</extension>
