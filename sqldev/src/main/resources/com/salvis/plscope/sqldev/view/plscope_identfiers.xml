@@ -2,7 +2,7 @@
 <displays>
 	<!-- based on https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_identifiers.sql -->
 	<!-- used sys.all_ instead of dba_ -->
-	<!-- Use case sensitve result columns including spaces -->
+	<!-- Use case sensitive result columns including spaces -->
 
 	<display type="editor" style="null" enable="true" connType="Oracle"
 		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PACKAGE BODY,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,TYPE BODY,VIEW">
@@ -98,7 +98,16 @@ WITH
    )
  SELECT lpad(' ', 3 * (tree.path_len - 1)) || tree.usage AS "Usage",
         tree.type AS "Type",
-        REPLACE(tree.name, ':', NULL) AS "Name", -- remove intermediate statement marker
+        CASE
+           WHEN tree.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+              'SQLDEV:LINK:' || tree.owner || ':' || tree.object_type || ':' || tree.object_name || ':' ||
+                 to_char(tree.line,'FM0000009') || ':' || 
+                 to_char(tree.col,'FM0000009') || ':' || 
+                 replace(tree.name, ':', NULL) || -- remove intermediate statement marker
+                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+           ELSE
+              replace(tree.name, ':', NULL) -- remove intermediate statement marker
+        END AS "Name",
         CASE 
            WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
               AND tree.usage = 'DECLARATION'
@@ -192,7 +201,16 @@ WITH
    )
  SELECT lpad(' ', 3 * (tree.path_len - 1)) || tree.usage AS "Usage",
         tree.type AS "Type",
-        REPLACE(tree.name, ':', NULL) AS "Name", -- remove intermediate statement marker
+        CASE
+           WHEN tree.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+              'SQLDEV:LINK:' || tree.owner || ':' || tree.object_type || ':' || tree.object_name || ':' ||
+                 to_char(tree.line,'FM0000009') || ':' || 
+                 to_char(tree.col,'FM0000009') || ':' || 
+                 replace(tree.name, ':', NULL) || -- remove intermediate statement marker
+                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+           ELSE
+              replace(tree.name, ':', NULL) -- remove intermediate statement marker
+        END AS "Name",
         CASE 
            WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
               AND tree.usage = 'DECLARATION'
@@ -251,7 +269,14 @@ WITH
         ids.object_name AS "Object name",
         ids.usage AS "Usage",
         ids.type AS "Type",
-        ids.name AS "Name",
+        CASE
+           WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+              'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
+                 to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' || ids.name ||
+                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+           ELSE
+              ids.name
+        END AS "Name",
         ids.line AS "Line",
         ids.col aS "Col",
         (
