@@ -20,7 +20,7 @@ SPOOL plscope.log
 DEFINE username = PLSCOPE
 
 PROMPT ====================================================================
-PROMPT This script creates the user &&username with all required privileges. 
+PROMPT This script creates the user &&username with all required privileges.
 PROMPT Run this script as SYS.
 PROMPT Please change default tablespace and password.
 PROMPT ====================================================================
@@ -32,7 +32,7 @@ PROMPT ====================================================================
 CREATE USER &&username IDENTIFIED BY plscope
   DEFAULT TABLESPACE USERS
   TEMPORARY TABLESPACE TEMP;
-  
+
 PROMPT ====================================================================
 PROMPT Grants
 PROMPT ====================================================================
@@ -41,6 +41,7 @@ GRANT CONNECT, RESOURCE to &&username;
 GRANT CREATE VIEW TO &&username;
 GRANT CREATE SYNONYM TO &&username;
 GRANT CREATE PUBLIC SYNONYM TO &&username;
+GRANT DROP PUBLIC SYNONYM TO &&username;
 GRANT UNLIMITED TABLESPACE to &&username;
 
 -- to get access to DBA-views
@@ -67,12 +68,12 @@ GRANT DEBUG CONNECT SESSION, DEBUG ANY PROCEDURE TO &&username;
 GRANT EXECUTE ON dbms_debug_jdwp to &&username;
 BEGIN
   dbms_network_acl_admin.append_host_ace (
-     host =>'*', 
+     host =>'*',
      ace  => sys.xs$ace_type(
-                privilege_list => sys.xs$name_list('JDWP') , 
-                principal_name => '&&username', 
+                privilege_list => sys.xs$name_list('JDWP') ,
+                principal_name => '&&username',
                 principal_type => sys.xs_acl.ptype_db
-             ) 
+             )
   );
 END;
 /
