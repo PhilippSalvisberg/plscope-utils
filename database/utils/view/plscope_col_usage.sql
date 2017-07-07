@@ -24,19 +24,18 @@ WITH
              ids.col,
              ids.procedure_name,
              CASE 
-                WHEN refs.usage = 'EXECUTE' THEN
-                   refs.type
+                WHEN refs.type IS NOT NULL THEN
+                   refs.type 
+                ELSE
+                   ids.usage
              END AS operation,
              ids.ref_owner,
              ids.ref_object_type,
              ids.ref_object_name,
              ids.name as column_name
         FROM plscope_identifiers ids
-        JOIN plscope_identifiers refs
-          ON refs.usage_id = ids.usage_context_id
-             AND refs.owner = ids.owner
-             AND refs.object_type = ids.object_type
-             AND refs.object_name = ids.object_name
+        LEFT JOIN dba_statements refs
+          ON refs.signature = parent_statement_signature
        WHERE ids.type = 'COLUMN'
          AND ids.usage != 'DECLARATION'
    ),
@@ -54,10 +53,10 @@ WITH
              tc.column_name
         FROM plscope_tab_usage t
         LEFT JOIN dba_synonyms s
-          ON s.owner            = t.ref_owner 
+          ON s.owner            = t.ref_owner
              AND s.synonym_name = t.ref_object_name
-        LEFT JOIN dba_objects o 
-          ON o.owner            = s.table_owner 
+        LEFT JOIN dba_objects o
+          ON o.owner            = s.table_owner
             AND o.object_name   = s.table_name
         LEFT JOIN scope_cols c
           ON t.owner                                        = c.owner
@@ -70,7 +69,7 @@ WITH
         JOIN dba_tab_columns tc
           ON tc.owner = t.owner
              AND tc.table_name = coalesce(o.object_name,t.ref_object_name)
-       WHERE direct_dependency = 'YES' 
+       WHERE direct_dependency = 'YES'
          AND c.owner IS NULL
          AND t.operation IN ('INSERT', 'SELECT')
    ),
@@ -132,8 +131,8 @@ SELECT c.owner,
   FROM base_cols c,
        TABLE(
           lineage_util.get_dep_cols_from_view(
-             in_owner       => c.ref_owner, 
-             in_object_name => c.ref_object_name, 
+             in_owner       => c.ref_owner,
+             in_object_name => c.ref_object_name,
              in_column_name => c.column_name,
              in_recursive   => 1
           )

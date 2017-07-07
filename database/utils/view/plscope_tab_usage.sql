@@ -17,12 +17,12 @@
 CREATE OR REPLACE VIEW plscope_tab_usage AS
 WITH
    dep AS (
-      SELECT owner      AS owner, 
-             'TABLE'    AS type, 
-             table_name AS name, 
-             NULL AS referenced_owner, 
+      SELECT owner      AS owner,
+             'TABLE'    AS type,
+             table_name AS name,
+             NULL AS referenced_owner,
              NULL AS referenced_type,
-             NULL AS referenced_name 
+             NULL AS referenced_name
         FROM dba_tables
       UNION ALL
       SELECT owner,
@@ -35,9 +35,9 @@ WITH
        WHERE type IN ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
    ),
    dep_graph AS (
-      SELECT DISTINCT 
-             owner, 
-             type                   AS object_type, 
+      SELECT DISTINCT
+             owner,
+             type                   AS object_type,
              name                   AS object_name,
              connect_by_root(owner) AS ref_owner,
              connect_by_root(type)  AS ref_object_type,
@@ -46,7 +46,7 @@ WITH
         FROM dep
       CONNECT BY  PRIOR dep.owner = dep.referenced_owner
               AND PRIOR dep.type  = dep.referenced_type
-              AND PRIOR dep.name  = dep.referenced_name      
+              AND PRIOR dep.name  = dep.referenced_name
    )
 SELECT ids.owner,
        ids.object_type,
@@ -54,12 +54,14 @@ SELECT ids.owner,
        ids.line,
        ids.col,
        ids.procedure_name,
-       CASE 
-          WHEN refs.usage = 'EXECUTE' THEN
+       CASE
+          WHEN refs.type IS NOT NULL THEN
              refs.type
+          ELSE
+             ids.usage
        END AS operation,
        dep_graph.ref_owner,
-       dep_graph.ref_object_type, 
+       dep_graph.ref_object_type,
        dep_graph.ref_object_name,
        CASE
           WHEN dep_graph.path_len = 1 THEN
@@ -68,11 +70,8 @@ SELECT ids.owner,
              'NO'
        END AS direct_dependency
   FROM plscope_identifiers ids
-  JOIN plscope_identifiers refs
-    ON refs.usage_id             = ids.usage_context_id
-       AND refs.owner            = ids.owner
-       AND refs.object_type      = ids.object_type
-       AND refs.object_name      = ids.object_name
+  LEFT JOIN dba_statements refs
+    ON refs.signature = parent_statement_signature
   JOIN dep_graph
     ON dep_graph.owner           = ids.ref_owner
        AND dep_graph.object_type = ids.ref_object_type
