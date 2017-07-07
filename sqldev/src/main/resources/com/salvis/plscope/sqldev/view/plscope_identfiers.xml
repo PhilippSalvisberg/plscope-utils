@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <displays>
-	<!-- based on https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_identifiers.sql -->
-	<!-- used sys.all_ instead of dba_ -->
+	<!-- based on -->
+	<!--   -  https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_identifiers.sql -->
+	<!--   -  https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_statements.sql -->
+	<!--   -  https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_tab_usage.sql -->
+	<!--   -  https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_col_usage.sql -->
+	<!-- used sys.all_ instead of dba_ - SQL Developer uses dba_ views, if the the connected use has the privileges -->
 	<!-- Use case sensitive result columns including spaces -->
-
 	<display type="editor" style="null" enable="true" connType="Oracle"
 		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PACKAGE BODY,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,TYPE BODY,VIEW">
-		<name><![CDATA[PL/Scope Declarations]]></name>
+		<name><![CDATA[Identifiers]]></name>
 		<description><![CDATA[]]>
 		</description>
 		<tooltip><![CDATA[]]>
 		</tooltip>
 		<drillclass><![CDATA[null]]></drillclass>
 		<queries>
-
 			<query minversion="12.2">
 				<sql><![CDATA[
 WITH
@@ -251,17 +253,60 @@ WITH
 			</query>
 		</queries>
 	</display>
-
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PACKAGE BODY,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,TYPE BODY,VIEW">
-		<name><![CDATA[PL/Scope References]]></name>
+		objectType="FUNCTION,PACKAGE,PACKAGE BODY,PROCEDURE,TRIGGER,TYPE,TYPE BODY">
+		<name><![CDATA[Statements]]></name>
 		<description><![CDATA[]]>
 		</description>
 		<tooltip><![CDATA[]]>
 		</tooltip>
 		<drillclass><![CDATA[null]]></drillclass>
 		<queries>
-
+			<query minversion="12.2">
+				<sql><![CDATA[
+SELECT CASE
+          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || type ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             type
+       END AS "Type",
+       line AS "Line", 
+       col AS "Col", 
+       sql_id AS "SQL_ID",
+       CASE 
+          WHEN (count(sql_id) OVER (PARTITION BY sql_id)) > 1 THEN 
+             'YES'
+          ELSE 
+             'NO' 
+       END AS "Duplicate?",
+       has_hint AS "Has hint?", 
+       has_into_bulk AS "Has bulk into?", 
+       has_into_returning AS "Has returning into?", 
+       has_into_record AS "Has into record?", 
+       has_current_of AS "Has current of?", 
+       has_for_update AS "Has for update?",
+       has_in_binds AS "Has binds?", 
+       full_text AS "Text"
+  FROM sys.all_statements
+ WHERE owner       = :OBJECT_OWNER
+  AND object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
+  AND object_name = :OBJECT_NAME
+ ORDER BY length(object_type), line, col
+				]]></sql>
+			</query>
+		</queries>
+	</display>
+	<display type="editor" style="null" enable="true" connType="Oracle"
+		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PACKAGE BODY,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,TYPE BODY,VIEW">
+		<name><![CDATA[Used by]]></name>
+		<description><![CDATA[]]>
+		</description>
+		<tooltip><![CDATA[]]>
+		</tooltip>
+		<drillclass><![CDATA[null]]></drillclass>
+		<queries>
 			<query minversion="11.1">
 				<sql><![CDATA[
  SELECT ids.owner AS "Owner",
@@ -303,8 +348,413 @@ WITH
   ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
 				]]></sql>
 			</query>
-
 		</queries>
 	</display>
-
+	<display type="editor" style="null" enable="true" connType="Oracle"
+		objectType="FUNCTION,PACKAGE,PACKAGE BODY,PROCEDURE,TRIGGER,TYPE,TYPE BODY">
+		<name><![CDATA[Table Usages]]></name>
+		<description><![CDATA[]]>
+		</description>
+		<tooltip><![CDATA[]]>
+		</tooltip>
+		<drillclass><![CDATA[null]]></drillclass>
+		<queries>
+			<query minversion="12.2">
+				<sql><![CDATA[
+WITH
+   dep AS (
+      SELECT owner      AS owner,
+             'TABLE'    AS type,
+             table_name AS name,
+             NULL AS referenced_owner,
+             NULL AS referenced_type,
+             NULL AS referenced_name
+        FROM sys.all_tables
+      UNION ALL
+      SELECT owner,
+             type,
+             name,
+             referenced_owner,
+             referenced_type,
+             referenced_name
+        FROM sys.all_dependencies
+       WHERE type IN ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
+   ),
+   dep_graph AS (
+      SELECT DISTINCT
+             owner,
+             type                   AS object_type,
+             name                   AS object_name,
+             connect_by_root(owner) AS ref_owner,
+             connect_by_root(type)  AS ref_object_type,
+             connect_by_root(name)  AS ref_object_name,
+             level                  AS path_len
+        FROM dep
+      CONNECT BY  PRIOR dep.owner = dep.referenced_owner
+              AND PRIOR dep.type  = dep.referenced_type
+              AND PRIOR dep.name  = dep.referenced_name
+   )
+SELECT ids.procedure_name AS "Procedure name",
+       CASE
+          WHEN refs.type IS NOT NULL THEN
+             refs.type
+          ELSE
+             ids.usage
+       END AS "Operation",
+       CASE
+          WHEN dep_graph.path_len = 1 THEN
+             'YES'
+          ELSE
+             'NO'
+       END AS "Direct dep?",
+       dep_graph.ref_owner AS "Owner",
+       dep_graph.ref_object_type AS "Object type",
+       CASE
+          WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
+                to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' ||  dep_graph.ref_object_name ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             ids.object_name
+       END AS "Object name",
+       ids.line AS "Line",
+       ids.col AS "Col",
+       ids.text AS "Text"
+  FROM plscope_identifiers ids
+  LEFT JOIN dba_statements refs
+    ON refs.signature = parent_statement_signature
+  JOIN dep_graph
+    ON dep_graph.owner           = ids.ref_owner
+       AND dep_graph.object_type = ids.ref_object_type
+       AND dep_graph.object_name = ids.ref_object_name
+ WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM', 'COLUMN')
+   AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'))
+   AND ids.owner       = :OBJECT_OWNER
+   AND ids.object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
+   AND ids.object_name = :OBJECT_NAME 
+ ORDER BY length(ids.object_type), ids.path_len, ids.line, ids.col, "Direct dep?" DESC  ;
+				]]></sql>
+			</query>
+		</queries>
+	</display>
+	<display type="editor" style="null" enable="true" connType="Oracle"
+		objectType="FUNCTION,PACKAGE,PACKAGE BODY,PROCEDURE,TRIGGER,TYPE,TYPE BODY">
+		<name><![CDATA[Column Usages]]></name>
+		<description><![CDATA[]]>
+		</description>
+		<tooltip><![CDATA[]]>
+		</tooltip>
+		<drillclass><![CDATA[null]]></drillclass>
+		<queries>
+			<query minversion="12.2">
+				<sql><![CDATA[
+WITH
+   base_ids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             origin_con_id
+        FROM sys.all_identifiers
+      UNION ALL
+      SELECT owner,
+             ':' || NVL(sql_id, type) AS name,  -- intermediate statement marker colon
+             signature,
+             type,
+             object_name,
+             object_type,
+             'EXECUTE' AS usage, -- new, artificial usage
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             origin_con_id
+       FROM sys.all_statements
+   ),
+   ids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             coalesce(
+                least(
+                   usage_context_id,
+                   max(usage_id) over (
+                      PARTITION BY owner, object_name, object_type
+                      ORDER BY usage_id
+                      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                   )
+                ),
+                0
+             ) AS usage_context_id, -- fix broken hierarchies
+             origin_con_id
+        FROM base_ids
+       WHERE owner       = :OBJECT_OWNER
+         AND object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
+         AND object_name = :OBJECT_NAME
+   ),
+   tree AS (
+       SELECT ids.owner,
+              ids.object_type,
+              ids.object_name,
+              ids.line,
+              ids.col,
+              ids.name,
+              sys_connect_by_path(ids.name, '/') AS name_path,
+              level as path_len,
+              ids.type,
+              ids.usage,
+              ids.signature,
+              ids.usage_id,
+              ids.usage_context_id,
+              ids.origin_con_id
+         FROM ids
+        START WITH ids.usage_context_id = 0
+      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
+              AND PRIOR ids.owner       = ids.owner
+              AND PRIOR ids.object_type = ids.object_type
+              AND PRIOR ids.object_name = ids.object_name
+   ), 
+   plscope_identifiers AS (
+      SELECT tree.owner,
+             tree.object_type,
+             tree.object_name,
+             last_value (
+                CASE
+                   WHEN tree.type in ('PROCEDURE', 'FUNCTION') AND tree.path_len = 2  THEN
+                      tree.name
+                END
+             ) IGNORE NULLS OVER (
+                PARTITION BY tree.owner, tree.object_name, tree.object_type
+                ORDER BY tree.line, tree.col, tree.path_len
+             ) AS procedure_name,
+             tree.line,
+             tree.col,
+             REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
+             tree.path_len,
+             tree.type,
+             tree.usage,
+             refs.owner AS ref_owner,
+             refs.object_type AS ref_object_type,
+             refs.object_name AS ref_object_name,
+             CASE
+                WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
+                   -- ensure that this is really a child of a statement
+                   last_value (
+                      CASE
+                         WHEN tree.usage = 'EXECUTE' THEN
+                            tree.signature
+                      END
+                   ) IGNORE NULLS OVER (
+                      PARTITION BY tree.owner, tree.object_name, tree.object_type
+                      ORDER BY tree.line, tree.col, tree.path_len
+                   )
+             END AS parent_statement_signature,
+             tree.signature,
+             tree.usage_id,
+             tree.usage_context_id,
+             tree.origin_con_id
+        FROM tree
+        LEFT JOIN sys.all_identifiers refs
+          ON refs.signature = tree.signature
+             AND refs.usage = 'DECLARATION'
+   ),
+   dep AS (
+      SELECT owner      AS owner,
+             'TABLE'    AS type,
+             table_name AS name,
+             NULL AS referenced_owner,
+             NULL AS referenced_type,
+             NULL AS referenced_name
+        FROM sys.all_tables
+      UNION ALL
+      SELECT owner,
+             type,
+             name,
+             referenced_owner,
+             referenced_type,
+             referenced_name
+        FROM sys.all_dependencies
+       WHERE type IN ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
+   ),
+   dep_graph AS (
+      SELECT DISTINCT
+             owner,
+             type                   AS object_type,
+             name                   AS object_name,
+             connect_by_root(owner) AS ref_owner,
+             connect_by_root(type)  AS ref_object_type,
+             connect_by_root(name)  AS ref_object_name,
+             level                  AS path_len
+        FROM dep
+      CONNECT BY  PRIOR dep.owner = dep.referenced_owner
+              AND PRIOR dep.type  = dep.referenced_type
+              AND PRIOR dep.name  = dep.referenced_name
+   ),
+   plscope_tab_usage AS (
+      SELECT ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.procedure_name,
+             CASE
+                WHEN refs.type IS NOT NULL THEN
+                   refs.type
+                ELSE
+                   ids.usage
+             END AS operation,
+             ids.path_len,
+             dep_graph.ref_owner,
+             dep_graph.ref_object_type,
+             dep_graph.ref_object_name,
+             CASE
+                WHEN dep_graph.path_len = 1 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS direct_dependency
+        FROM plscope_identifiers ids
+        LEFT JOIN sys.all_statements refs
+          ON refs.signature = parent_statement_signature
+        JOIN dep_graph
+          ON dep_graph.owner           = ids.ref_owner
+             AND dep_graph.object_type = ids.ref_object_type
+             AND dep_graph.object_name = ids.ref_object_name
+       WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
+         AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'))
+   ),
+   scope_cols AS (
+      SELECT ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.procedure_name,
+             CASE 
+                WHEN refs.type IS NOT NULL THEN
+                   refs.type 
+                ELSE
+                   ids.usage
+             END AS operation,
+             ids.ref_owner,
+             ids.ref_object_type,
+             ids.ref_object_name,
+             ids.name as column_name,
+             ids.path_len
+        FROM plscope_identifiers ids
+        LEFT JOIN sys.all_statements refs
+          ON refs.signature = parent_statement_signature
+       WHERE ids.type = 'COLUMN'
+         AND ids.usage != 'DECLARATION'
+   ),
+   missing_cols AS (
+      SELECT t.owner,
+             t.object_type,
+             t.object_name,
+             t.line,
+             t.col,
+             t.procedure_name,
+             t.operation,
+             coalesce(o.owner, t.ref_owner) AS ref_owner,
+             coalesce(o.object_type, t.ref_object_type) AS ref_object_type,
+             coalesce(o.object_name, t.ref_object_name) AS ref_object_name,
+             tc.column_name,
+             t.path_len
+        FROM plscope_tab_usage t
+        LEFT JOIN sys.all_synonyms s
+          ON s.owner            = t.ref_owner
+             AND s.synonym_name = t.ref_object_name
+        LEFT JOIN sys.all_objects o
+          ON o.owner            = s.table_owner
+            AND o.object_name   = s.table_name
+        LEFT JOIN scope_cols c
+          ON t.owner                                        = c.owner
+             AND t.object_type                              = c.object_type
+             AND t.object_name                              = c.object_name
+             AND t.procedure_name                           = c.procedure_name
+             AND coalesce(o.owner, t.ref_owner)             = c.ref_owner
+             AND coalesce(o.object_type, t.ref_object_type) = c.ref_object_type
+             AND coalesce(o.object_name, t.ref_object_name) = c.ref_object_name
+        JOIN sys.all_tab_columns tc
+          ON tc.owner = t.owner
+             AND tc.table_name = coalesce(o.object_name,t.ref_object_name)
+       WHERE direct_dependency = 'YES'
+         AND c.owner IS NULL
+         AND t.operation IN ('INSERT', 'SELECT')
+   ),
+   base_cols AS (
+      SELECT owner,
+             object_type,
+             object_name,
+             line,
+             col,
+             procedure_name,
+             operation,
+             ref_owner,
+             ref_object_type,
+             ref_object_name,
+             column_name,
+             path_len,
+             'YES' AS direct_dependency
+        FROM scope_cols
+      UNION ALL
+      SELECT owner,
+             object_type,
+             object_name,
+             line,
+             col,
+             procedure_name,
+             operation,
+             ref_owner,
+             ref_object_type,
+             ref_object_name,
+             column_name,
+             path_len,
+             'NO' AS direct_dependency
+        FROM missing_cols
+   )
+SELECT procedure_name AS "Procedure name",
+       operation AS "Operation",
+       direct_dependency AS "Direct dep?",
+       ref_owner "Owner",
+       ref_object_type AS "Object type",
+       ref_object_name AS "Object name",
+       CASE
+          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || column_name ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             column_name
+       END AS "Column name",
+       line AS "Line",
+       col AS "Col",
+       (
+          SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
+            FROM sys.all_source src
+           WHERE src.owner = base_cols.owner
+             AND src.type = base_cols.object_type
+             AND src.name = base_cols.object_name
+             AND src.line = base_cols.line
+       ) AS "Text"
+  FROM base_cols
+ ORDER BY length(object_type), path_len, line, col, direct_dependency DESC
+				]]></sql>
+			</query>
+		</queries>
+	</display>
 </displays>
