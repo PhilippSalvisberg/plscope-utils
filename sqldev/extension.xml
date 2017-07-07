@@ -4,31 +4,36 @@
 	<name rskey="EXTENSION_NAME" />
 	<owner rskey="EXTENSION_OWNER" />
 
-	<!-- features may be used to enable/disable extensions without uninstalling them -->
+	<!-- features may be used to enable/disable extensions without uninstalling 
+		them -->
 	<feature id="com.salvis.plscope.sqldev" xmlns="http://xmlns.oracle.com/ide/extension">
 		<category-id>db-category</category-id>
 		<name>#EXTENSION_NAME#</name>
 		<description><![CDATA[#EXTENSION_DESCRIPTION#]]></description>
 		<type>
-			<service can-user-disable="true" reload-if-used="true"/>
+			<service can-user-disable="true" reload-if-used="true" />
 		</type>
 	</feature>
 
-	<!-- register actions, triggering extension load -->
+	<!-- register actions and reports -->
 	<trigger-hooks xmlns="http://xmlns.oracle.com/ide/extension">
 		<triggers xmlns:c="http://xmlns.oracle.com/ide/customization">
 			<sqldev-action-hook
 				xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-actions">
 				<actionDescriptor package="com.salvis.plscope.sqldev.action" />
 			</sqldev-action-hook>
+			<sqldev-reports-hook
+				xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-reports">
+				<report package="/com/salvis/plscope/sqldev/report" />
+			</sqldev-reports-hook>
 		</triggers>
 	</trigger-hooks>
 
-	<!-- views (editors) used by in database navigator -->
+	<!-- register views (editors) -->
 	<hooks>
-		<sqldev-viewer-hook 
+		<sqldev-viewer-hook
 			xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-viewers">
-			<viewerDescriptor package="com.salvis.plscope.sqldev.editor"/>
+			<viewerDescriptor package="com.salvis.plscope.sqldev.editor" />
 		</sqldev-viewer-hook>
 	</hooks>
 </extension>
