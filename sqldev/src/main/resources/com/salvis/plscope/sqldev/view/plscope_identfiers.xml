@@ -8,7 +8,7 @@
 	<!-- used sys.all_ instead of dba_ - SQL Developer uses dba_ views, if the the connected use has the privileges -->
 	<!-- Use case sensitive result columns including spaces -->
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PACKAGE BODY,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,TYPE BODY,VIEW">
+		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW">
 		<name><![CDATA[Identifiers]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -254,7 +254,7 @@ WITH
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PACKAGE BODY,PROCEDURE,TRIGGER,TYPE,TYPE BODY">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE">
 		<name><![CDATA[Statements]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -299,7 +299,7 @@ SELECT CASE
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PACKAGE BODY,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,TYPE BODY,VIEW">
+		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW">
 		<name><![CDATA[Used by]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -351,7 +351,7 @@ SELECT CASE
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PACKAGE BODY,PROCEDURE,TRIGGER,TYPE,TYPE BODY">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE">
 		<name><![CDATA[Table Usages]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -428,7 +428,7 @@ SELECT ids.procedure_name AS "Procedure name",
     ON dep_graph.owner           = ids.ref_owner
        AND dep_graph.object_type = ids.ref_object_type
        AND dep_graph.object_name = ids.ref_object_name
- WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM', 'COLUMN')
+ WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
    AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'))
    AND ids.owner       = :OBJECT_OWNER
    AND ids.object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
@@ -441,7 +441,7 @@ SELECT ids.procedure_name AS "Procedure name",
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PACKAGE BODY,PROCEDURE,TRIGGER,TYPE,TYPE BODY">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE">
 		<name><![CDATA[Column Usages]]></name>
 		<description><![CDATA[]]>
 		</description>
