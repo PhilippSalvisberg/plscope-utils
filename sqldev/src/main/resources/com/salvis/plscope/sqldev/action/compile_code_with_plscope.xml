@@ -15,9 +15,16 @@
 			<value><![CDATA[STATIC:ALL:NONE]]></value>
 		</prompt>
 		<sql>
-			<![CDATA[BEGIN
+			<![CDATA[DECLARE
+   e_is_not_udt     EXCEPTION;
+   e_has_table_deps EXCEPTION;
+   e_no_privs       EXCEPTION;
+   PRAGMA exception_init(e_is_not_udt, -22307);
+   PRAGMA exception_init(e_has_table_deps, -2311);	
+   PRAGMA exception_init(e_no_privs, -1031);	
+BEGIN
    IF dbms_db_version.version <= 11 OR
-      dbms_db_version.version = 12 and dbms_db_version.release = 1
+      dbms_db_version.version = 12 AND dbms_db_version.release = 1
    THEN
       /* PL/Scope identifiers since 11.1 */
       EXECUTE IMMEDIATE q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#']';
@@ -25,7 +32,7 @@
       /* PL/Scope statements since 12.2 */
       EXECUTE IMMEDIATE q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
    END IF;
-   IF NOT (dbms_db_version.version = 11 and dbms_db_version.version = 1) THEN
+   IF NOT (dbms_db_version.version = 11 AND dbms_db_version.version = 1) THEN
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
       <<synonyms>>
       FOR r IN (
@@ -33,8 +40,55 @@
            FROM user_synonyms
       ) LOOP
          EXECUTE IMMEDIATE 'ALTER SYNONYM ' || r.synonym_name || ' COMPILE';
-      END loop synonyms;
+      END LOOP synonyms;
+      <<public_synonyms>>
+      FOR R IN (
+         SELECT synonym_name
+           FROM sys.all_synonyms
+          WHERE owner = 'PUBLIC'
+            AND table_owner = USER
+      ) LOOP
+         <<compile_public_synonym>>
+         BEGIN
+            EXECUTE IMMEDIATE 'ALTER PUBLIC SYNONYM ' || r.synonym_name || ' COMPILE';
+         EXCEPTION
+            WHEN e_no_privs THEN
+               /* ignore when user does not have create public synonym and drop public synonym privileges */
+               NULL;
+         END compile_public_synonym;
+      END LOOP public_synonyms;
    END IF;
+   /* Compile types */
+   <<types>>
+   FOR r IN (
+      SELECT o.object_type, o.object_name, count(d.name) AS priority 
+        FROM sys.all_objects o
+        LEFT JOIN all_dependencies d
+          ON d.owner = o.owner
+             AND d.type = o.object_type
+             AND d.name = o.object_name
+       WHERE o.owner = USER
+         AND o.object_type in ('TYPE', 'TYPE BODY')
+       GROUP BY o.object_TYPE, o.object_NAME
+       ORDER BY priority
+   ) LOOP
+      <<compile_type>>
+      BEGIN
+          IF r.object_type = 'TYPE' THEN
+             EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE';
+          ELSE
+             EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE BODY';
+          END IF;
+      EXCEPTION
+          WHEN e_is_not_udt THEN
+             /* ignore errors for non user-defined types */
+             NULL;
+          WHEN e_has_table_deps THEN
+             /* ignore when type is used in tables */
+             NULL;
+      END compile_type;
+   END LOOP types;
+   /* Compile schema handles procedures, functions, packages, views and triggers only */
    dbms_utility.compile_schema(
       schema         => USER,
       compile_all    => TRUE,
