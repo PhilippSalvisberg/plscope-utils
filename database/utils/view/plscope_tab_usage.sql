@@ -68,7 +68,8 @@ SELECT ids.owner,
              'YES'
           ELSE
              'NO'
-       END AS direct_dependency
+       END AS direct_dependency,
+       ids.text
   FROM plscope_identifiers ids
   LEFT JOIN dba_statements refs
     ON refs.signature = parent_statement_signature

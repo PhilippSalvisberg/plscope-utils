@@ -23,16 +23,17 @@ WITH
              ids.line,
              ids.col,
              ids.procedure_name,
-             CASE 
+             CASE
                 WHEN refs.type IS NOT NULL THEN
-                   refs.type 
+                   refs.type
                 ELSE
                    ids.usage
              END AS operation,
              ids.ref_owner,
              ids.ref_object_type,
              ids.ref_object_name,
-             ids.name as column_name
+             ids.name as column_name,
+             ids.text
         FROM plscope_identifiers ids
         LEFT JOIN dba_statements refs
           ON refs.signature = parent_statement_signature
@@ -50,7 +51,8 @@ WITH
              coalesce(o.owner, t.ref_owner) AS ref_owner,
              coalesce(o.object_type, t.ref_object_type) AS ref_object_type,
              coalesce(o.object_name, t.ref_object_name) AS ref_object_name,
-             tc.column_name
+             tc.column_name,
+             t.text
         FROM plscope_tab_usage t
         LEFT JOIN dba_synonyms s
           ON s.owner            = t.ref_owner
@@ -85,7 +87,8 @@ WITH
              ref_object_type,
              ref_object_name,
              column_name,
-             'YES' AS direct_dependency
+             'YES' AS direct_dependency,
+             text
         FROM scope_cols
       UNION ALL
       SELECT owner,
@@ -99,7 +102,8 @@ WITH
              ref_object_type,
              ref_object_name,
              column_name,
-             'NO' AS direct_dependency
+             'NO' AS direct_dependency,
+             text
         FROM missing_cols
    )
 SELECT owner,
@@ -113,7 +117,8 @@ SELECT owner,
        ref_object_type,
        ref_object_name,
        column_name,
-       direct_dependency
+       direct_dependency,
+       text
   FROM base_cols
 UNION ALL
 SELECT c.owner,
@@ -127,7 +132,8 @@ SELECT c.owner,
        d.object_type AS ref_object_type,
        d.object_name AS ref_object_name,
        d.column_name,
-       'NO' AS direct_dependency
+       'NO' AS direct_dependency,
+       c.text
   FROM base_cols c,
        TABLE(
           lineage_util.get_dep_cols_from_view(
