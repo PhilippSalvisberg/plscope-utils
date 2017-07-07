@@ -383,12 +383,13 @@ WITH
    dep_graph AS (
       SELECT DISTINCT
              owner,
-             type                   AS object_type,
-             name                   AS object_name,
-             connect_by_root(owner) AS ref_owner,
-             connect_by_root(type)  AS ref_object_type,
-             connect_by_root(name)  AS ref_object_name,
-             level                  AS path_len
+             type                          AS object_type,
+             name                          AS object_name,
+             connect_by_root(owner)        AS ref_owner,
+             connect_by_root(type)         AS ref_object_type,
+             connect_by_root(name)         AS ref_object_name,
+             sys_connect_by_path(type,'/') AS ref_object_type_path,
+             level                         AS path_len
         FROM dep
       CONNECT BY  PRIOR dep.owner = dep.referenced_owner
               AND PRIOR dep.type  = dep.referenced_type
@@ -431,8 +432,10 @@ SELECT ids.procedure_name AS "Procedure name",
    AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'))
    AND ids.owner       = :OBJECT_OWNER
    AND ids.object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
-   AND ids.object_name = :OBJECT_NAME 
- ORDER BY length(ids.object_type), ids.path_len, ids.line, ids.col, "Direct dep?" DESC  ;
+   AND ids.object_name = :OBJECT_NAME
+   -- resolve synonyms as indirect dependencies only (do not resolve table usages in views)
+   AND (dep_graph.path_len = 1 OR dep_graph.path_len = 2 AND ref_object_type_path LIKE '%SYNONYM')
+ ORDER BY length(ids.object_type), ids.path_len, ids.line, ids.col, "Direct dep?" DESC;
 				]]></sql>
 			</query>
 		</queries>
