@@ -28,7 +28,7 @@
 	<hooks>
 		<sqldev-viewer-hook 
 			xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-viewers">
-			<viewerDescriptor package="com.salvis.plscope.sqldev.view"/>
+			<viewerDescriptor package="com.salvis.plscope.sqldev.editor"/>
 		</sqldev-viewer-hook>
 	</hooks>
 </extension>
