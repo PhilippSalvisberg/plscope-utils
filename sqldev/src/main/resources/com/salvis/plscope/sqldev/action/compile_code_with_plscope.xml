@@ -39,7 +39,7 @@ BEGIN
          SELECT synonym_name
            FROM user_synonyms
       ) LOOP
-         EXECUTE IMMEDIATE 'ALTER SYNONYM ' || r.synonym_name || ' COMPILE';
+         EXECUTE IMMEDIATE 'ALTER SYNONYM "' || r.synonym_name || '" COMPILE';
       END LOOP synonyms;
       <<public_synonyms>>
       FOR R IN (
@@ -50,7 +50,7 @@ BEGIN
       ) LOOP
          <<compile_public_synonym>>
          BEGIN
-            EXECUTE IMMEDIATE 'ALTER PUBLIC SYNONYM ' || r.synonym_name || ' COMPILE';
+            EXECUTE IMMEDIATE 'ALTER PUBLIC SYNONYM "' || r.synonym_name || '" COMPILE';
          EXCEPTION
             WHEN e_no_privs THEN
                /* ignore when user does not have create public synonym and drop public synonym privileges */
