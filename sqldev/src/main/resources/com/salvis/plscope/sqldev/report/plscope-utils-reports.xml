@@ -32,17 +32,18 @@
         FROM sys.all_statements
        WHERE owner = NVL(:OBJECT_OWNER, USER)
    )
-SELECT owner AS "Owner",
-       object_type AS "Object type",
-       object_name AS "Object name",
-       CASE
+SELECT CASE
           WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
              'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
-                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || type ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || 'Source' ||
                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
           ELSE
-             type
-       END AS "Type",
+             NULL
+       END AS "Link",
+       owner AS "Owner",
+       object_type AS "Object type",
+       object_name AS "Object name",
+       type AS "Type",
        line AS "Line", 
        col AS "Col", 
        sql_id AS "SQL_ID",
@@ -59,6 +60,24 @@ SELECT owner AS "Owner",
 				</bind>
 			</binds>
 		</query>
+			<pdf version="VERSION_1_7" compression="CONTENT">
+				<docproperty title="" author="" subject="" keywords="" />
+				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
+				<column>
+					<heading font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="FIRST_PAGE" />
+					<footing font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="NONE" />
+					<blob blob="NONE" zip="false" />
+				</column>
+				<table font="Times New Roman" size="10" style="NORMAL" color="-16777216" userowshading="false" oddrowshading="-1" evenrowshading="-1" showborders="true" spacingbefore="12" spacingafter="12" horizontalalign="LEFT" />
+				<header enable="false" generatedate="false">
+					<data>
+					null					</data>
+				</header>
+				<footer enable="false" generatedate="false">
+					<data value="null" />
+				</footer>
+				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
+			</pdf>
 	</display>
 </folder>
 </displays>

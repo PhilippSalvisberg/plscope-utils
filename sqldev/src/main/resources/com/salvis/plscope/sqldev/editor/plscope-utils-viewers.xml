@@ -98,18 +98,17 @@ WITH
               AND PRIOR ids.object_type = ids.object_type
               AND PRIOR ids.object_name = ids.object_name
    )
- SELECT lpad(' ', 3 * (tree.path_len - 1)) || tree.usage AS "Usage",
-        tree.type AS "Type",
-        CASE
+ SELECT CASE
            WHEN tree.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
               'SQLDEV:LINK:' || tree.owner || ':' || tree.object_type || ':' || tree.object_name || ':' ||
-                 to_char(tree.line,'FM0000009') || ':' || 
-                 to_char(tree.col,'FM0000009') || ':' || 
-                 replace(tree.name, ':', NULL) || -- remove intermediate statement marker
+                 to_char(tree.line,'FM0000009') || ':' || to_char(tree.col,'FM0000009') || ':' || 'Source' ||
                  ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
            ELSE
-              replace(tree.name, ':', NULL) -- remove intermediate statement marker
-        END AS "Name",
+              NULL
+        END AS "Link",
+        lpad(' ', 3 * (tree.path_len - 1)) || tree.usage AS "Usage",
+        tree.type AS "Type",
+        replace(tree.name, ':', NULL) AS "Name", -- remove intermediate statement marker
         CASE 
            WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
               AND tree.usage = 'DECLARATION'
@@ -201,18 +200,17 @@ WITH
               AND PRIOR ids.object_type = ids.object_type
               AND PRIOR ids.object_name = ids.object_name
    )
- SELECT lpad(' ', 3 * (tree.path_len - 1)) || tree.usage AS "Usage",
-        tree.type AS "Type",
-        CASE
+ SELECT CASE
            WHEN tree.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
               'SQLDEV:LINK:' || tree.owner || ':' || tree.object_type || ':' || tree.object_name || ':' ||
-                 to_char(tree.line,'FM0000009') || ':' || 
-                 to_char(tree.col,'FM0000009') || ':' || 
-                 replace(tree.name, ':', NULL) || -- remove intermediate statement marker
+                 to_char(tree.line,'FM0000009') || ':' || to_char(tree.col,'FM0000009') || ':' || 'Source' || 
                  ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
            ELSE
-              replace(tree.name, ':', NULL) -- remove intermediate statement marker
-        END AS "Name",
+              NULL
+        END AS "Link",
+        lpad(' ', 3 * (tree.path_len - 1)) || tree.usage AS "Usage",
+        tree.type AS "Type",
+        replace(tree.name, ':', NULL) AS "Name", -- remove intermediate statement marker
         CASE 
            WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
               AND tree.usage = 'DECLARATION'
@@ -267,11 +265,12 @@ WITH
 SELECT CASE
           WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
              'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
-                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || type ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || 'Source' ||
                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
           ELSE
-             type
-       END AS "Type",
+             NULL
+       END AS "Link",
+       type AS "Type",
        line AS "Line", 
        col AS "Col", 
        sql_id AS "SQL_ID",
@@ -309,19 +308,20 @@ SELECT CASE
 		<queries>
 			<query minversion="11.1">
 				<sql><![CDATA[
- SELECT ids.owner AS "Owner",
+ SELECT CASE
+           WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+              'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
+                 to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' || 'Source' ||
+                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+           ELSE
+              NULL
+        END AS "Link",
+        ids.owner AS "Owner",
         ids.object_type AS "Object type",
         ids.object_name AS "Object name",
         ids.usage AS "Usage",
         ids.type AS "Type",
-        CASE
-           WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-              'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
-                 to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' || ids.name ||
-                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-           ELSE
-              ids.name
-        END AS "Name",
+        ids.name AS "Name",
         ids.line AS "Line",
         ids.col aS "Col",
         (
@@ -395,7 +395,15 @@ WITH
               AND PRIOR dep.type  = dep.referenced_type
               AND PRIOR dep.name  = dep.referenced_name
    )
-SELECT ids.procedure_name AS "Procedure name",
+SELECT CASE
+          WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
+                to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' ||  'Source' ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             NULL
+       END AS "Link",
+       ids.procedure_name AS "Procedure name",
        CASE
           WHEN refs.type IS NOT NULL THEN
              refs.type
@@ -410,14 +418,7 @@ SELECT ids.procedure_name AS "Procedure name",
        END AS "Direct dep?",
        dep_graph.ref_owner AS "Owner",
        dep_graph.ref_object_type AS "Object type",
-       CASE
-          WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-             'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
-                to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' ||  dep_graph.ref_object_name ||
-                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-          ELSE
-             ids.object_name
-       END AS "Object name",
+       ids.object_name AS "Object name",
        ids.line AS "Line",
        ids.col AS "Col",
        ids.text AS "Text"
@@ -729,20 +730,21 @@ WITH
              'NO' AS direct_dependency
         FROM missing_cols
    )
-SELECT procedure_name AS "Procedure name",
+SELECT CASE
+          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || 'Source' ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             NULL
+       END AS "Link",
+       procedure_name AS "Procedure name",
        operation AS "Operation",
        direct_dependency AS "Direct dep?",
        ref_owner "Owner",
        ref_object_type AS "Object type",
        ref_object_name AS "Object name",
-       CASE
-          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
-                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || column_name ||
-                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-          ELSE
-             column_name
-       END AS "Column name",
+       column_name AS "Column name",
        line AS "Line",
        col AS "Col",
        (
