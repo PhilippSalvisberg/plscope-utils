@@ -72,7 +72,7 @@ WITH
              ) AS usage_context_id, -- fix broken hierarchies
              origin_con_id
         FROM base_ids
-       WHERE owner       = :OBJECT_OWNER
+       WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
          AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND object_name = :OBJECT_NAME
    ),
@@ -175,7 +175,7 @@ WITH
              ) AS usage_context_id, -- fix broken hierarchies
              origin_con_id
         FROM sys.all_identifiers
-       WHERE owner       = :OBJECT_OWNER
+       WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
          AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND object_name = :OBJECT_NAME
    ),
@@ -336,7 +336,7 @@ SELECT CASE
    JOIN sys.all_identifiers refs
      ON refs.signature = ids.signature
         AND refs.usage = 'DECLARATION'
-  WHERE refs.owner       = :OBJECT_OWNER
+  WHERE (refs.owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
     AND refs.object_type = upper(replace(:OBJECT_TYPE,'plscope-utils-')) 
     AND refs.object_name = :OBJECT_NAME
     AND NOT (
@@ -429,7 +429,6 @@ SELECT ids.procedure_name AS "Procedure name",
        AND dep_graph.object_type = ids.ref_object_type
        AND dep_graph.object_name = ids.ref_object_name
  WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
-   AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'))
    AND ids.owner       = :OBJECT_OWNER
    AND ids.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
    AND ids.object_name = :OBJECT_NAME
