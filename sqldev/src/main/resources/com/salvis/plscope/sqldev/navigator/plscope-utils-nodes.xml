@@ -219,6 +219,31 @@ SELECT i.object_name AS name,
 			<icon RSKEY="OracleIcons.PACKAGE" />
 		</node>
 	</objectType>
+	<objectType connType="Oracle" id="plscope-utils-procedure">
+		<node>
+			<icon RSKEY="OracleIcons.PROCEDURE" />
+		</node>
+	</objectType>
+	<objectType connType="Oracle" id="plscope-utils-function">
+		<node>
+			<icon RSKEY="OracleIcons.FUNCTION" />
+		</node>
+	</objectType>
+	<objectType connType="Oracle" id="plscope-utils-trigger">
+		<node>
+			<icon RSKEY="OracleIcons.TRIGGER" />
+		</node>
+	</objectType>
+	<objectType connType="Oracle" id="plscope-utils-type">
+		<node>
+			<icon RSKEY="OracleIcons.TYPE" />
+		</node>
+	</objectType>
+	<objectType connType="Oracle" id="plscope-utils-synonym">
+		<node>
+			<icon RSKEY="OracleIcons.SYNONYM" />
+		</node>
+	</objectType>
 	<objectType connType="Oracle" id="plscope-utils-table">
 		<node>
 			<icon RSKEY="OracleIcons.TABLE" />
