@@ -8,7 +8,7 @@
 	<!-- used sys.all_ instead of dba_ - SQL Developer uses dba_ views, if the the connected use has the privileges -->
 	<!-- Use case sensitive result columns including spaces -->
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view">
 		<name><![CDATA[Identifiers]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -73,7 +73,7 @@ WITH
              origin_con_id
         FROM base_ids
        WHERE owner       = :OBJECT_OWNER
-         AND object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
+         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND object_name = :OBJECT_NAME
    ),
    tree AS (
@@ -176,7 +176,7 @@ WITH
              origin_con_id
         FROM sys.all_identifiers
        WHERE owner       = :OBJECT_OWNER
-         AND object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
+         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND object_name = :OBJECT_NAME
    ),
    tree AS (
@@ -254,7 +254,7 @@ WITH
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-trigger,plscope-utils-type">
 		<name><![CDATA[Statements]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -291,7 +291,7 @@ SELECT CASE
        full_text AS "Text"
   FROM sys.all_statements
  WHERE owner       = :OBJECT_OWNER
-  AND object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
+  AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
   AND object_name = :OBJECT_NAME
  ORDER BY length(object_type), line, col
 				]]></sql>
@@ -299,7 +299,7 @@ SELECT CASE
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,MATERIALIZED VIEW,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view">
 		<name><![CDATA[Used by]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -337,11 +337,11 @@ SELECT CASE
      ON refs.signature = ids.signature
         AND refs.usage = 'DECLARATION'
   WHERE refs.owner       = :OBJECT_OWNER
-    AND refs.object_type = :OBJECT_TYPE 
+    AND refs.object_type = upper(replace(:OBJECT_TYPE,'plscope-utils-')) 
     AND refs.object_name = :OBJECT_NAME
     AND NOT (
                ids.owner       = :OBJECT_OWNER
-           AND ids.object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
+           AND ids.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
            AND ids.object_name = :OBJECT_NAME
         )
     
@@ -351,7 +351,7 @@ SELECT CASE
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-trigger,plscope-utils-type">
 		<name><![CDATA[Table Usages]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -431,7 +431,7 @@ SELECT ids.procedure_name AS "Procedure name",
  WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
    AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'))
    AND ids.owner       = :OBJECT_OWNER
-   AND ids.object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
+   AND ids.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
    AND ids.object_name = :OBJECT_NAME
    -- resolve synonyms as indirect dependencies only (do not resolve table usages in views)
    AND (dep_graph.path_len = 1 OR dep_graph.path_len = 2 AND ref_object_type_path LIKE '%SYNONYM')
@@ -441,7 +441,7 @@ SELECT ids.procedure_name AS "Procedure name",
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-trigger,plscope-utils-type">
 		<name><![CDATA[Column Usages]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -506,7 +506,7 @@ WITH
              origin_con_id
         FROM base_ids
        WHERE owner       = :OBJECT_OWNER
-         AND object_type IN (:OBJECT_TYPE, :OBJECT_TYPE || ' BODY')  
+         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND object_name = :OBJECT_NAME
    ),
    tree AS (
