@@ -15,13 +15,16 @@
 		</type>
 	</feature>
 
-	<!-- register actions and reports -->
+	<!-- register actions, navigator nodes and reports -->
 	<trigger-hooks xmlns="http://xmlns.oracle.com/ide/extension">
 		<triggers xmlns:c="http://xmlns.oracle.com/ide/customization">
 			<sqldev-action-hook
 				xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-actions">
 				<actionDescriptor package="com.salvis.plscope.sqldev.action" />
 			</sqldev-action-hook>
+			<sqldev-navigator-hook xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-navigator">
+                <descriptor>/com/salvis/plscope/sqldev/navigator/plscope-utils-nodes.xml</descriptor>
+            </sqldev-navigator-hook>
 			<sqldev-reports-hook
 				xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-reports">
 				<report package="/com/salvis/plscope/sqldev/report" />
