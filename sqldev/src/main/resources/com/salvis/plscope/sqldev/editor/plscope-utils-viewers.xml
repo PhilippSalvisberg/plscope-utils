@@ -144,7 +144,7 @@ WITH
               AND src.line = tree.line
         ) AS "Text"
    FROM tree
-  ORDER BY length(tree.object_type), tree.path_len, tree.line, tree.col 
+  ORDER BY length(tree.object_type), tree.line, tree.col, tree.path_len
 				]]></sql>
 			</query>
 			<query minversion="11.1">
@@ -246,7 +246,7 @@ WITH
               AND src.line = tree.line
         ) AS "Text"
    FROM tree
-  ORDER BY length(tree.object_type), tree.path_len, tree.line, tree.col 
+  ORDER BY length(tree.object_type), tree.line, tree.col, tree.path_len
 				]]></sql>
 			</query>
 		</queries>
@@ -435,7 +435,7 @@ SELECT CASE
    AND ids.object_name = :OBJECT_NAME
    -- resolve synonyms as indirect dependencies only (do not resolve table usages in views)
    AND (dep_graph.path_len = 1 OR dep_graph.path_len = 2 AND ref_object_type_path LIKE '%SYNONYM')
- ORDER BY length(ids.object_type), ids.path_len, ids.line, ids.col, "Direct dep?" DESC;
+ ORDER BY length(ids.object_type), ids.line, ids.col, ids.path_len, "Direct dep?" DESC;
 				]]></sql>
 			</query>
 		</queries>
@@ -756,7 +756,7 @@ SELECT CASE
              AND src.line = base_cols.line
        ) AS "Text"
   FROM base_cols
- ORDER BY length(object_type), path_len, line, col, direct_dependency DESC
+ ORDER BY length(object_type), line, col, path_len, direct_dependency DESC
 				]]></sql>
 			</query>
 		</queries>
