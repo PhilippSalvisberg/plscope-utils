@@ -467,7 +467,7 @@ WITH
                 -- this correlated subquery will be evaluated only,
                 -- if the column TEXT is selected
                 SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-                  FROM dba_source src
+                  FROM sys.all_source src
                  WHERE src.owner = tree.owner
                    AND src.type = tree.object_type
                    AND src.name = tree.object_name
