@@ -71,8 +71,7 @@
 							<tasks>
 								<copy failonerror="true" file="sqldeveloper.xml" tofile="target/sqldeveloper.xml" />
 								<copy failonerror="true" file="bundle.xml" tofile="target/bundle.xml" />
-								<copy failonerror="true" file="extension.xml"
-									tofile="target/classes/META-INF/extension.xml" />
+								<copy failonerror="true" file="extension.xml" tofile="target/classes/META-INF/extension.xml" />
 							</tasks>
 						</configuration>
 						<goals>
@@ -345,8 +344,7 @@
 	</scm>
 	<prerequisites>
 		<!-- SQL Developer 4.2.0 installation for Oracle dependencies, see sqldev.basedir -->
-		<!-- JDK 1.7 to ensure compatiblity to SQL Developer 4.0.x, using JDK 1.8 
-			with target 1.7 should be OK -->
+		<!-- JDK 1.7 to ensure compatiblity to SQL Developer 4.0.x, using JDK 1.8 with target 1.7 should be OK -->
 		<maven>3.5.0</maven>
 	</prerequisites>
 

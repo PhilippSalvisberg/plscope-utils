@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <displays>
 	<!-- based on -->
-	<!--   -  https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_identifiers.sql -->
-	<!--   -  https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_statements.sql -->
-	<!--   -  https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_tab_usage.sql -->
-	<!--   -  https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_col_usage.sql -->
+	<!-- - https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_identifiers.sql -->
+	<!-- - https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_statements.sql -->
+	<!-- - https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_tab_usage.sql -->
+	<!-- - https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_col_usage.sql -->
 	<!-- used sys.all_ instead of dba_ - SQL Developer uses dba_ views, if the the connected use has the privileges -->
 	<!-- Use case sensitive result columns including spaces -->
 	<display type="editor" style="null" enable="true" connType="Oracle"

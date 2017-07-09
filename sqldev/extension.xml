@@ -1,11 +1,9 @@
-<extension id="com.salvis.plscope.sqldev" version="#EXTENSION_VERSION#"
-	esdk-version="1.0" xmlns="http://jcp.org/jsr/198/extension-manifest"
-	rsbundle-class="com.salvis.plscope.sqldev.PlscopeResources">
+<extension id="com.salvis.plscope.sqldev" version="#EXTENSION_VERSION#" esdk-version="1.0"
+	xmlns="http://jcp.org/jsr/198/extension-manifest" rsbundle-class="com.salvis.plscope.sqldev.PlscopeResources">
 	<name rskey="EXTENSION_NAME" />
 	<owner rskey="EXTENSION_OWNER" />
 
-	<!-- features may be used to enable/disable extensions without uninstalling 
-		them -->
+	<!-- features may be used to enable/disable extensions without uninstalling them -->
 	<feature id="com.salvis.plscope.sqldev" xmlns="http://xmlns.oracle.com/ide/extension">
 		<category-id>db-category</category-id>
 		<name>#EXTENSION_NAME#</name>
@@ -18,15 +16,13 @@
 	<!-- register actions, navigator nodes and reports -->
 	<trigger-hooks xmlns="http://xmlns.oracle.com/ide/extension">
 		<triggers xmlns:c="http://xmlns.oracle.com/ide/customization">
-			<sqldev-action-hook
-				xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-actions">
+			<sqldev-action-hook xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-actions">
 				<actionDescriptor package="com.salvis.plscope.sqldev.action" />
 			</sqldev-action-hook>
 			<sqldev-navigator-hook xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-navigator">
-                <descriptor>/com/salvis/plscope/sqldev/navigator/plscope-utils-nodes.xml</descriptor>
-            </sqldev-navigator-hook>
-			<sqldev-reports-hook
-				xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-reports">
+				<descriptor>/com/salvis/plscope/sqldev/navigator/plscope-utils-nodes.xml</descriptor>
+			</sqldev-navigator-hook>
+			<sqldev-reports-hook xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-reports">
 				<report package="/com/salvis/plscope/sqldev/report" />
 			</sqldev-reports-hook>
 		</triggers>
@@ -34,8 +30,7 @@
 
 	<!-- register views (editors) -->
 	<hooks>
-		<sqldev-viewer-hook
-			xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-viewers">
+		<sqldev-viewer-hook xmlns="http://xmlns.oracle.com/sqldeveloper/sqldev-viewers">
 			<viewerDescriptor package="com.salvis.plscope.sqldev.editor" />
 		</sqldev-viewer-hook>
 	</hooks>
