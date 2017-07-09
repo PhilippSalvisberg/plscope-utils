@@ -241,7 +241,7 @@ SELECT i.object_name AS name,
 	</objectType>
 	<objectType connType="Oracle" id="plscope-utils-type">
 		<node>
-			<icon RSKEY="OracleIcons.TYPE" />
+			<icon RSKEY="OracleIcons.DOMAIN" />
 		</node>
 	</objectType>
 	<objectType connType="Oracle" id="plscope-utils-synonym">
