@@ -72,7 +72,8 @@ SELECT CASE
 				<header enable="false" generatedate="false">
 					<data>
 					
-					null										</data>
+					
+					null															</data>
 				</header>
 				<footer enable="false" generatedate="false">
 					<data value="null" />
@@ -103,7 +104,7 @@ SELECT CASE
              col,
              usage_context_id,
              origin_con_id
-        FROM dba_identifiers
+        FROM sys.all_identifiers
       UNION ALL
       SELECT owner,
              ':' || NVL(sql_id, type) AS name,  -- intermediate statement marker colon
@@ -117,7 +118,7 @@ SELECT CASE
              col,
              usage_context_id,
              origin_con_id
-       FROM dba_statements
+       FROM sys.all_statements
    ),
    ids AS (
       SELECT owner,
@@ -192,7 +193,7 @@ SELECT CASE
               -- this correlated subquery will be evaluated only,
               -- if the column TEXT is selected
               SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-                FROM dba_source src
+                FROM sys.all_source src
                WHERE src.owner = tree.owner
                  AND src.type = tree.object_type
                  AND src.name = tree.object_name
@@ -229,7 +230,7 @@ SELECT CASE
            tree.usage_context_id,
            tree.origin_con_id
       FROM tree
-      LEFT JOIN dba_identifiers refs
+      LEFT JOIN sys.all_identifiers refs
         ON refs.signature = tree.signature
            AND refs.usage = 'DECLARATION'
    )
@@ -260,6 +261,149 @@ SELECT CASE
    -- reduce scope to a single schema
    AND owner = NVL(:OBJECT_OWNER, USER)
  ORDER BY owner, object_type, object_name, line, col]]></sql>
+			<binds>
+				<bind id="OBJECT_OWNER">
+					<prompt><![CDATA[Owner]]></prompt>
+					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+			<pdf version="VERSION_1_7" compression="CONTENT">
+				<docproperty title="" author="" subject="" keywords="" />
+				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
+				<column>
+					<heading font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="FIRST_PAGE" />
+					<footing font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="NONE" />
+					<blob blob="NONE" zip="false" />
+				</column>
+				<table font="Times New Roman" size="10" style="NORMAL" color="-16777216" userowshading="false" oddrowshading="-1" evenrowshading="-1" showborders="true" spacingbefore="12" spacingafter="12" horizontalalign="LEFT" />
+				<header enable="false" generatedate="false">
+					<data>
+					
+					null										</data>
+				</header>
+				<footer enable="false" generatedate="false">
+					<data value="null" />
+				</footer>
+				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
+			</pdf>
+	</display>
+	<display id="27d1dbe9-015d-1000-8001-c0a801060752" type="" style="Table" enable="true">
+		<name><![CDATA[CRUD Operations]]></name>
+		<description><![CDATA[Reports static usages of tables/views/synonyms within packages, procedures, functions, triggers and types. Reports number of SELECT, INSERT, UPDATE, DELETE, MERGE, REFERENCE usages per PL/SQL unit ]]></description>
+		<tooltip><![CDATA[Number of select, insert, update, delete, merge, reference usages per PL/SQL unit.]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+			<TYPE><![CDATA[horizontal]]></TYPE>
+		</CustomValues>
+		<query minversion="12.2">
+			<sql><![CDATA[WITH
+   dep AS (
+      SELECT owner      AS owner,
+             'TABLE'    AS type,
+             table_name AS name,
+             NULL AS referenced_owner,
+             NULL AS referenced_type,
+             NULL AS referenced_name
+        FROM sys.all_tables
+      UNION ALL
+      SELECT owner,
+             type,
+             name,
+             referenced_owner,
+             referenced_type,
+             referenced_name
+        FROM sys.all_dependencies
+       WHERE type IN ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
+   ),
+   dep_graph AS (
+      SELECT DISTINCT
+             owner,
+             type                          AS object_type,
+             name                          AS object_name,
+             connect_by_root(owner)        AS ref_owner,
+             connect_by_root(type)         AS ref_object_type,
+             connect_by_root(name)         AS ref_object_name,
+             sys_connect_by_path(type,'/') AS ref_object_type_path,
+             level                         AS path_len
+        FROM dep
+      CONNECT BY  PRIOR dep.owner = dep.referenced_owner
+              AND PRIOR dep.type  = dep.referenced_type
+              AND PRIOR dep.name  = dep.referenced_name
+   ),
+   tab_usage AS (
+      SELECT ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.procedure_name,
+             CASE
+                WHEN refs.type IS NOT NULL THEN
+                   refs.type
+                ELSE
+                   ids.usage
+             END AS operation,
+             dep_graph.ref_owner,
+             dep_graph.ref_object_type,
+             dep_graph.ref_object_name,
+             CASE
+                WHEN dep_graph.path_len = 1 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS direct_dependency,
+             dep_graph.ref_object_type_path,
+             LEAD(dep_graph.ref_object_type_path) OVER (
+                ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col, dep_graph.path_len
+             ) AS next_ref_object_type_path,
+             ids.text
+        FROM plscope_identifiers ids
+        JOIN dep_graph
+          ON dep_graph.owner           = ids.ref_owner
+             AND dep_graph.object_type = ids.ref_object_type
+             AND dep_graph.object_name = ids.ref_object_name
+        LEFT JOIN sys.all_statements refs
+          ON refs.signature = parent_statement_signature
+       WHERE ids.type IN ('VIEW', 'TABLE', 'SYNONYM')
+   ),
+   plscope_tab_usage AS (
+      SELECT owner,
+             object_type,
+             object_name,
+             line,
+             col,
+             procedure_name,
+             operation,
+             ref_owner,
+             ref_object_type,
+             ref_object_name,
+             direct_dependency,
+             text
+        FROM tab_usage
+       WHERE (ref_object_type != 'SYNONYM' OR next_ref_object_type_path IN ('/VIEW/SYNONYM','/TABLE/SYNONYM'))
+   )
+SELECT owner AS "Owner",
+       object_type AS "Object type",
+       object_name AS "Object name",
+       procedure_name AS "Procedure name",
+       ref_owner AS "Ref Owner", 
+       ref_object_type "Ref object type", 
+       ref_object_name "Ref object name", 
+       SUM(CASE WHEN operation = 'SELECT' THEN 1 ELSE 0 END) AS "Select",
+       SUM(CASE WHEN operation = 'INSERT' THEN 1 ELSE 0 END) AS "Insert",
+       SUM(CASE WHEN operation = 'UPDATE' THEN 1 ELSE 0 END) AS "Update",
+       SUM(CASE WHEN operation = 'DELETE' THEN 1 ELSE 0 END) AS "Delete",
+       SUM(CASE WHEN operation = 'MERGE' THEN 1 ELSE 0 END) AS "Merge",
+       SUM(CASE WHEN operation = 'REFERENCE' THEN 1 ELSE 0 END) AS "Reference"      
+  FROM plscope_tab_usage
+ WHERE operation in ('SELECT','INSERT','UPDATE','DELETE','MERGE','REFERENCE')
+   AND owner = NVL(:OBJECT_OWNER, USER)
+   AND direct_dependency = 'YES'
+ GROUP by owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name
+ ORDER by owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name]]></sql>
 			<binds>
 				<bind id="OBJECT_OWNER">
 					<prompt><![CDATA[Owner]]></prompt>
