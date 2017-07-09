@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Change RESOURCE_FILE to "oracle.dbtools.raptor.navigator.OracleNavigatorResource" when you want to use it as -->
+<!-- "User Defined Extensions". The dedicated resource handler "com.salvis.plscope.sqldev.PlscopeResources" -->
+<!-- is required for the folder label PLSCOPE_LABEL_NAME. -->
 <navigator RESOURCE_FILE="com.salvis.plscope.sqldev.PlscopeResources" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:noNamespaceSchemaLocation="navigator.xsd">
 	<objectType connType="Oracle" id="plscope-utils-root" weight="201">
 		<folder>
 			<icon RSKEY="OracleIcons.SEARCH_SOURCEPATH" />
+			<!-- Hard coding labels is not supported. The resource key is shown when -->
+			<!-- "oracle.dbtools.raptor.navigator.OracleNavigatorResource" is configured. -->
 			<label RSKEY="PLSCOPE_LABEL_NAME" />
 			<queries>
 				<query minversion="11.1">
@@ -128,7 +133,7 @@ SELECT object_name AS name,
 			<childType id="plscope-utils-procedure" nodeType="plscope-utils-procedure">
 				<icon RSKEY="OracleIcons.PROCEDURE" />
 				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations"/>
+					<query minversion="11.1" sharedId="plscope-declarations" />
 				</queries>
 			</childType>
 		</node>
@@ -139,7 +144,7 @@ SELECT object_name AS name,
 			<childType id="plscope-utils-function" nodeType="plscope-utils-function">
 				<icon RSKEY="OracleIcons.FUNCTION" />
 				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations"/>
+					<query minversion="11.1" sharedId="plscope-declarations" />
 				</queries>
 			</childType>
 		</node>
@@ -150,7 +155,7 @@ SELECT object_name AS name,
 			<childType id="plscope-utils-triggger" nodeType="plscope-utils-trigger">
 				<icon RSKEY="OracleIcons.TRIGGER" />
 				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations"/>
+					<query minversion="11.1" sharedId="plscope-declarations" />
 				</queries>
 			</childType>
 		</node>
@@ -161,7 +166,7 @@ SELECT object_name AS name,
 			<childType id="plscope-utils-type" nodeType="plscope-utils-type">
 				<icon RSKEY="OracleIcons.DOMAIN" />
 				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations"/>
+					<query minversion="11.1" sharedId="plscope-declarations" />
 				</queries>
 			</childType>
 		</node>
@@ -198,7 +203,7 @@ SELECT i.object_name AS name,
 			<childType id="plscope-utils-table" nodeType="plscope-utils-table">
 				<icon RSKEY="OracleIcons.TABLE" />
 				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations"/>
+					<query minversion="11.1" sharedId="plscope-declarations" />
 				</queries>
 			</childType>
 		</node>
@@ -209,7 +214,7 @@ SELECT i.object_name AS name,
 			<childType id="plscope-utils-view" nodeType="plscope-utils-view">
 				<icon RSKEY="OracleIcons.VIEW" />
 				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations"/>
+					<query minversion="11.1" sharedId="plscope-declarations" />
 				</queries>
 			</childType>
 		</node>
