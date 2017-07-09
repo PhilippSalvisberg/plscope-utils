@@ -71,10 +71,17 @@ SELECT ids.owner,
        END AS direct_dependency,
        ids.text
   FROM plscope_identifiers ids
-  LEFT JOIN dba_statements refs
-    ON refs.signature = parent_statement_signature
   JOIN dep_graph
     ON dep_graph.owner           = ids.ref_owner
        AND dep_graph.object_type = ids.ref_object_type
        AND dep_graph.object_name = ids.ref_object_name
- WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM');
+  LEFT JOIN sys.dba_synonyms syn
+    ON dep_graph.ref_owner = syn.owner
+       AND dep_graph.ref_object_name = syn.synonym_name
+  LEFT JOIN sys.dba_objects obj
+    ON obj.owner = syn.table_owner
+       AND obj.object_name = syn.table_name
+  LEFT JOIN dba_statements refs
+    ON refs.signature = parent_statement_signature
+ WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
+   AND (obj.object_type IS NULL OR obj.object_type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW'));
