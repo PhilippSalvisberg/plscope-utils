@@ -527,52 +527,66 @@ WITH
       CONNECT BY  PRIOR dep.owner = dep.referenced_owner
               AND PRIOR dep.type  = dep.referenced_type
               AND PRIOR dep.name  = dep.referenced_name
+   ),
+   tab_usage AS (
+      SELECT ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.procedure_name,
+             CASE
+                WHEN refs.type IS NOT NULL THEN
+                   refs.type
+                ELSE
+                   ids.usage
+             END AS operation,
+             dep_graph.ref_owner,
+             dep_graph.ref_object_type,
+             dep_graph.ref_object_name,
+             CASE
+                WHEN dep_graph.path_len = 1 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS direct_dependency,
+             dep_graph.ref_object_type_path,
+             LEAD(dep_graph.ref_object_type_path) OVER (
+                ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col, dep_graph.path_len
+             ) AS next_ref_object_type_path,
+             ids.text,
+             dep_graph.path_len
+        FROM plscope_identifiers ids
+        JOIN dep_graph
+          ON dep_graph.owner           = ids.ref_owner
+             AND dep_graph.object_type = ids.ref_object_type
+             AND dep_graph.object_name = ids.ref_object_name
+        LEFT JOIN dba_statements refs
+          ON refs.signature = parent_statement_signature
+       WHERE ids.type IN ('VIEW', 'TABLE', 'SYNONYM')
    )
 SELECT CASE
-          WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-             'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
-                to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' ||  'Source' ||
+          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' ||  'Source' ||
                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
           ELSE
              NULL
        END AS "Link",
-       ids.procedure_name AS "Procedure name",
-       CASE
-          WHEN refs.type IS NOT NULL THEN
-             refs.type
-          ELSE
-             ids.usage
-       END AS "Operation",
-       CASE
-          WHEN dep_graph.path_len = 1 THEN
-             'YES'
-          ELSE
-             'NO'
-       END AS "Direct dep?",
-       dep_graph.ref_owner AS "Owner",
-       dep_graph.ref_object_type AS "Object type",
-       dep_graph.ref_object_name AS "Object name",
-       ids.line AS "Line",
-       ids.col AS "Col",
-       ids.text AS "Text"
-  FROM plscope_identifiers ids
-  JOIN dep_graph
-    ON dep_graph.owner           = ids.ref_owner
-       AND dep_graph.object_type = ids.ref_object_type
-       AND dep_graph.object_name = ids.ref_object_name
-  LEFT JOIN sys.all_synonyms syn
-    ON dep_graph.ref_owner = syn.owner
-       AND dep_graph.ref_object_name = syn.synonym_name
-  LEFT JOIN sys.all_objects obj
-    ON obj.owner = syn.table_owner
-       AND obj.object_name = syn.table_name
-  LEFT JOIN sys.all_statements refs
-    ON refs.signature = parent_statement_signature
- WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
-   -- resolve synonyms as indirect dependencies only (do not resolve table usages in views)
-   AND (dep_graph.path_len = 1 OR dep_graph.path_len = 2 AND ref_object_type_path LIKE '%SYNONYM')
-   AND (obj.object_type IS NULL OR obj.object_type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW'))
- ORDER BY length(ids.object_type), ids.line, ids.col, ids.path_len, "Direct dep?" DESC
+       procedure_name AS "Procedure name",
+       operation AS "Operation",
+       direct_dependency AS "Direct dep?",
+       ref_owner AS "Owner",
+       ref_object_type AS "Object type",
+       ref_object_name AS "Object name",
+       line AS "Line",
+       col AS "Col",
+       text AS "Text"
+  FROM tab_usage
+ WHERE (ref_object_type != 'SYNONYM' OR next_ref_object_type_path IN ('/VIEW/SYNONYM','/TABLE/SYNONYM'))
+       -- resolve synonyms as indirect dependencies only (do not resolve table usages in views)
+   AND (path_len = 1 OR path_len = 2 AND ref_object_type_path LIKE '%SYNONYM')
+ ORDER BY length(object_type), line, col, path_len
 				]]></sql>
 			</query>
 		</queries>
@@ -893,7 +907,7 @@ SELECT CASE
              AND src.line = base_cols.line
        ) AS "Text"
   FROM base_cols
- ORDER BY length(object_type), line, col, path_len, direct_dependency DESC
+ ORDER BY length(object_type), line, col, path_len
 				]]></sql>
 			</query>
 		</queries>
