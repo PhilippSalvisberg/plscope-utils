@@ -167,6 +167,19 @@ WITH
                  ORDER BY tree.line, tree.col, tree.path_len
               )
         END AS parent_statement_signature,
+        CASE
+           WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
+              -- ensure that this is really a child of a statement
+              last_value (
+                 CASE
+                    WHEN tree.usage = 'EXECUTE' THEN
+                       tree.path_len
+                 END
+              ) IGNORE NULLS OVER (
+                 PARTITION BY tree.owner, tree.object_name, tree.object_type
+                 ORDER BY tree.line, tree.col, tree.path_len
+              )
+        END AS parent_statement_path_len,
         CASE 
            WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
               AND tree.usage = 'DECLARATION'
