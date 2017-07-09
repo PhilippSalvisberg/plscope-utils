@@ -152,7 +152,7 @@ SELECT object_name AS name,
 	<objectType connType="Oracle" id="plscope-utils-trigger-folder" weight="201.4">
 		<node>
 			<icon RSKEY="TRIGGER_FOLDER_ICON" />
-			<childType id="plscope-utils-triggger" nodeType="plscope-utils-trigger">
+			<childType id="plscope-utils-trigger" nodeType="plscope-utils-trigger">
 				<icon RSKEY="OracleIcons.TRIGGER" />
 				<queries>
 					<query minversion="11.1" sharedId="plscope-declarations" />
