@@ -83,7 +83,7 @@ WITH
               ids.line,
               ids.col,
               ids.name,
-              sys_connect_by_path(ids.name, '/') AS name_path,
+              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
               level as path_len,
               ids.type,
               ids.usage,
@@ -185,7 +185,7 @@ WITH
               ids.line,
               ids.col,
               ids.name,
-              sys_connect_by_path(ids.name, '/') AS name_path,
+              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
               level as path_len,
               ids.type,
               ids.usage,
@@ -362,6 +362,139 @@ SELECT CASE
 			<query minversion="12.2">
 				<sql><![CDATA[
 WITH
+   base_ids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             origin_con_id
+        FROM sys.all_identifiers
+      UNION ALL
+      SELECT owner,
+             ':' || NVL(sql_id, type) AS name,  -- intermediate statement marker colon
+             signature,
+             type,
+             object_name,
+             object_type,
+             'EXECUTE' AS usage, -- new, artificial usage
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             origin_con_id
+       FROM sys.all_statements
+   ),
+   ids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             coalesce(
+                least(
+                   usage_context_id,
+                   max(usage_id) over (
+                      PARTITION BY owner, object_name, object_type
+                      ORDER BY usage_id
+                      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                   )
+                ),
+                0
+             ) AS usage_context_id, -- fix broken hierarchies
+             origin_con_id
+        FROM base_ids
+       WHERE owner       = :OBJECT_OWNER
+         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND object_name = :OBJECT_NAME
+   ),
+   tree AS (
+       SELECT ids.owner,
+              ids.object_type,
+              ids.object_name,
+              ids.line,
+              ids.col,
+              ids.name,
+              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
+              level as path_len,
+              ids.type,
+              ids.usage,
+              ids.signature,
+              ids.usage_id,
+              ids.usage_context_id,
+              ids.origin_con_id
+         FROM ids
+        START WITH ids.usage_context_id = 0
+      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
+              AND PRIOR ids.owner       = ids.owner
+              AND PRIOR ids.object_type = ids.object_type
+              AND PRIOR ids.object_name = ids.object_name
+   ), 
+   plscope_identifiers AS (
+      SELECT tree.owner,
+             tree.object_type,
+             tree.object_name,
+             last_value (
+                CASE
+                   WHEN tree.type in ('PROCEDURE', 'FUNCTION') AND tree.path_len = 2  THEN
+                      tree.name
+                END
+             ) IGNORE NULLS OVER (
+                PARTITION BY tree.owner, tree.object_name, tree.object_type
+                ORDER BY tree.line, tree.col, tree.path_len
+             ) AS procedure_name,
+             tree.line,
+             tree.col,
+             REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
+             tree.path_len,
+             tree.type,
+             tree.usage,
+             refs.owner AS ref_owner,
+             refs.object_type AS ref_object_type,
+             refs.object_name AS ref_object_name,
+             (
+                -- this correlated subquery will be evaluated only,
+                -- if the column TEXT is selected
+                SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
+                  FROM dba_source src
+                 WHERE src.owner = tree.owner
+                   AND src.type = tree.object_type
+                   AND src.name = tree.object_name
+                   AND src.line = tree.line
+             ) AS text,
+             CASE
+                WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
+                   -- ensure that this is really a child of a statement
+                   last_value (
+                      CASE
+                         WHEN tree.usage = 'EXECUTE' THEN
+                            tree.signature
+                      END
+                   ) IGNORE NULLS OVER (
+                      PARTITION BY tree.owner, tree.object_name, tree.object_type
+                      ORDER BY tree.line, tree.col, tree.path_len
+                   )
+             END AS parent_statement_signature,
+             tree.signature,
+             tree.usage_id,
+             tree.usage_context_id,
+             tree.origin_con_id
+        FROM tree
+        LEFT JOIN sys.all_identifiers refs
+          ON refs.signature = tree.signature
+             AND refs.usage = 'DECLARATION'
+   ),
    dep AS (
       SELECT owner      AS owner,
              'TABLE'    AS type,
@@ -423,19 +556,23 @@ SELECT CASE
        ids.col AS "Col",
        ids.text AS "Text"
   FROM plscope_identifiers ids
-  LEFT JOIN dba_statements refs
-    ON refs.signature = parent_statement_signature
   JOIN dep_graph
     ON dep_graph.owner           = ids.ref_owner
        AND dep_graph.object_type = ids.ref_object_type
        AND dep_graph.object_name = ids.ref_object_name
+  LEFT JOIN sys.all_synonyms syn
+    ON dep_graph.ref_owner = syn.owner
+       AND dep_graph.ref_object_name = syn.synonym_name
+  LEFT JOIN sys.all_objects obj
+    ON obj.owner = syn.table_owner
+       AND obj.object_name = syn.table_name
+  LEFT JOIN sys.all_statements refs
+    ON refs.signature = parent_statement_signature
  WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
-   AND ids.owner       = :OBJECT_OWNER
-   AND ids.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-   AND ids.object_name = :OBJECT_NAME
    -- resolve synonyms as indirect dependencies only (do not resolve table usages in views)
    AND (dep_graph.path_len = 1 OR dep_graph.path_len = 2 AND ref_object_type_path LIKE '%SYNONYM')
- ORDER BY length(ids.object_type), ids.line, ids.col, ids.path_len, "Direct dep?" DESC;
+   AND (obj.object_type IS NULL OR obj.object_type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW'))
+ ORDER BY length(ids.object_type), ids.line, ids.col, ids.path_len, "Direct dep?" DESC
 				]]></sql>
 			</query>
 		</queries>
@@ -516,7 +653,7 @@ WITH
               ids.line,
               ids.col,
               ids.name,
-              sys_connect_by_path(ids.name, '/') AS name_path,
+              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
               level as path_len,
               ids.type,
               ids.usage,
