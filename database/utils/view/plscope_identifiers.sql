@@ -77,7 +77,7 @@ WITH
               ids.line,
               ids.col,
               ids.name,
-              sys_connect_by_path(ids.name, '/') AS name_path,
+              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
               level as path_len,
               ids.type,
               ids.usage,
