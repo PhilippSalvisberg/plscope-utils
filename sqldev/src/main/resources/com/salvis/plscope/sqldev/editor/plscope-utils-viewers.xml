@@ -551,7 +551,7 @@ SELECT CASE
        END AS "Direct dep?",
        dep_graph.ref_owner AS "Owner",
        dep_graph.ref_object_type AS "Object type",
-       ids.object_name AS "Object name",
+       dep_graph.ref_object_name AS "Object name",
        ids.line AS "Line",
        ids.col AS "Col",
        ids.text AS "Text"
