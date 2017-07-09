@@ -37,51 +37,65 @@ WITH
    dep_graph AS (
       SELECT DISTINCT
              owner,
-             type                   AS object_type,
-             name                   AS object_name,
-             connect_by_root(owner) AS ref_owner,
-             connect_by_root(type)  AS ref_object_type,
-             connect_by_root(name)  AS ref_object_name,
-             level                  AS path_len
+             type                          AS object_type,
+             name                          AS object_name,
+             connect_by_root(owner)        AS ref_owner,
+             connect_by_root(type)         AS ref_object_type,
+             connect_by_root(name)         AS ref_object_name,
+             sys_connect_by_path(type,'/') AS ref_object_type_path,
+             level                         AS path_len
         FROM dep
       CONNECT BY  PRIOR dep.owner = dep.referenced_owner
               AND PRIOR dep.type  = dep.referenced_type
               AND PRIOR dep.name  = dep.referenced_name
+   ),
+   tab_usage AS (
+      SELECT ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.procedure_name,
+             CASE
+                WHEN refs.type IS NOT NULL THEN
+                   refs.type
+                ELSE
+                   ids.usage
+             END AS operation,
+             dep_graph.ref_owner,
+             dep_graph.ref_object_type,
+             dep_graph.ref_object_name,
+             CASE
+                WHEN dep_graph.path_len = 1 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS direct_dependency,
+             dep_graph.ref_object_type_path,
+             LEAD(dep_graph.ref_object_type_path) OVER (
+                ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col, dep_graph.path_len
+             ) AS next_ref_object_type_path,
+             ids.text
+        FROM plscope_identifiers ids
+        JOIN dep_graph
+          ON dep_graph.owner           = ids.ref_owner
+             AND dep_graph.object_type = ids.ref_object_type
+             AND dep_graph.object_name = ids.ref_object_name
+        LEFT JOIN dba_statements refs
+          ON refs.signature = parent_statement_signature
+       WHERE ids.type IN ('VIEW', 'TABLE', 'SYNONYM')
    )
-SELECT ids.owner,
-       ids.object_type,
-       ids.object_name,
-       ids.line,
-       ids.col,
-       ids.procedure_name,
-       CASE
-          WHEN refs.type IS NOT NULL THEN
-             refs.type
-          ELSE
-             ids.usage
-       END AS operation,
-       dep_graph.ref_owner,
-       dep_graph.ref_object_type,
-       dep_graph.ref_object_name,
-       CASE
-          WHEN dep_graph.path_len = 1 THEN
-             'YES'
-          ELSE
-             'NO'
-       END AS direct_dependency,
-       ids.text
-  FROM plscope_identifiers ids
-  JOIN dep_graph
-    ON dep_graph.owner           = ids.ref_owner
-       AND dep_graph.object_type = ids.ref_object_type
-       AND dep_graph.object_name = ids.ref_object_name
-  LEFT JOIN sys.dba_synonyms syn
-    ON dep_graph.ref_owner = syn.owner
-       AND dep_graph.ref_object_name = syn.synonym_name
-  LEFT JOIN sys.dba_objects obj
-    ON obj.owner = syn.table_owner
-       AND obj.object_name = syn.table_name
-  LEFT JOIN dba_statements refs
-    ON refs.signature = parent_statement_signature
- WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
-   AND (obj.object_type IS NULL OR obj.object_type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW'));
+SELECT owner,
+       object_type,
+       object_name,
+       line,
+       col,
+       procedure_name,
+       operation,
+       ref_owner,
+       ref_object_type,
+       ref_object_name,
+       direct_dependency,
+       text
+  FROM tab_usage
+ WHERE (ref_object_type != 'SYNONYM' OR next_ref_object_type_path IN ('/VIEW/SYNONYM','/TABLE/SYNONYM'));
