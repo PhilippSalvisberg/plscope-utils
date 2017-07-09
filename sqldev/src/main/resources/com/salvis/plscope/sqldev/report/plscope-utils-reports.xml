@@ -6,7 +6,7 @@
 	<description><![CDATA[PL/Scope based reports maintained in https://github.com/PhilippSalvisberg/plscope-utils ]]></description>
 		<display id="1dc49f53-015d-1000-8001-c0a8011251fe" type="" style="Table" enable="true">
 		<name><![CDATA[Duplicate SQL Statements]]></name>
-		<description><![CDATA[Reports duplicate static SQL statements with packages, procedures, functions, triggers and types. ]]></description>
+		<description><![CDATA[Reports duplicate static SQL statements within packages, procedures, functions, triggers and types. ]]></description>
 		<tooltip><![CDATA[Reports duplicate static SQL statements]]></tooltip>
 		<drillclass><![CDATA[]]></drillclass>
 		<CustomValues>
@@ -51,6 +51,215 @@ SELECT CASE
   FROM stmt
  WHERE is_duplicate = 'YES'
  ORDER BY owner, object_type, object_name, sql_id, line, col]]></sql>
+			<binds>
+				<bind id="OBJECT_OWNER">
+					<prompt><![CDATA[Owner]]></prompt>
+					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+			<pdf version="VERSION_1_7" compression="CONTENT">
+				<docproperty title="" author="" subject="" keywords="" />
+				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
+				<column>
+					<heading font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="FIRST_PAGE" />
+					<footing font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="NONE" />
+					<blob blob="NONE" zip="false" />
+				</column>
+				<table font="Times New Roman" size="10" style="NORMAL" color="-16777216" userowshading="false" oddrowshading="-1" evenrowshading="-1" showborders="true" spacingbefore="12" spacingafter="12" horizontalalign="LEFT" />
+				<header enable="false" generatedate="false">
+					<data>
+					
+					null										</data>
+				</header>
+				<footer enable="false" generatedate="false">
+					<data value="null" />
+				</footer>
+				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
+			</pdf>
+	</display>
+	<display id="27802dea-015d-1000-8001-c0a80106a1a4" type="" style="Table" enable="true">
+		<name><![CDATA[UDF Calls in SQL Statements]]></name>
+		<description><![CDATA[Reports static SELECT, INSERT, UPDATE, DELETE and MERGE statements within packages, procedures, functions, triggers and types using user-defined function calls.]]></description>
+		<tooltip><![CDATA[Reports user-defined function calls in SQL statements]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+			<TYPE><![CDATA[horizontal]]></TYPE>
+		</CustomValues>
+		<query minversion="12.2">
+			<sql><![CDATA[WITH
+   base_ids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             origin_con_id
+        FROM dba_identifiers
+      UNION ALL
+      SELECT owner,
+             ':' || NVL(sql_id, type) AS name,  -- intermediate statement marker colon
+             signature,
+             type,
+             object_name,
+             object_type,
+             'EXECUTE' AS usage, -- new, artificial usage
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             origin_con_id
+       FROM dba_statements
+   ),
+   ids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             coalesce(
+                least(
+                   usage_context_id,
+                   max(usage_id) over (
+                      PARTITION BY owner, object_name, object_type
+                      ORDER BY usage_id
+                      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                   )
+                ),
+                0
+             ) AS usage_context_id, -- fix broken hierarchies
+             origin_con_id
+        FROM base_ids
+   ),
+   tree AS (
+       SELECT ids.owner,
+              ids.object_type,
+              ids.object_name,
+              ids.line,
+              ids.col,
+              ids.name,
+              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
+              level as path_len,
+              ids.type,
+              ids.usage,
+              ids.signature,
+              ids.usage_id,
+              ids.usage_context_id,
+              ids.origin_con_id
+         FROM ids
+        START WITH ids.usage_context_id = 0
+      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
+              AND PRIOR ids.owner       = ids.owner
+              AND PRIOR ids.object_type = ids.object_type
+              AND PRIOR ids.object_name = ids.object_name
+   ),
+   plscope_identifiers AS (
+      SELECT tree.owner,
+           tree.object_type,
+           tree.object_name,
+           tree.line,
+           tree.col,
+           last_value (
+              CASE
+                 WHEN tree.type in ('PROCEDURE', 'FUNCTION') AND tree.path_len = 2  THEN
+                    tree.name
+              END
+           ) IGNORE NULLS OVER (
+              PARTITION BY tree.owner, tree.object_name, tree.object_type
+              ORDER BY tree.line, tree.col, tree.path_len
+           ) AS procedure_name,
+           REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
+           tree.path_len,
+           tree.type,
+           tree.usage,
+           refs.owner AS ref_owner,
+           refs.object_type AS ref_object_type,
+           refs.object_name AS ref_object_name,
+           (
+              -- this correlated subquery will be evaluated only,
+              -- if the column TEXT is selected
+              SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
+                FROM dba_source src
+               WHERE src.owner = tree.owner
+                 AND src.type = tree.object_type
+                 AND src.name = tree.object_name
+                 AND src.line = tree.line
+           ) AS text,
+           CASE
+              WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
+                 -- ensure that this is really a child of a statement
+                 last_value (
+                    CASE
+                       WHEN tree.usage = 'EXECUTE' THEN
+                          tree.type
+                    END
+                 ) IGNORE NULLS OVER (
+                    PARTITION BY tree.owner, tree.object_name, tree.object_type
+                    ORDER BY tree.line, tree.col, tree.path_len
+                 )
+           END AS parent_statement_type,
+           CASE
+              WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
+                 -- ensure that this is really a child of a statement
+                 last_value (
+                    CASE
+                       WHEN tree.usage = 'EXECUTE' THEN
+                          tree.path_len
+                    END
+                 ) IGNORE NULLS OVER (
+                    PARTITION BY tree.owner, tree.object_name, tree.object_type
+                    ORDER BY tree.line, tree.col, tree.path_len
+                 )
+           END AS parent_statement_path_len,
+           tree.signature,
+           tree.usage_id,
+           tree.usage_context_id,
+           tree.origin_con_id
+      FROM tree
+      LEFT JOIN dba_identifiers refs
+        ON refs.signature = tree.signature
+           AND refs.usage = 'DECLARATION'
+   )
+SELECT CASE
+          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || 'Source' ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             NULL
+       END AS "Link",
+       owner AS "Owner",
+       object_type AS "Object type",
+       object_name AS "Object name",
+       parent_statement_type AS "Statement type",
+       name AS "Function name",
+       line AS "Line",
+       col AS "Col",
+       text AS "Text"
+  FROM plscope_identifiers
+ WHERE parent_statement_type IN ('SELECT', 'INSERT', 'UPDATE', 'DETETE', 'MERGE')
+   AND type = 'FUNCTION' 
+   AND usage = 'CALL'
+   -- ensure function call is part of the parent statement
+   AND (parent_statement_path_len >= path_len -2)
+   -- do not report function calls from standard package such as USER, REPLACE, SUBSTR, etc.
+   AND NOT (ref_owner = 'SYS' AND ref_object_type = 'PACKAGE' AND ref_object_name = 'STANDARD')
+   -- reduce scope to a single schema
+   AND owner = NVL(:OBJECT_OWNER, USER)
+ ORDER BY owner, object_type, object_name, line, col]]></sql>
 			<binds>
 				<bind id="OBJECT_OWNER">
 					<prompt><![CDATA[Owner]]></prompt>
