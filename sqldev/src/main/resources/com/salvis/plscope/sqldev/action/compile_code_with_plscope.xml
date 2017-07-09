@@ -6,7 +6,7 @@
 
 	<!-- first item based on title is considered independent of minversion/maxversion -->
 	<item connType="Oracle" type="CONNECTION" reload="true" minversion="11.1">
-		<title>Compile code with PL/Scope...</title>
+		<title>Compile with PL/Scope...</title>
 		<prompt type="radio">
 			<label>Identifiers</label>
 			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
@@ -14,6 +14,16 @@
 		<prompt type="radio">
 			<label>Statements</label>
 			<value><![CDATA[STATIC:ALL:NONE]]></value>
+		</prompt>
+		<prompt>
+			<label>Compile Code?</label>
+			<value><![CDATA[STATIC:TRUE:FALSE]]>
+			</value>
+		</prompt>
+		<prompt>
+			<label>Compile Synonyms?</label>
+			<value><![CDATA[STATIC:TRUE:FALSE]]>
+			</value>
 		</prompt>
 		<sql>
 			<![CDATA[DECLARE
@@ -33,7 +43,7 @@ BEGIN
       /* PL/Scope statements since 12.2 */
       EXECUTE IMMEDIATE q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
    END IF;
-   IF NOT (dbms_db_version.version = 11 AND dbms_db_version.version = 1) THEN
+   IF NOT (dbms_db_version.version = 11 AND dbms_db_version.version = 1) AND '#3#' = 'TRUE' THEN
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
       <<synonyms>>
       FOR r IN (
@@ -59,53 +69,55 @@ BEGIN
          END compile_public_synonym;
       END LOOP public_synonyms;
    END IF;
-   /* Compile types */
-   <<types>>
-   FOR r IN (
-      SELECT o.object_type, o.object_name, count(d.name) AS priority 
-        FROM sys.all_objects o
-        LEFT JOIN all_dependencies d
-          ON d.owner = o.owner
-             AND d.type = o.object_type
-             AND d.name = o.object_name
-       WHERE o.owner = USER
-         AND o.object_type in ('TYPE', 'TYPE BODY')
-       GROUP BY o.object_TYPE, o.object_NAME
-       ORDER BY priority
-   ) LOOP
-      <<compile_type>>
-      BEGIN
-          IF r.object_type = 'TYPE' THEN
-             EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE';
-          ELSE
-             EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE BODY';
-          END IF;
-      EXCEPTION
-          WHEN e_is_not_udt THEN
-             /* ignore errors for non user-defined types */
-             NULL;
-          WHEN e_has_table_deps THEN
-             /* ignore when type is used in tables */
-             NULL;
-      END compile_type;
-   END LOOP types;
-   /* Compile schema handles procedures, functions, packages, views and triggers only */
-   dbms_utility.compile_schema(
-      schema         => USER,
-      compile_all    => TRUE,
-      reuse_settings => FALSE
-   );
+   IF '#2#' = 'TRUE' THEN
+      /* Compile types */
+      <<types>>
+      FOR r IN (
+         SELECT o.object_type, o.object_name, count(d.name) AS priority 
+           FROM sys.all_objects o
+           LEFT JOIN all_dependencies d
+             ON d.owner = o.owner
+                AND d.type = o.object_type
+                AND d.name = o.object_name
+          WHERE o.owner = USER
+            AND o.object_type in ('TYPE', 'TYPE BODY')
+          GROUP BY o.object_TYPE, o.object_NAME
+          ORDER BY priority
+      ) LOOP
+         <<compile_type>>
+         BEGIN
+             IF r.object_type = 'TYPE' THEN
+                EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE';
+             ELSE
+                EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE BODY';
+             END IF;
+         EXCEPTION
+             WHEN e_is_not_udt THEN
+                /* ignore errors for non user-defined types */
+                NULL;
+             WHEN e_has_table_deps THEN
+                /* ignore when type is used in tables */
+                NULL;
+         END compile_type;
+      END LOOP types;
+      /* Compile schema handles procedures, functions, packages, views and triggers only */
+      dbms_utility.compile_schema(
+         schema         => USER,
+         compile_all    => TRUE,
+         reuse_settings => FALSE
+      );
+   END IF;
 END;]]>
 		</sql>
 		<confirmation>
 			<title>Confirmation</title>
-			<prompt>Code compiled with PL/Scope.</prompt>
+			<prompt>Compilation with PL/Scope completed.</prompt>
 		</confirmation>
 	</item>
 
 	<!-- Copy of the previous item. Changed type only. A menu cannot be assigned to multiple nodes. -->
 	<item connType="Oracle" type="plscope-utils-root_FOLDER" reload="true" minversion="11.1">
-		<title>Compile code with PL/Scope...</title>
+		<title>Compile with PL/Scope...</title>
 		<prompt type="radio">
 			<label>Identifiers</label>
 			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
@@ -113,6 +125,16 @@ END;]]>
 		<prompt type="radio">
 			<label>Statements</label>
 			<value><![CDATA[STATIC:ALL:NONE]]></value>
+		</prompt>
+		<prompt>
+			<label>Compile Code?</label>
+			<value><![CDATA[STATIC:TRUE:FALSE]]>
+			</value>
+		</prompt>
+		<prompt>
+			<label>Compile Synonyms?</label>
+			<value><![CDATA[STATIC:TRUE:FALSE]]>
+			</value>
 		</prompt>
 		<sql>
 			<![CDATA[DECLARE
@@ -132,7 +154,7 @@ BEGIN
       /* PL/Scope statements since 12.2 */
       EXECUTE IMMEDIATE q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
    END IF;
-   IF NOT (dbms_db_version.version = 11 AND dbms_db_version.version = 1) THEN
+   IF NOT (dbms_db_version.version = 11 AND dbms_db_version.version = 1) AND '#3#' = 'TRUE' THEN
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
       <<synonyms>>
       FOR r IN (
@@ -158,49 +180,50 @@ BEGIN
          END compile_public_synonym;
       END LOOP public_synonyms;
    END IF;
-   /* Compile types */
-   <<types>>
-   FOR r IN (
-      SELECT o.object_type, o.object_name, count(d.name) AS priority 
-        FROM sys.all_objects o
-        LEFT JOIN all_dependencies d
-          ON d.owner = o.owner
-             AND d.type = o.object_type
-             AND d.name = o.object_name
-       WHERE o.owner = USER
-         AND o.object_type in ('TYPE', 'TYPE BODY')
-       GROUP BY o.object_TYPE, o.object_NAME
-       ORDER BY priority
-   ) LOOP
-      <<compile_type>>
-      BEGIN
-          IF r.object_type = 'TYPE' THEN
-             EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE';
-          ELSE
-             EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE BODY';
-          END IF;
-      EXCEPTION
-          WHEN e_is_not_udt THEN
-             /* ignore errors for non user-defined types */
-             NULL;
-          WHEN e_has_table_deps THEN
-             /* ignore when type is used in tables */
-             NULL;
-      END compile_type;
-   END LOOP types;
-   /* Compile schema handles procedures, functions, packages, views and triggers only */
-   dbms_utility.compile_schema(
-      schema         => USER,
-      compile_all    => TRUE,
-      reuse_settings => FALSE
-   );
+   IF '#2#' = 'TRUE' THEN
+      /* Compile types */
+      <<types>>
+      FOR r IN (
+         SELECT o.object_type, o.object_name, count(d.name) AS priority 
+           FROM sys.all_objects o
+           LEFT JOIN all_dependencies d
+             ON d.owner = o.owner
+                AND d.type = o.object_type
+                AND d.name = o.object_name
+          WHERE o.owner = USER
+            AND o.object_type in ('TYPE', 'TYPE BODY')
+          GROUP BY o.object_TYPE, o.object_NAME
+          ORDER BY priority
+      ) LOOP
+         <<compile_type>>
+         BEGIN
+             IF r.object_type = 'TYPE' THEN
+                EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE';
+             ELSE
+                EXECUTE IMMEDIATE 'ALTER TYPE "' || r.object_name || '" COMPILE BODY';
+             END IF;
+         EXCEPTION
+             WHEN e_is_not_udt THEN
+                /* ignore errors for non user-defined types */
+                NULL;
+             WHEN e_has_table_deps THEN
+                /* ignore when type is used in tables */
+                NULL;
+         END compile_type;
+      END LOOP types;
+      /* Compile schema handles procedures, functions, packages, views and triggers only */
+      dbms_utility.compile_schema(
+         schema         => USER,
+         compile_all    => TRUE,
+         reuse_settings => FALSE
+      );
+   END IF;
 END;]]>
 		</sql>
 		<confirmation>
 			<title>Confirmation</title>
-			<prompt>Code compiled with PL/Scope.</prompt>
+			<prompt>Compilation with PL/Scope completed.</prompt>
 		</confirmation>
 	</item>
-
 
 </items>
