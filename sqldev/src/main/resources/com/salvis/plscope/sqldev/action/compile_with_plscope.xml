@@ -17,12 +17,12 @@
 		</prompt>
 		<prompt>
 			<label>Compile Code?</label>
-			<value><![CDATA[STATIC:TRUE:FALSE]]>
+			<value><![CDATA[STATIC:Yes:No]]>
 			</value>
 		</prompt>
 		<prompt>
 			<label>Compile Synonyms?</label>
-			<value><![CDATA[STATIC:TRUE:FALSE]]>
+			<value><![CDATA[STATIC:Yes:No]]>
 			</value>
 		</prompt>
 		<sql>
@@ -43,7 +43,7 @@ BEGIN
       /* PL/Scope statements since 12.2 */
       EXECUTE IMMEDIATE q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
    END IF;
-   IF NOT (dbms_db_version.version = 11 AND dbms_db_version.version = 1) AND '#3#' = 'TRUE' THEN
+   IF NOT (dbms_db_version.version = 11 AND dbms_db_version.version = 1) AND '#3#' = 'Yes' THEN
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
       <<synonyms>>
       FOR r IN (
@@ -69,7 +69,7 @@ BEGIN
          END compile_public_synonym;
       END LOOP public_synonyms;
    END IF;
-   IF '#2#' = 'TRUE' THEN
+   IF '#2#' = 'Yes' THEN
       /* Compile types */
       <<types>>
       FOR r IN (
@@ -128,12 +128,12 @@ END;]]>
 		</prompt>
 		<prompt>
 			<label>Compile Code?</label>
-			<value><![CDATA[STATIC:TRUE:FALSE]]>
+			<value><![CDATA[STATIC:Yes:No]]>
 			</value>
 		</prompt>
 		<prompt>
 			<label>Compile Synonyms?</label>
-			<value><![CDATA[STATIC:TRUE:FALSE]]>
+			<value><![CDATA[STATIC:Yes:No]]>
 			</value>
 		</prompt>
 		<sql>
@@ -154,7 +154,7 @@ BEGIN
       /* PL/Scope statements since 12.2 */
       EXECUTE IMMEDIATE q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
    END IF;
-   IF NOT (dbms_db_version.version = 11 AND dbms_db_version.version = 1) AND '#3#' = 'TRUE' THEN
+   IF NOT (dbms_db_version.version = 11 AND dbms_db_version.version = 1) AND '#3#' = 'Yes' THEN
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
       <<synonyms>>
       FOR r IN (
@@ -180,7 +180,7 @@ BEGIN
          END compile_public_synonym;
       END LOOP public_synonyms;
    END IF;
-   IF '#2#' = 'TRUE' THEN
+   IF '#2#' = 'Yes' THEN
       /* Compile types */
       <<types>>
       FOR r IN (
