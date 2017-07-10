@@ -385,7 +385,15 @@ SELECT CASE
         FROM tab_usage
        WHERE (ref_object_type != 'SYNONYM' OR next_ref_object_type_path IN ('/VIEW/SYNONYM','/TABLE/SYNONYM'))
    )
-SELECT owner AS "Owner",
+SELECT CASE
+          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
+                to_char(min(line),'FM0000009') || ':' || to_char(1,'FM0000009') || ':' || 'Source' ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             NULL
+       END AS "Link",
+       owner AS "Owner",
        object_type AS "Object type",
        object_name AS "Object name",
        procedure_name AS "Procedure name",
