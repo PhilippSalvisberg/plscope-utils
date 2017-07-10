@@ -82,6 +82,7 @@ Column Name           | Description
 ```text``` | ```text``` of the referenced source code line
 ```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if parent is not a SQL statement)
 ```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if parent is not a SQL statement)
+```parent_statement_path_len``` | ```path_len``` of the parent statement (```NULL``` if parent is not a SQL statement)
 ```is_used``` | ```YES``` if a declared identifier has been referenced, otherwise ```NO```. ```NULL``` when ```is_used``` is not applicable for an identifier (e.g. SQL statements).
 
 #### Query
