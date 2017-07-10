@@ -3,7 +3,7 @@
 <folder>
 	<name><![CDATA[plscope-utils Reports]]></name>
 	<tooltip><![CDATA[PL/Scope reports]]></tooltip>
-	<description><![CDATA[PL/Scope based reports maintained in https://github.com/PhilippSalvisberg/plscope-utils ]]></description>
+	<description><![CDATA[PL/Scope reports provided by plscope-utils, see https://github.com/PhilippSalvisberg/plscope-utils ]]></description>
 		<display id="1dc49f53-015d-1000-8001-c0a8011251fe" type="" style="Table" enable="true">
 		<name><![CDATA[Duplicate SQL Statements]]></name>
 		<description><![CDATA[Reports duplicate static SQL statements within packages, procedures, functions, triggers and types. ]]></description>
