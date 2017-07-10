@@ -618,7 +618,7 @@ SELECT CASE
 				<bind id="OBJECT_OWNER">
 					<prompt><![CDATA[Owner]]></prompt>
 					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
-					<value><![CDATA[AX]]></value>
+					<value><![CDATA[NULL_VALUE]]></value>
 					<bracket><![CDATA[null]]></bracket>
 				</bind>
 			</binds>
