@@ -440,5 +440,207 @@ SELECT CASE
 				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
 			</pdf>
 	</display>
+	<display id="2e3cb6a6-015d-1000-8001-c0a801126c36" type="" style="Table" enable="true">
+		<name><![CDATA[Unused Local Identifiers]]></name>
+		<description><![CDATA[Reports locally declared identifiers in within packages, procedures, functions, triggers and types which are not referenced.]]></description>
+		<tooltip><![CDATA[Reports unreferenced locally defined identifiers]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+			<TYPE><![CDATA[horizontal]]></TYPE>
+		</CustomValues>
+		<query minversion="12.2">
+			<sql><![CDATA[WITH
+   base_ids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             origin_con_id
+        FROM dba_identifiers
+      UNION ALL
+      SELECT owner,
+             ':' || NVL(sql_id, type) AS name,  -- intermediate statement marker colon
+             signature,
+             type,
+             object_name,
+             object_type,
+             'EXECUTE' AS usage, -- new, artificial usage
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             origin_con_id
+       FROM dba_statements
+   ),
+   ids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             coalesce(
+                least(
+                   usage_context_id,
+                   max(usage_id) over (
+                      PARTITION BY owner, object_name, object_type
+                      ORDER BY usage_id
+                      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                   )
+                ),
+                0
+             ) AS usage_context_id, -- fix broken hierarchies
+             origin_con_id
+        FROM base_ids
+   ),
+   tree AS (
+       SELECT ids.owner,
+              ids.object_type,
+              ids.object_name,
+              ids.line,
+              ids.col,
+              ids.name,
+              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
+              level as path_len,
+              ids.type,
+              ids.usage,
+              ids.signature,
+              ids.usage_id,
+              ids.usage_context_id,
+              ids.origin_con_id
+         FROM ids
+        START WITH ids.usage_context_id = 0
+      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
+              AND PRIOR ids.owner       = ids.owner
+              AND PRIOR ids.object_type = ids.object_type
+              AND PRIOR ids.object_name = ids.object_name
+   ),
+   plscope_identifiers AS (
+       SELECT tree.owner,
+              tree.object_type,
+              tree.object_name,
+              tree.line,
+              tree.col,
+              last_value (
+                 CASE
+                    WHEN tree.type in ('PROCEDURE', 'FUNCTION') AND tree.path_len = 2  THEN
+                       tree.name
+                 END
+              ) IGNORE NULLS OVER (
+                 PARTITION BY tree.owner, tree.object_name, tree.object_type
+                 ORDER BY tree.line, tree.col, tree.path_len
+              ) AS procedure_name,
+              REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
+              REPLACE(tree.name_path, ':', NULL) AS name_path, -- remove intermediate statement marker
+              tree.path_len,
+              tree.type,
+              tree.usage,
+              refs.owner AS ref_owner,
+              refs.object_type AS ref_object_type,
+              refs.object_name AS ref_object_name,
+              (
+                 -- this correlated subquery will be evaluated only,
+                 -- if the column TEXT is selected
+                 SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
+                   FROM dba_source src
+                  WHERE src.owner = tree.owner
+                    AND src.type = tree.object_type
+                    AND src.name = tree.object_name
+                    AND src.line = tree.line
+              ) AS text,
+              CASE 
+                 WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
+                    AND tree.usage = 'DECLARATION'
+                    AND tree.type NOT IN ('LABEL')
+                 THEN
+                    CASE
+                       WHEN 
+                          count(
+                             CASE 
+                                WHEN tree.usage NOT IN ('DECLARATION', 'ASSIGNMENT') 
+                                   OR (tree.type IN ('FORMAL OUT', 'FORMAL IN OUT')
+                                       AND tree.usage = 'ASSIGNMENT')
+                                THEN 
+                                   1 
+                             END
+                          ) OVER (
+                             PARTITION BY tree.owner, tree.object_name, tree.object_type, tree.signature
+                          ) = 0
+                       THEN
+                          'NO'
+                       ELSE
+                          'YES'
+                    END
+              END AS is_used, -- wrong result, if used in statements which do not register usage, such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE. Bug?
+              tree.signature,
+              tree.usage_id,
+              tree.usage_context_id,
+              tree.origin_con_id
+         FROM tree
+         LEFT JOIN dba_identifiers refs
+           ON refs.signature = tree.signature
+              AND refs.usage = 'DECLARATION'
+   )
+SELECT CASE
+          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || 'Source' ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             NULL
+       END AS "Link",
+       owner AS "Owner",
+       object_type AS "Object type",
+       object_name AS "Object name",
+       procedure_name AS "Procedure name",
+       type AS "Type",
+       name AS "Name",
+       line AS "Line",
+       col AS "Col",
+       text AS "Text" 
+  FROM plscope_identifiers
+ WHERE owner = NVL(:OBJECT_OWNER, USER)
+   AND usage = 'DECLARATION'
+   AND is_used = 'NO'
+ ORDER BY owner, object_type, object_name, line, col]]></sql>
+			<binds>
+				<bind id="OBJECT_OWNER">
+					<prompt><![CDATA[Owner]]></prompt>
+					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+					<value><![CDATA[AX]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+			<pdf version="VERSION_1_7" compression="CONTENT">
+				<docproperty title="" author="" subject="" keywords="" />
+				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
+				<column>
+					<heading font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="FIRST_PAGE" />
+					<footing font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="NONE" />
+					<blob blob="NONE" zip="false" />
+				</column>
+				<table font="Times New Roman" size="10" style="NORMAL" color="-16777216" userowshading="false" oddrowshading="-1" evenrowshading="-1" showborders="true" spacingbefore="12" spacingafter="12" horizontalalign="LEFT" />
+				<header enable="false" generatedate="false">
+					<data>
+					null					</data>
+				</header>
+				<footer enable="false" generatedate="false">
+					<data value="null" />
+				</footer>
+				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
+			</pdf>
+	</display>
 </folder>
 </displays>
