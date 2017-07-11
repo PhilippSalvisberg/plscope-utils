@@ -463,7 +463,7 @@ SELECT CASE
              col,
              usage_context_id,
              origin_con_id
-        FROM dba_identifiers
+        FROM sys.all_identifiers
       UNION ALL
       SELECT owner,
              ':' || NVL(sql_id, type) AS name,  -- intermediate statement marker colon
@@ -477,7 +477,7 @@ SELECT CASE
              col,
              usage_context_id,
              origin_con_id
-       FROM dba_statements
+       FROM sys.all_statements
    ),
    ids AS (
       SELECT owner,
@@ -553,7 +553,7 @@ SELECT CASE
                  -- this correlated subquery will be evaluated only,
                  -- if the column TEXT is selected
                  SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-                   FROM dba_source src
+                   FROM sys.all_source src
                   WHERE src.owner = tree.owner
                     AND src.type = tree.object_type
                     AND src.name = tree.object_name
@@ -588,7 +588,7 @@ SELECT CASE
               tree.usage_context_id,
               tree.origin_con_id
          FROM tree
-         LEFT JOIN dba_identifiers refs
+         LEFT JOIN sys.all_identifiers refs
            ON refs.signature = tree.signature
               AND refs.usage = 'DECLARATION'
    )

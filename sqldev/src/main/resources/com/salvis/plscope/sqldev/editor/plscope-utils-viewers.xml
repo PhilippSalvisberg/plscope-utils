@@ -561,7 +561,7 @@ WITH
           ON dep_graph.owner           = ids.ref_owner
              AND dep_graph.object_type = ids.ref_object_type
              AND dep_graph.object_name = ids.ref_object_name
-        LEFT JOIN dba_statements refs
+        LEFT JOIN sys.all_statements refs
           ON refs.signature = parent_statement_signature
        WHERE ids.type IN ('VIEW', 'TABLE', 'SYNONYM')
    )
