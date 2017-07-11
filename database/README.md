@@ -293,6 +293,6 @@ The example below shows that the ```salary``` column in the table ```deptsal``` 
 
 	 11 rows selected
 
-	 ## License
+## License
 
-	 plscope-utils is licensed under the Apache License, Version 2.0. You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>.
+plscope-utils is licensed under the Apache License, Version 2.0. You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>.
