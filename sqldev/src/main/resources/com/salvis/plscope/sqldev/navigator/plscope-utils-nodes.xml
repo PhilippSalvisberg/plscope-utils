@@ -76,7 +76,7 @@ SELECT 'Types' AS name, 'TYPE' AS value FROM dual WHERE :VALUE = 'PRIMARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-SELECT 'Synonym' AS name, 'SYNONYM' AS value FROM dual WHERE :VALUE = 'PRIMARY'
+SELECT 'Synonyms' AS name, 'SYNONYM' AS value FROM dual WHERE :VALUE = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
