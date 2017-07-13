@@ -102,8 +102,7 @@ SELECT CASE
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
         FROM sys.all_identifiers
       UNION ALL
       SELECT owner,
@@ -116,8 +115,7 @@ SELECT CASE
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
        FROM sys.all_statements
    ),
    ids AS (
@@ -141,8 +139,7 @@ SELECT CASE
                    )
                 ),
                 0
-             ) AS usage_context_id, -- fix broken hierarchies
-             origin_con_id
+             ) AS usage_context_id -- fix broken hierarchies
         FROM base_ids
    ),
    tree AS (
@@ -158,8 +155,7 @@ SELECT CASE
               ids.usage,
               ids.signature,
               ids.usage_id,
-              ids.usage_context_id,
-              ids.origin_con_id
+              ids.usage_context_id
          FROM ids
         START WITH ids.usage_context_id = 0
       CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
@@ -227,8 +223,7 @@ SELECT CASE
            END AS parent_statement_path_len,
            tree.signature,
            tree.usage_id,
-           tree.usage_context_id,
-           tree.origin_con_id
+           tree.usage_context_id
       FROM tree
       LEFT JOIN sys.all_identifiers refs
         ON refs.signature = tree.signature
@@ -461,8 +456,7 @@ SELECT CASE
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
         FROM sys.all_identifiers
       UNION ALL
       SELECT owner,
@@ -475,8 +469,7 @@ SELECT CASE
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
        FROM sys.all_statements
    ),
    ids AS (
@@ -500,8 +493,7 @@ SELECT CASE
                    )
                 ),
                 0
-             ) AS usage_context_id, -- fix broken hierarchies
-             origin_con_id
+             ) AS usage_context_id -- fix broken hierarchies
         FROM base_ids
    ),
    tree AS (
@@ -517,8 +509,7 @@ SELECT CASE
               ids.usage,
               ids.signature,
               ids.usage_id,
-              ids.usage_context_id,
-              ids.origin_con_id
+              ids.usage_context_id
          FROM ids
         START WITH ids.usage_context_id = 0
       CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
@@ -585,8 +576,7 @@ SELECT CASE
               END AS is_used, -- wrong result, if used in statements which do not register usage, such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE. Bug?
               tree.signature,
               tree.usage_id,
-              tree.usage_context_id,
-              tree.origin_con_id
+              tree.usage_context_id
          FROM tree
          LEFT JOIN sys.all_identifiers refs
            ON refs.signature = tree.signature

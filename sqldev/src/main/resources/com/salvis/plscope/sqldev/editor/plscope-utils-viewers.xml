@@ -30,8 +30,7 @@ WITH
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
         FROM sys.all_identifiers
       UNION ALL
       SELECT owner,
@@ -44,8 +43,7 @@ WITH
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
        FROM sys.all_statements
    ),
    ids AS (
@@ -69,8 +67,7 @@ WITH
                    )
                 ),
                 0
-             ) AS usage_context_id, -- fix broken hierarchies
-             origin_con_id
+             ) AS usage_context_id -- fix broken hierarchies
         FROM base_ids
        WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
          AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
@@ -89,8 +86,7 @@ WITH
               ids.usage,
               ids.signature,
               ids.usage_id,
-              ids.usage_context_id,
-              ids.origin_con_id
+              ids.usage_context_id
          FROM ids
         START WITH ids.usage_context_id = 0
       CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
@@ -171,8 +167,7 @@ WITH
                    )
                 ),
                 0
-             ) AS usage_context_id, -- fix broken hierarchies
-             origin_con_id
+             ) AS usage_context_id -- fix broken hierarchies
         FROM sys.all_identifiers
        WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
          AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
@@ -191,8 +186,7 @@ WITH
               ids.usage,
               ids.signature,
               ids.usage_id,
-              ids.usage_context_id,
-              ids.origin_con_id
+              ids.usage_context_id
          FROM ids
         START WITH ids.usage_context_id = 0
       CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
@@ -373,8 +367,7 @@ WITH
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
         FROM sys.all_identifiers
       UNION ALL
       SELECT owner,
@@ -387,8 +380,7 @@ WITH
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
        FROM sys.all_statements
    ),
    ids AS (
@@ -412,8 +404,7 @@ WITH
                    )
                 ),
                 0
-             ) AS usage_context_id, -- fix broken hierarchies
-             origin_con_id
+             ) AS usage_context_id -- fix broken hierarchies
         FROM base_ids
        WHERE owner       = :OBJECT_OWNER
          AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
@@ -432,8 +423,7 @@ WITH
               ids.usage,
               ids.signature,
               ids.usage_id,
-              ids.usage_context_id,
-              ids.origin_con_id
+              ids.usage_context_id
          FROM ids
         START WITH ids.usage_context_id = 0
       CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
@@ -488,8 +478,7 @@ WITH
              END AS parent_statement_signature,
              tree.signature,
              tree.usage_id,
-             tree.usage_context_id,
-             tree.origin_con_id
+             tree.usage_context_id
         FROM tree
         LEFT JOIN sys.all_identifiers refs
           ON refs.signature = tree.signature
@@ -614,8 +603,7 @@ WITH
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
         FROM sys.all_identifiers
       UNION ALL
       SELECT owner,
@@ -628,8 +616,7 @@ WITH
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
        FROM sys.all_statements
    ),
    ids AS (
@@ -653,8 +640,7 @@ WITH
                    )
                 ),
                 0
-             ) AS usage_context_id, -- fix broken hierarchies
-             origin_con_id
+             ) AS usage_context_id -- fix broken hierarchies
         FROM base_ids
        WHERE owner       = :OBJECT_OWNER
          AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
@@ -673,8 +659,7 @@ WITH
               ids.usage,
               ids.signature,
               ids.usage_id,
-              ids.usage_context_id,
-              ids.origin_con_id
+              ids.usage_context_id
          FROM ids
         START WITH ids.usage_context_id = 0
       CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
@@ -719,8 +704,7 @@ WITH
              END AS parent_statement_signature,
              tree.signature,
              tree.usage_id,
-             tree.usage_context_id,
-             tree.origin_con_id
+             tree.usage_context_id
         FROM tree
         LEFT JOIN sys.all_identifiers refs
           ON refs.signature = tree.signature
