@@ -65,7 +65,7 @@ WITH
  SELECT ids.line, 
         ids.col,
         ids.name,
-        sys_connect_by_path(ids.name, '/') AS name_path,
+        sys_connect_by_path(replace(ids.name,'/'), '/') AS name_path,
         ids.type,
         ids.usage, 
         refs.owner AS ref_owner,
