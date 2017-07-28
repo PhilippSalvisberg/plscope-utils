@@ -57,7 +57,7 @@ CREATE OR REPLACE PACKAGE BODY etl AS
       clear_deptsal;
       INSERT INTO deptsal (dept_no, dept_name, salary)
       SELECT dept_no, dept_name, salary
-        FROM source_syn
+        FROM source_syn s
       LOG ERRORS INTO deptsal_err REJECT LIMIT 10;
       COMMIT;
       sys.dbms_output.put_line('deptsal loaded and commited (with log errors).');
