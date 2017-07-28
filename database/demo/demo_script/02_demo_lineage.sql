@@ -1,14 +1,15 @@
 -- 1. parse the insert statement using sys.utl_xml.parsequery
-SELECT full_text, parse_util.parse_query(s.owner, s.full_text) 
-  FROM all_statements s
- WHERE s.type = 'INSERT'
-   AND s.object_name = 'LOAD_FROM_TAB'
+SELECT full_text, parse_util.parse_query(in_parse_user => owner, in_query => full_text) 
+  FROM all_statements
+ WHERE type = 'INSERT'
+   AND object_name = 'LOAD_FROM_TAB'
    AND type = 'INSERT';
 
 -- 2. get taget tables via XQuery
-SELECT schema_name,
-       table_name
-  FROM all_statements s,
+SELECT t.schema_name,
+       t.table_name
+  FROM all_statements s
+ CROSS JOIN
        xmltable(q'{
                      for $tar in /QUERY/FROM/FROM_ITEM
                      return
@@ -17,56 +18,89 @@ SELECT schema_name,
                            <tableName>{$tar/TABLE/text()}</tableName>
                         </target>
                   }'
-          PASSING parse_util.parse_query(s.owner, s.full_text)
+          PASSING parse_util.parse_query(in_parse_user => s.owner, in_query => s.full_text)
           COLUMNS schema_name VARCHAR2(128 CHAR) PATH '/target/schemaName',
                   table_name  VARCHAR2(128 CHAR) PATH '/target/tableName'
-       )
+       ) t
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB'
    AND type = 'INSERT';
 
 -- 3. get target tables from table function
 SELECT t.* 
-  FROM all_statements s,
-       TABLE(parse_util.get_insert_targets(s.owner, s.full_text)) t
+  FROM all_statements s
+ CROSS JOIN
+       TABLE(parse_util.get_insert_targets(in_parse_user => s.owner, in_sql => s.full_text)) t
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB';
          
 -- 4. get fully qualified target tables from table functions
 SELECT t.* 
-  FROM all_statements s,
-       TABLE(dd_util.get_objects(s.owner, parse_util.get_insert_targets(s.owner, s.full_text))) t
+  FROM all_statements s
+ CROSS JOIN
+       TABLE(
+          dd_util.get_objects(
+             in_parse_user => s.owner, 
+             in_t_obj      => parse_util.get_insert_targets(
+                                 in_parse_user => s.owner, 
+                                 in_sql        => s.full_text
+                              )
+             )
+       ) t
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB';
 
 -- 5. get subquery from insert statement
 SELECT s.full_text, 
        regexp_substr(s.full_text, '(\s|\()+SELECT\s+(.+)', 1, 1, 'i') AS subquery 
-  FROM all_statements s,
-       TABLE(dd_util.get_objects(s.owner, parse_util.get_insert_targets(s.owner, s.full_text))) t
+  FROM all_statements s
+ CROSS JOIN
+       TABLE(
+          dd_util.get_objects(
+             in_parse_user => s.owner, 
+             in_t_obj      => parse_util.get_insert_targets(
+                                 in_parse_user => s.owner, 
+                                 in_sql        => s.full_text
+                              )
+          )
+       ) t
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB';
    
 -- 6. get subquery from function, handling more cases (e.g. with_clause, error_logging_clause)    
 SELECT s.full_text, 
-       parse_util.get_insert_subquery(s.full_text) AS subquery 
-  FROM all_statements s,
-       TABLE(dd_util.get_objects(s.owner, parse_util.get_insert_targets(s.owner, s.full_text))) t
+       parse_util.get_insert_subquery(in_sql => s.full_text) AS subquery 
+  FROM all_statements s
+ CROSS JOIN
+       TABLE(
+          dd_util.get_objects(
+             in_parse_user => s.owner, 
+             in_t_obj      => parse_util.get_insert_targets(
+                                 in_parse_user => s.owner, 
+                                 in_sql => s.full_text
+                              )
+          )
+       ) t
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB';
 
 -- 7. parse the subquery using sys.utl_xml.parsequery
-SELECT full_text, parse_util.parse_query(s.owner, parse_util.get_insert_subquery(s.full_text)) 
+SELECT full_text, 
+       parse_util.parse_query(
+          in_parse_user => s.owner, 
+          in_query => parse_util.get_insert_subquery(in_sql => s.full_text)
+       ) 
   FROM all_statements s
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB'
    AND type = 'INSERT';
    
 -- 8. where-linage of column salary
-SELECT schema_name,
-       table_name,
-       column_name
-  FROM all_statements s,
+SELECT t.schema_name,
+       t.table_name,
+       t.column_name
+  FROM all_statements s
+ CROSS JOIN
        xmltable(q'{
                      declare function local:analyze-col($col as element()) as element()* {
                         let $tableAlias := $col/ancestor::QUERY[1]/FROM/FROM_ITEM//TABLE_ALIAS[local-name(..) != 'COLUMN_REF' 
@@ -129,22 +163,32 @@ SELECT schema_name,
                      let $res := local:analyze-col($col)
                      return $res
                   }'
-          PASSING parse_util.parse_query(s.owner, parse_util.get_insert_subquery(s.full_text)), 3 AS "columnPos" 
+          PASSING parse_util.parse_query(
+                     in_parse_user => s.owner, 
+                     in_query      => parse_util.get_insert_subquery(in_sql => s.full_text)
+                  ), 
+                  3 AS "columnPos" 
           COLUMNS schema_name VARCHAR2(128 CHAR) PATH 'schemaName',
                   table_name  VARCHAR2(128 CHAR) PATH 'tableName',
                   column_name VARCHAR2(128 CHAR) PATH 'columnName'
-       )
+       ) t
  WHERE s.type = 'INSERT'
-   AND s.object_name = 'LOAD_FROM_TAB'
-   AND type = 'INSERT';
+   AND s.object_name = 'LOAD_FROM_TAB';
    
 -- 9. where-linage of column salary via function hiding XQuery complexity
 SELECT l.owner,
        l.object_type,
        l.object_name,
        l.column_name
-  FROM all_statements s,
-       TABLE(lineage_util.get_dep_cols_from_query(s.owner, parse_util.get_insert_subquery(s.full_text), 3)) l
+  FROM all_statements s
+ CROSS JOIN
+       TABLE(
+          lineage_util.get_dep_cols_from_query(
+             in_parse_user => s.owner, 
+             in_query      => parse_util.get_insert_subquery(in_sql => s.full_text), 
+             in_column_pos => 3
+           )
+       ) l
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB'
    AND type = 'INSERT';
@@ -153,8 +197,14 @@ SELECT l.owner,
 SELECT ids.line, ids.col, 
        l.from_owner, l.from_object_type, l.from_object_name, l.from_column_name,
        l.to_owner, l.to_object_type, l.to_object_name, l.to_column_name
-  FROM plscope_identifiers ids,
-       TABLE(lineage_util.get_dep_cols_from_insert(ids.signature, 1)) l 
+  FROM plscope_identifiers ids
+ CROSS JOIN
+       TABLE(
+          lineage_util.get_dep_cols_from_insert(
+             in_signature => ids.signature, 
+             in_recursive => 1
+          )
+       ) l 
  WHERE ids.type = 'INSERT'
    AND ids.object_name = 'LOAD_FROM_TAB'
  ORDER BY to_column_name;

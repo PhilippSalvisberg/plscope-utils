@@ -5,7 +5,7 @@ CREATE OR REPLACE PACKAGE BODY etl AS
    BEGIN
       DELETE FROM deptsal;
       DELETE FROM deptsal_err;
-      dbms_output.put_line('deptsal an deptsal_err deleted.'); -- use synonym
+      sys.dbms_output.put_line('deptsal an deptsal_err deleted.'); -- use synonym
    END clear_deptsal;
    
    PROCEDURE load_from_tab IS
@@ -44,7 +44,7 @@ CREATE OR REPLACE PACKAGE BODY etl AS
    PROCEDURE load_from_syn_wild IS
    BEGIN
       clear_deptsal;
-      INSERT INTO deptsal  -- no column list
+      INSERT INTO deptsal  -- no column list NOSONAR G-3110
       SELECT t.*           -- all-column wildcard
         FROM source_syn t;
       COMMIT;
@@ -68,7 +68,7 @@ CREATE OR REPLACE PACKAGE BODY etl AS
       clear_deptsal;
       INSERT ALL
          WHEN dept_no <= 100 THEN
-            INTO deptsal  -- no column list
+            INTO deptsal  -- no column list NOSONAR G-3110
          ELSE
             INTO deptsal_err (dept_no, dept_name, salary) 
       SELECT dept_no, dept_name, salary
@@ -80,13 +80,14 @@ CREATE OR REPLACE PACKAGE BODY etl AS
    PROCEDURE load_from_implicit_cursor IS
    BEGIN
       clear_deptsal;
+      <<deptsal>>
       FOR r_src IN (
          SELECT dept_no, dept_name, salary
            FROM source_syn
       ) LOOP
          INSERT INTO deptsal (dept_no, dept_name, salary)
          VALUES (r_src.dept_no, r_src.dept_name, r_src.salary);
-      END LOOP;
+      END LOOP deptsal;
       COMMIT;
       sys.dbms_output.put_line('deptsal loaded and commited (from implicit cursor).');
    END load_from_implicit_cursor;
@@ -97,16 +98,17 @@ CREATE OR REPLACE PACKAGE BODY etl AS
            FROM source_syn;      
    BEGIN
       clear_deptsal;
+      <<deptsal>>
       FOR r_src IN c_src LOOP
          INSERT INTO deptsal (dept_no, dept_name, salary)
          VALUES (r_src.dept_no, r_src.dept_name, r_src.salary);
-      END LOOP;
+      END LOOP deptsal;
       COMMIT;
       sys.dbms_output.put_line('deptsal loaded and commited (from explicit cursor).');
    END load_from_explicit_cursor; 
    
    PROCEDURE load_from_dyn_sql IS
-      l_sql VARCHAR2(4000) := q'[
+      l_sql CLOB := q'[
             INSERT INTO deptsal (dept_no, dept_name, salary)
             SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
               FROM dept d
@@ -121,7 +123,7 @@ CREATE OR REPLACE PACKAGE BODY etl AS
       sys.dbms_output.put_line('deptsal loaded and commited (from dynamic SQL).');
    END load_from_dyn_sql;
    
-   FUNCTION sal_of_dept (in_deptno dept.deptno%TYPE) RETURN deptsal.salary%TYPE IS 
+   FUNCTION sal_of_dept (in_deptno IN dept.deptno%TYPE) RETURN deptsal.salary%TYPE IS 
       l_salary deptsal.salary%TYPE;
    BEGIN
       SELECT SUM(sal + NVL(comm, 0))
@@ -136,7 +138,7 @@ CREATE OR REPLACE PACKAGE BODY etl AS
    BEGIN
       clear_deptsal;
       INSERT INTO deptsal (dept_no, dept_name, salary)
-      SELECT deptno, dname, etl.sal_of_dept(deptno)
+      SELECT deptno, dname, etl.sal_of_dept(in_deptno => deptno)
         FROM dept;
       COMMIT;
       sys.dbms_output.put_line('deptsal loaded and commited (from application join).');

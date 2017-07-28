@@ -10,11 +10,11 @@ CREATE OR REPLACE PROCEDURE load_from_tab IS
 BEGIN
    INSERT INTO deptsal (dept_no, dept_name, salary)
    SELECT /*+ordered */
-        d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
+          d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
     FROM dept d
     LEFT JOIN (SELECT * 
-              FROM emp 
-             WHERE hiredate > DATE '1980-01-01') e
+                 FROM emp 
+                WHERE hiredate > DATE '1980-01-01') e
       ON e.deptno = d.deptno
    GROUP BY d.deptno, d.dname;
    COMMIT;
