@@ -624,6 +624,435 @@ SELECT CASE
 				<table font="Times New Roman" size="10" style="NORMAL" color="-16777216" userowshading="false" oddrowshading="-1" evenrowshading="-1" showborders="true" spacingbefore="12" spacingafter="12" horizontalalign="LEFT" />
 				<header enable="false" generatedate="false">
 					<data>
+					
+					null										</data>
+				</header>
+				<footer enable="false" generatedate="false">
+					<data value="null" />
+				</footer>
+				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
+			</pdf>
+	</display>
+	<display id="9f38924a-015d-1000-8001-c0a80112c4cd" type="" style="Table" enable="true">
+		<name><![CDATA[PL/SQL Naming Conventions]]></name>
+		<description><![CDATA[Naming Conventions for PL/SQL according chapter 2.2 of the Trivadis PL/SQL & SQL Coding Guidelines V3.2]]></description>
+		<tooltip><![CDATA[]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+			<TYPE><![CDATA[horizontal]]></TYPE>
+		</CustomValues>
+		<query minversion="11.1">
+			<sql><![CDATA[WITH
+   ids AS (
+      SELECT owner,
+             name,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id
+        FROM sys.all_identifiers
+       WHERE owner LIKE NVL(:OBJECT_OWNER, USER)
+   ),   
+   tree AS (
+       SELECT ids.owner,
+              ids.object_type,
+              ids.object_name,
+              ids.line,
+              ids.col,
+              ids.name,
+              level as path_len,
+              ids.type,
+              sys_connect_by_path(ids.type, '/') AS type_path,
+              ids.usage,
+              ids.usage_id,
+              ids.usage_context_id,
+              prior ids.type AS parent_type,
+              prior ids.usage AS parent_usage,
+              prior ids.line AS parent_line,
+              prior ids.col AS parent_col,
+              prior ids.name AS parent_name
+         FROM ids
+        START WITH ids.usage_context_id = 0
+      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
+              AND PRIOR ids.owner       = ids.owner
+              AND PRIOR ids.object_type = ids.object_type
+              AND PRIOR ids.object_name = ids.object_name
+   ),
+   prepared AS (
+      SELECT tree.owner,
+             tree.object_type,
+             tree.object_name,
+             last_value (
+                CASE
+                   WHEN tree.type in ('PROCEDURE', 'FUNCTION') AND tree.path_len = 2 THEN
+                      tree.name
+                END
+             ) IGNORE NULLS OVER (
+                PARTITION BY tree.owner, tree.object_name, tree.object_type
+                ORDER BY tree.line, tree.col, tree.path_len
+             ) AS procedure_name,
+             (
+                -- this correlated subquery will be evaluated only,
+                -- if the column TEXT is selected
+                SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
+                  FROM sys.all_source src
+                 WHERE src.owner = tree.owner
+                   AND src.type = tree.object_type
+                   AND src.name = tree.object_name
+                   AND src.line = tree.line
+             ) AS text,
+             tree.usage,
+             tree.type,
+             tree.name,
+             tree.line,
+             tree.col,
+             tree.type_path,
+             tree.parent_usage,
+             tree.parent_type,
+             tree.parent_name,
+             tree.parent_line,
+             tree.parent_col
+        FROM tree
+       WHERE tree.object_type IN ('FUNCTION', 'PROCEDURE', 'TRIGGER', 'PACKAGE', 'PACKAGE BODY', 'TYPE', 'TYPE BODY')
+   ),
+   checked AS (
+      SELECT owner,
+             object_type,
+             object_name,
+             procedure_name,
+             CASE 
+                WHEN usage = 'REFERENCE' THEN
+                   parent_usage 
+                ELSE
+                   usage
+             END AS usage,
+             CASE 
+                WHEN usage = 'REFERENCE' THEN
+                   parent_type 
+                ELSE
+                   type
+             END AS type,
+             CASE 
+                WHEN usage = 'REFERENCE' THEN
+                   parent_name 
+                ELSE
+                   name
+             END AS name,
+             CASE
+                -- global variables (all types)
+                WHEN     parent_usage = 'DECLARATION'
+                     AND parent_type = 'VARIABLE'
+                     AND usage = 'REFERENCE'
+                     AND regexp_like(type_path, '/PACKAGE/VARIABLE/[A-Z0-9_ ]*$')
+                THEN
+                   CASE 
+                      WHEN regexp_like(parent_name, :GLOBAL_VARIABLE_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Global variable should match the regular expression "' || :GLOBAL_VARIABLE_REGEX || '".'
+                   END 
+                -- record variables
+                WHEN     parent_usage = 'DECLARATION'
+                     AND parent_type = 'VARIABLE'
+                     AND usage = 'REFERENCE'
+                     AND (type = 'RECORD' OR regexp_like(text, :RECORD_VARIABLE_REGEX, 'i'))
+                THEN
+                   CASE
+                      WHEN regexp_like(parent_name,'^r_.*', 'i') THEN
+                         'OK'
+                      ELSE
+                         'Record variable should match the regular expression "' || :RECORD_VARIABLE_REGEX || '".'
+                   END
+                -- array/table variables
+                WHEN     parent_usage = 'DECLARATION'
+                     AND parent_type = 'VARIABLE'
+                     AND usage = 'REFERENCE'
+                     AND (type LIKE '%ARRAY' OR type LIKE '%TABLE')
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :ARRAY_VARIABLE_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Array/table variable should match the regular expression "' || :ARRAY_VARIABLE_REGEX || '".'
+                   END
+                -- object variables
+                WHEN     parent_usage = 'DECLARATION'
+                     AND parent_type = 'VARIABLE'
+                     AND usage = 'REFERENCE'
+                     AND type = 'OBJECT'
+                     AND object_type != 'TYPE'
+                THEN
+                   CASE
+                      WHEN regexp_like(parent_name, :OBJECT_VARIABLE_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Object variables should match the regular expression "' || :OBJECT_VARIABLE_REGEX || '".'
+                   END
+                -- local variables for other types
+                WHEN     parent_usage = 'DECLARATION'
+                     AND parent_type = 'VARIABLE'
+                     AND usage = 'REFERENCE'
+                     AND object_type != 'TYPE'
+                THEN
+                   CASE
+                      WHEN regexp_like(parent_name, :LOCAL_VARIABLE_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Local variable should match the regular expression "' || :LOCAL_VARIABLE_REGEX || '".'
+                   END
+                -- cursors
+                WHEN     usage = 'DECLARATION'
+                     AND type = 'CURSOR'
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :CURSOR_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Cursor should match the regular expression "' || :CURSOR_REGEX || '".'
+                   END
+                -- cursor parameters
+                WHEN     parent_usage = 'DECLARATION'
+                     AND parent_type = 'CURSOR'
+                     AND usage = 'DECLARATION'
+                     AND type LIKE 'FORMAL%'
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :CURSOR_PARAMETER_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Cursor parameter should match the regular expression "' || :CURSOR_PARAMETER_REGEX || '".'
+                   END
+                -- IN parameters
+                WHEN     usage = 'DECLARATION'
+                     AND type LIKE 'FORMAL IN'
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :IN_PARAMETER_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'IN parameter should match the regular expression "' || :IN_PARAMETER_REGEX || '".'
+                   END
+                -- OUT parameters
+                WHEN     usage = 'DECLARATION'
+                     AND type LIKE 'FORMAL OUT'
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :OUT_PARAMETER_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'OUT parameter should match the regular expression "' || :OUT_PARAMETER_REGEX || '".'
+                   END
+                -- IN OUT parameters
+                WHEN     usage = 'DECLARATION'
+                     AND type LIKE 'FORMAL IN OUT'
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :IN_OUT_PARAMETER_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'IN OUT parameter should match the regular expression "' || :IN_OUT_PARAMETER_REGEX || '".'
+                   END
+                -- records
+                WHEN     usage = 'DECLARATION'
+                     AND type = 'RECORD'
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :RECORD_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Record should match the regular expression "' || :RECORD_REGEX || '".'
+                   END
+                -- arrays/tables
+                WHEN     usage = 'DECLARATION'
+                     AND (type LIKE '%ARRAY' OR type LIKE '%TABLE')
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :ARRAY_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Array/table should match the regular expression "' || :ARRAY_REGEX || '".'
+                   END
+                -- exceptions
+                WHEN     usage = 'DECLARATION'
+                     AND type = 'EXCEPTION'
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :EXCEPTION_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Exception should match the regular expression "' || :EXCEPTION_REGEX || '".'
+                   END
+                -- constants
+                WHEN     usage = 'DECLARATION'
+                     AND type = 'CONSTANT'
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :CONSTANT_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Constant should match the regular expression "' || :CONSTANT_REGEX || '".'
+                   END
+                -- subtypes
+                WHEN     usage = 'DECLARATION'
+                     AND type = 'SUBTYPE'
+                THEN
+                   CASE
+                      WHEN regexp_like(name, :SUBTYPE_REGEX, 'i') THEN
+                         'OK'
+                      ELSE
+                         'Subtype should match the regular expression "' || :SUBTYPE_REGEX || '".'
+                   END
+             END AS message,
+             CASE 
+                WHEN usage = 'REFERENCE' THEN
+                   parent_line 
+                ELSE
+                   line
+             END AS line,
+             CASE 
+                WHEN usage = 'REFERENCE' THEN
+                   parent_col 
+                ELSE
+                   col
+             END AS col,
+             text
+        FROM prepared
+   )
+SELECT CASE
+          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || 'Source' ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             NULL
+       END AS "Link",
+       owner AS "Owner", 
+       object_type AS "Object type", 
+       object_name AS "Object name", 
+       procedure_name AS "Procedure name",
+       type AS "Type",
+       name AS "Name",
+       message AS "Message",
+       line AS "Line",
+       col AS "Col",
+       text AS "Text"
+  FROM checked
+ WHERE message != 'OK'
+ ORDER BY owner, object_type, object_name, line, col]]></sql>
+			<binds>
+				<bind id="OBJECT_OWNER">
+					<prompt><![CDATA[Owner]]></prompt>
+					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="GLOBAL_VARIABLE_REGEX">
+					<prompt><![CDATA[Global variable regex]]></prompt>
+					<tooltip><![CDATA[GLOBAL_VARIABLE_REGEX]]></tooltip>
+					<value><![CDATA[^g_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="RECORD_VARIABLE_REGEX">
+					<prompt><![CDATA[Record variable regex]]></prompt>
+					<tooltip><![CDATA[RECORD_VARIABLE_REGEX]]></tooltip>
+					<value><![CDATA[^r_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="ARRAY_VARIABLE_REGEX">
+					<prompt><![CDATA[Array/table variable regex]]></prompt>
+					<tooltip><![CDATA[ARRAY_VARIABLE_REGEX]]></tooltip>
+					<value><![CDATA[^t_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="OBJECT_VARIABLE_REGEX">
+					<prompt><![CDATA[Object variable regex]]></prompt>
+					<tooltip><![CDATA[OBJECT_VARIABLE_REGEX]]></tooltip>
+					<value><![CDATA[^o_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="LOCAL_VARIABLE_REGEX">
+					<prompt><![CDATA[Local variable regex]]></prompt>
+					<tooltip><![CDATA[LOCAL_VARIABLE_REGEX]]></tooltip>
+					<value><![CDATA[^l_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="CURSOR_REGEX">
+					<prompt><![CDATA[Cursor regex]]></prompt>
+					<tooltip><![CDATA[CURSOR_REGEX]]></tooltip>
+					<value><![CDATA[^c_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="CURSOR_PARAMETER_REGEX">
+					<prompt><![CDATA[Cursor parameter regex]]></prompt>
+					<tooltip><![CDATA[CURSOR_PARAMETER_REGEX]]></tooltip>
+					<value><![CDATA[^p_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="IN_PARAMETER_REGEX">
+					<prompt><![CDATA[IN parameter regex]]></prompt>
+					<tooltip><![CDATA[IN_PARAMETER_REGEX]]></tooltip>
+					<value><![CDATA[^in_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="OUT_PARAMETER_REGEX">
+					<prompt><![CDATA[OUT parameter regex]]></prompt>
+					<tooltip><![CDATA[OUT_PARAMETER_REGEX]]></tooltip>
+					<value><![CDATA[^out_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="IN_OUT_PARAMETER_REGEX">
+					<prompt><![CDATA[IN OUT_parameter regex]]></prompt>
+					<tooltip><![CDATA[IN_OUT_PARAMETER_REGEX]]></tooltip>
+					<value><![CDATA[^io_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="RECORD_REGEX">
+					<prompt><![CDATA[Record regex]]></prompt>
+					<tooltip><![CDATA[RECORD_REGEX]]></tooltip>
+					<value><![CDATA[^r_.*_type$]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="ARRAY_REGEX">
+					<prompt><![CDATA[Array/table regex]]></prompt>
+					<tooltip><![CDATA[ARRAY_REGEX]]></tooltip>
+					<value><![CDATA[^t_.*_type$]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="EXCEPTION_REGEX">
+					<prompt><![CDATA[Exception regex]]></prompt>
+					<tooltip><![CDATA[EXCEPTION_REGEX]]></tooltip>
+					<value><![CDATA[^e_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="CONSTANT_REGEX">
+					<prompt><![CDATA[Constant regex]]></prompt>
+					<tooltip><![CDATA[CONSTANT_REGEX]]></tooltip>
+					<value><![CDATA[^co_.*]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="SUBTYPE_REGEX">
+					<prompt><![CDATA[Subtype regex]]></prompt>
+					<tooltip><![CDATA[SUBTYPE_REGEX]]></tooltip>
+					<value><![CDATA[.*_type$]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+			<pdf version="VERSION_1_7" compression="CONTENT">
+				<docproperty title="" author="" subject="" keywords="" />
+				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
+				<column>
+					<heading font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="FIRST_PAGE" />
+					<footing font="null" size="10" style="NORMAL" color="-16777216" rowshading="-1" labeling="NONE" />
+					<blob blob="NONE" zip="false" />
+				</column>
+				<table font="Times New Roman" size="10" style="NORMAL" color="-16777216" userowshading="false" oddrowshading="-1" evenrowshading="-1" showborders="true" spacingbefore="12" spacingafter="12" horizontalalign="LEFT" />
+				<header enable="false" generatedate="false">
+					<data>
 					null					</data>
 				</header>
 				<footer enable="false" generatedate="false">
