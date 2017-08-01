@@ -9,7 +9,7 @@ plscope-utils is based on PL/Scope which is available in the Oracle Database sin
 
 - [SQL Developer Extension (plscope-utils for SQL Developer)](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/sqldev/README.md)
 
-   Extends SQL Developer by a ```PL/Scope```node in the database navigator tree, context menus, views shown for tables, views and PL/SQL nodes and some reports. Requires a client side installation only.
+   Extends SQL Developer by a ```PL/Scope``` node in the database navigator tree, context menus, views shown for tables, views and PL/SQL nodes and some reports. Requires a client side installation only.
 
 ## Releases
 
