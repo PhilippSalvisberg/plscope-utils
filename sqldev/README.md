@@ -3,10 +3,10 @@
 ## Introduction
 This component of plscope-utils extends SQL Developer by the following:
 
-- ```PL/Scope```node in the database navigator tree;
+- ```PL/Scope``` node in the database navigator tree;
 - ```Compile with PL/Scope``` context menu on the connection and PL/Scope node;
 - ```Identifiers```, ```Statements```, ```Used by```, ```Table Usages```and ```Column Usages``` viewers shown for tables, views and PL/SQL nodes;
-- ```CRUD Operations```, ```Duplicate SQL Statements```, ```UDF Calls in SQL Statements``` and ```Unused Local Identifiers```reports.
+- ```CRUD Operations```, ```Duplicate SQL Statements```, ```PL/SQL Naming Conventions``` ```UDF Calls in SQL Statements``` and ```Unused Local Identifiers```reports.
 
 Requires a client side installation only. All operations are based on components available in an Oracle Database Server version 11.1. However, viewers and reports querying the ```all_statements``` view require an Oracle Database version 12.2 or higher.
 
@@ -29,7 +29,7 @@ See https://www.salvis.com/blog/plscope-utils-for-sql-developer/ for screenshots
 
 6. Run maven build by the following command
 
-		mvn -Dsqldev.basedir=/Applications/SQLDeveloper4.2.0.app/Contents/Resources/sqldeveloper clean package
+		mvn -Dsqldev.basedir=/Applications/SQLDeveloper17.2.0.app/Contents/Resources/sqldeveloper clean package
 
 	Amend the parameter sqldev.basedir to match the path of your SQL Developer installation. This folder is used to reference Oracle jar files which are not available in public Maven repositories
 7. The resulting file ```plscope-utils_for_SQLDev_x.x.x-SNAPSHOT.zip``` in the ```target``` directory may be installed within SQL Developer
