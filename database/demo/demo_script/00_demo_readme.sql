@@ -27,6 +27,7 @@ END load_from_tab;
 
 SET PAGESIZE 50
 SET LINESIZE 500
+COLUMN OWNER FORMAT A7
 COLUMN PROCEDURE_NAME FORMAT A14
 COLUMN LINE FORMAT 999
 COLUMN COL FORMAT 999
@@ -67,6 +68,7 @@ SELECT line, col, type, sql_id, is_duplicate, full_text
 
 -- ### Query
 
+COLUMN TEXT FORMAT A81
 COLUMN DIRECT_DEPENDENCY FORMAT A17
 COLUMN PROCEDURE_NAME FORMAT A18
 SELECT * 
@@ -79,6 +81,7 @@ SELECT *
 
 -- ### Query
 
+COLUMN TEXT FORMAT A81
 COLUMN COLUMN_NAME FORMAT A11
 COLUMN OBJECT_NAME FORMAT A13
 COLUMN OPERATION FORMAT A9
@@ -87,6 +90,74 @@ SELECT *
  WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
    AND owner = USER
  ORDER BY owner, object_type, object_name, line, col, direct_dependency;
+ 
+-- ## View PLSCOPE_NAMING
+
+-- ### Create/compile a package
+CREATE OR REPLACE PACKAGE pkg IS
+   g_global_variable INTEGER := 0;
+   g_global_constant CONSTANT VARCHAR2(10) := 'PUBLIC';
+
+   PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);
+END pkg;
+/
+
+CREATE OR REPLACE PACKAGE BODY pkg IS
+   m_global_variable  INTEGER := 1;
+   co_global_constant CONSTANT VARCHAR2(10) := 'PRIVATE';
+
+   FUNCTION f(in_1 IN INTEGER) RETURN INTEGER IS
+      l_result INTEGER;
+   BEGIN
+    l_result := in_1 * in_1;
+      RETURN l_result;
+   END f;
+
+   PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS
+   BEGIN
+      p_2 := f(in_1 => p_1);
+   END p;
+END pkg;
+/
+
+-- ### Query (default Naming Conventions)
+SET PAGESIZE 50
+SET LINESIZE 500
+COLUMN OBJECT_TYPE FORMAT A12
+COLUMN PROCEDURE_NAME FORMAT A3
+COLUMN TYPE FORMAT A10
+COLUMN NAME FORMAT A18
+COLUMN MESSAGE FORMAT A45
+COLUMN LINE FORMAT 999
+COLUMN COL FORMAT 999
+COLUMN TEXT FORMAT A57
+
+BEGIN
+   plscope_context.remove_all;
+END;
+/
+
+SELECT object_type, procedure_name, type, name, message, line, col, text
+  FROM plscope_naming
+ WHERE owner = USER
+   AND object_name = 'PKG'
+ ORDER BY object_type, line, col;  
+ 
+-- ### Query (adapted Naming Conventions) 
+
+BEGIN
+   plscope_context.set_attr('GLOBAL_VARIABLE_REGEX', '^(g|m)_.*');
+   plscope_context.set_attr('CONSTANT_REGEX',        '^(co|g)_.*');
+   plscope_context.set_attr('IN_PARAMETER_REGEX',    '^(in|p)_.*');
+   plscope_context.set_attr('OUT_PARAMETER_REGEX',   '^(out|p)_.*');
+END;
+/
+
+SELECT object_type, procedure_name, type, name, message, line, col, text
+  FROM plscope_naming
+ WHERE owner = USER
+   AND object_name = 'PKG'
+ ORDER BY object_type, line, col;  
 
 -- ## View PLSCOPE_INS_LINEAGE
 
@@ -106,7 +177,9 @@ COLUMN PROCEDURE_NAME FORMAT A18
 EXEC lineage_util.set_recursive(1);
 SELECT *
   FROM plscope_ins_lineage
- WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ WHERE owner = USER
+   AND object_name IN ('ETL', 'LOAD_FROM_TAB')
+   AND procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
  ORDER BY owner, object_type, object_name, line, col, 
        to_object_name, to_column_name, 
        from_owner, from_object_type, from_object_name, from_column_name;
@@ -116,7 +189,9 @@ SELECT *
 EXEC lineage_util.set_recursive(0);
 SELECT *
   FROM plscope_ins_lineage
- WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ WHERE owner = USER
+   AND object_name IN ('ETL', 'LOAD_FROM_TAB')
+   AND procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
  ORDER BY owner, object_type, object_name, line, col, 
        to_object_name, to_column_name, 
        from_owner, from_object_type, from_object_name, from_column_name;
