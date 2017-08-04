@@ -34,6 +34,11 @@ PROMPT ====================================================================
 ALTER SESSION SET plscope_settings='identifiers:none, statements:none';
 
 PROMPT ====================================================================
+PROMPT Context
+PROMPT ====================================================================
+@./utils/context/plscope.ctx
+
+PROMPT ====================================================================
 PROMPT Types
 PROMPT ====================================================================
 
@@ -56,6 +61,8 @@ SHOW ERRORS
 SHOW ERRORS
 @./utils/package/type_util.pks
 SHOW ERRORS
+@./utils/package/plscope_context.pks
+SHOW ERRORS
 @./utils/package/dd_util.pkb
 SHOW ERRORS
 @./utils/package/lineage_util.pkb
@@ -63,6 +70,8 @@ SHOW ERRORS
 @./utils/package/parse_util.pkb
 SHOW ERRORS
 @./utils/package/type_util.pkb
+SHOW ERRORS
+@./utils/package/plscope_context.pkb
 SHOW ERRORS
 
 PROMPT ====================================================================
@@ -79,6 +88,8 @@ SHOW ERRORS
 SHOW ERRORS
 @./utils/view/plscope_ins_lineage.sql
 SHOW ERRORS
+@./utils/view/plscope_naming.sql
+SHOW ERRORS
 
 PROMPT ====================================================================
 PROMPT Grants
@@ -89,6 +100,7 @@ GRANT SELECT ON plscope_statements TO PUBLIC;
 GRANT SELECT ON plscope_tab_usage TO PUBLIC;
 GRANT SELECT ON plscope_col_usage TO PUBLIC;
 GRANT SELECT ON plscope_ins_lineage TO PUBLIC;
+GRANT SELECT ON plscope_naming TO PUBLIC;
 GRANT EXECUTE ON dd_util TO PUBLIC;
 GRANT EXECUTE ON lineage_util TO PUBLIC;
 GRANT EXECUTE ON parse_util TO PUBLIC;
@@ -115,10 +127,12 @@ BEGIN
    cre_syn('plscope_tab_usage');
    cre_syn('plscope_col_usage');
    cre_syn('plscope_ins_lineage');
+   cre_syn('plscope_naming');
    cre_syn('dd_util');
    cre_syn('lineage_util');
    cre_syn('parse_util');
    cre_syn('type_util');
+   cre_syn('plscope_context');
 END;
 /
 
