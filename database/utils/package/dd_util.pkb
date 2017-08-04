@@ -7,7 +7,7 @@ CREATE OR REPLACE PACKAGE BODY dd_util IS
       in_parse_user IN VARCHAR2,
       in_obj        IN obj_type
    ) return obj_type IS
-      r_obj obj_type;
+      o_obj obj_type;
       CURSOR c_lookup IS
          SELECT obj_type (
                    owner       => o.owner,
@@ -18,16 +18,16 @@ CREATE OR REPLACE PACKAGE BODY dd_util IS
            JOIN dba_objects o
              ON o.owner = s.table_owner
                 AND o.object_name = s.table_name
-          WHERE s.owner = r_obj.owner
-            AND s.synonym_name = r_obj.object_name;
+          WHERE s.owner = o_obj.owner
+            AND s.synonym_name = o_obj.object_name;
    BEGIN
-      r_obj := get_object(in_parse_user => in_parse_user, in_obj => in_obj);
-      IF r_obj.object_type = 'SYNONYM' THEN
+      o_obj := get_object(in_parse_user => in_parse_user, in_obj => in_obj);
+      IF o_obj.object_type = 'SYNONYM' THEN
          OPEN c_lookup;
-         FETCH c_lookup INTO r_obj;
+         FETCH c_lookup INTO o_obj;
          CLOSE c_lookup;
       END IF;
-      RETURN r_obj;
+      RETURN o_obj;
    END resolve_synonym;
 
    --
@@ -37,7 +37,7 @@ CREATE OR REPLACE PACKAGE BODY dd_util IS
       in_parse_user IN VARCHAR2,
       in_obj        IN obj_type
    ) RETURN obj_type IS
-      r_obj obj_type;
+      o_obj obj_type;
       CURSOR c_lookup IS
          SELECT obj_type (
                    owner       => o.owner,
@@ -65,9 +65,9 @@ CREATE OR REPLACE PACKAGE BODY dd_util IS
                    END;
    BEGIN
       OPEN c_lookup;
-      FETCH c_lookup INTO r_obj;
+      FETCH c_lookup INTO o_obj;
       CLOSE c_lookup;
-      RETURN r_obj;
+      RETURN o_obj;
    END get_object;
 
    --
@@ -77,19 +77,19 @@ CREATE OR REPLACE PACKAGE BODY dd_util IS
       in_parse_user IN VARCHAR2, 
       in_t_obj      IN t_obj_type
    ) RETURN t_obj_type IS
-      r_obj    obj_type;
+      o_obj    obj_type;
       t_obj    t_obj_type := t_obj_type();
    BEGIN
       IF in_t_obj IS NOT NULL AND in_t_obj.COUNT > 0 THEN
          <<input_objects>>
          FOR i IN 1 .. in_t_obj.count LOOP
-            r_obj := get_object(
+            o_obj := get_object(
                         in_parse_user => in_parse_user, 
                         in_obj        => in_t_obj(i)
                      );
-            IF r_obj.owner IS NOT NULL THEN
+            IF o_obj.owner IS NOT NULL THEN
                t_obj.extend;
-               t_obj(t_obj.count) := r_obj;
+               t_obj(t_obj.count) := o_obj;
             END IF;
          END LOOP input_objects;
       END IF;

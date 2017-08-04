@@ -51,7 +51,7 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
    ) RETURN t_col_type IS
       l_parse_tree XMLTYPE;
       l_dep_cols   XMLTYPE;
-      r_obj        obj_type;
+      o_obj        obj_type;
       t_col        t_col_type := t_col_type();
    BEGIN
       -- parse query
@@ -78,7 +78,7 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
                                  column_name VARCHAR2(128 CHAR) PATH 'columnName'
                       )
             ) LOOP
-               r_obj := dd_util.resolve_synonym(
+               o_obj := dd_util.resolve_synonym(
                            in_parse_user => in_parse_user,
                            in_obj        => obj_type(
                                                owner       => r_dep.schema_name,
@@ -88,9 +88,9 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
                         );
                t_col.extend;
                t_col(t_col.count) := col_type(
-                                        owner       => r_obj.owner,
-                                        object_type => r_obj.object_type,
-                                        object_name => r_obj.object_name,
+                                        owner       => o_obj.owner,
+                                        object_type => o_obj.object_type,
+                                        object_name => o_obj.object_name,
                                         column_name => r_dep.column_name
                                      );
                IF in_recursive = 1 THEN
@@ -99,8 +99,8 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
                      SELECT value(p) AS col
                        FROM TABLE(
                                lineage_util.get_dep_cols_from_view(
-                                  in_owner       => r_obj.owner,
-                                  in_object_name => r_obj.object_name,
+                                  in_owner       => o_obj.owner,
+                                  in_object_name => o_obj.object_name,
                                   in_column_name => r_dep.column_name,
                                   in_recursive   => in_recursive
                                )
@@ -126,13 +126,13 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
       in_column_name IN VARCHAR2,
       in_recursive   IN INTEGER DEFAULT 1
    ) RETURN t_col_type IS
-      r_obj        obj_type;
+      o_obj        obj_type;
       l_column_id  INTEGER;
       l_query      CLOB;
       t_col        t_col_type := t_col_type();
    BEGIN
       -- resolve synonym into view
-      r_obj := dd_util.resolve_synonym(
+      o_obj := dd_util.resolve_synonym(
                   in_parse_user => in_owner,
                   in_obj        => obj_type (
                                       owner       => null,
@@ -141,14 +141,14 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
                                    )
                );
       
-      IF r_obj.object_type = 'VIEW' THEN
+      IF o_obj.object_type = 'VIEW' THEN
          l_column_id := dd_util.get_column_id(
-                           in_owner       => r_obj.owner,
-                           in_object_name => r_obj.object_name,
+                           in_owner       => o_obj.owner,
+                           in_object_name => o_obj.object_name,
                            in_column_name => in_column_name
                         );
          IF l_column_id IS NOT NULL THEN
-            l_query := dd_util.get_view_source(in_obj => r_obj);
+            l_query := dd_util.get_view_source(in_obj => o_obj);
             IF l_query IS NOT NULL THEN
                <<column_dendencies>>
                FOR r_col IN (
