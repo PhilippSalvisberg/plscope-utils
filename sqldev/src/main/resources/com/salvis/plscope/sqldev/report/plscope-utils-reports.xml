@@ -30,7 +30,7 @@
              END AS is_duplicate,
              full_text
         FROM sys.all_statements
-       WHERE owner = NVL(:OBJECT_OWNER, USER)
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    )
 SELECT CASE
           WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
@@ -53,7 +53,7 @@ SELECT CASE
  ORDER BY owner, object_type, object_name, sql_id, line, col]]></sql>
 			<binds>
 				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner]]></prompt>
+					<prompt><![CDATA[Owner like]]></prompt>
 					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
 					<value><![CDATA[NULL_VALUE]]></value>
 					<bracket><![CDATA[null]]></bracket>
@@ -254,11 +254,11 @@ SELECT CASE
    -- do not report function calls from standard package such as USER, REPLACE, SUBSTR, etc.
    AND NOT (ref_owner = 'SYS' AND ref_object_type = 'PACKAGE' AND ref_object_name = 'STANDARD')
    -- reduce scope to a single schema
-   AND owner = NVL(:OBJECT_OWNER, USER)
+   AND owner LIKE nvl(:OBJECT_OWNER, USER)
  ORDER BY owner, object_type, object_name, line, col]]></sql>
 			<binds>
 				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner]]></prompt>
+					<prompt><![CDATA[Owner like]]></prompt>
 					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
 					<value><![CDATA[NULL_VALUE]]></value>
 					<bracket><![CDATA[null]]></bracket>
@@ -403,13 +403,13 @@ SELECT CASE
        SUM(CASE WHEN operation = 'REFERENCE' THEN 1 ELSE 0 END) AS "Reference"      
   FROM plscope_tab_usage
  WHERE operation in ('SELECT','INSERT','UPDATE','DELETE','MERGE','REFERENCE')
-   AND owner = NVL(:OBJECT_OWNER, USER)
+   AND owner LIKE nvl(:OBJECT_OWNER, USER)
    AND direct_dependency = 'YES'
  GROUP by owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name
  ORDER by owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name]]></sql>
 			<binds>
 				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner]]></prompt>
+					<prompt><![CDATA[Owner like]]></prompt>
 					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
 					<value><![CDATA[NULL_VALUE]]></value>
 					<bracket><![CDATA[null]]></bracket>
@@ -600,13 +600,13 @@ SELECT CASE
        col AS "Col",
        text AS "Text" 
   FROM plscope_identifiers
- WHERE owner = NVL(:OBJECT_OWNER, USER)
+ WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    AND usage = 'DECLARATION'
    AND is_used = 'NO'
  ORDER BY owner, object_type, object_name, line, col]]></sql>
 			<binds>
 				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner]]></prompt>
+					<prompt><![CDATA[Owner like]]></prompt>
 					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
 					<value><![CDATA[NULL_VALUE]]></value>
 					<bracket><![CDATA[null]]></bracket>
@@ -635,8 +635,8 @@ SELECT CASE
 	</display>
 	<display id="9f38924a-015d-1000-8001-c0a80112c4cd" type="" style="Table" enable="true">
 		<name><![CDATA[PL/SQL Naming Conventions]]></name>
-		<description><![CDATA[Naming Conventions for PL/SQL according chapter 2.2 of the Trivadis PL/SQL & SQL Coding Guidelines V3.2]]></description>
-		<tooltip><![CDATA[]]></tooltip>
+		<description><![CDATA[Check PL/SQL identifiers based on the Trivadis PL/SQL & SQL Coding Guidelines V3.2]]></description>
+		<tooltip><![CDATA[Reports PL/SQL identifiers violationg naming conventions]]></tooltip>
 		<drillclass><![CDATA[]]></drillclass>
 		<CustomValues>
 			<TYPE><![CDATA[horizontal]]></TYPE>
@@ -655,7 +655,7 @@ SELECT CASE
              col,
              usage_context_id
         FROM sys.all_identifiers
-       WHERE owner LIKE NVL(:OBJECT_OWNER, USER)
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    ),   
    tree AS (
        SELECT ids.owner,
@@ -750,69 +750,75 @@ SELECT CASE
                      AND regexp_like(type_path, '/PACKAGE/VARIABLE/[A-Z0-9_ ]*$')
                 THEN
                    CASE 
-                      WHEN regexp_like(parent_name, :GLOBAL_VARIABLE_REGEX, 'i') THEN
+                      WHEN regexp_like(parent_name, nvl(:GLOBAL_VARIABLE_REGEX, '^g_.*'), 'i') THEN
                          'OK'
                       ELSE
-                         'Global variable should match the regular expression "' || :GLOBAL_VARIABLE_REGEX || '".'
+                         'Global variable does not match regex "' || nvl(:GLOBAL_VARIABLE_REGEX, '^g_.*') || '".'
                    END 
-                -- record variables
+                -- local record variables
                 WHEN     parent_usage = 'DECLARATION'
                      AND parent_type = 'VARIABLE'
                      AND usage = 'REFERENCE'
-                     AND (type = 'RECORD' OR regexp_like(text, :RECORD_VARIABLE_REGEX, 'i'))
+                     AND (type = 'RECORD' OR regexp_like(text, '.*%\s*rowtype.*', 'i'))
+                     AND object_type != 'TYPE'
+                     AND NOT regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                 THEN
                    CASE
-                      WHEN regexp_like(parent_name,'^r_.*', 'i') THEN
+                      WHEN regexp_like(parent_name, nvl(:LOCAL_RECORD_VARIABLE_REGEX, '^r_.*'), 'i') THEN
                          'OK'
                       ELSE
-                         'Record variable should match the regular expression "' || :RECORD_VARIABLE_REGEX || '".'
+                         'Local record variable does not match regex "' || nvl(:LOCAL_RECORD_VARIABLE_REGEX, '^r_.*') || '".'
                    END
-                -- array/table variables
+                -- local array/table variables
                 WHEN     parent_usage = 'DECLARATION'
                      AND parent_type = 'VARIABLE'
                      AND usage = 'REFERENCE'
-                     AND (type LIKE '%ARRAY' OR type LIKE '%TABLE')
+                     AND type IN ('ASSOCIATIVE ARRAY', 'VARRAY', 'INDEX TABLE', 'NESTED TABLE')
+                     AND object_type != 'TYPE'
+                     AND NOT regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                 THEN
                    CASE
-                      WHEN regexp_like(name, :ARRAY_VARIABLE_REGEX, 'i') THEN
+                      WHEN regexp_like(parent_name, nvl(:LOCAL_ARRAY_VARIABLE_REGEX, '^t_.*'), 'i') THEN
                          'OK'
                       ELSE
-                         'Array/table variable should match the regular expression "' || :ARRAY_VARIABLE_REGEX || '".'
+                         'Local array/table variable does not match regex "' || nvl(:LOCAL_ARRAY_VARIABLE_REGEX, '^t_.*') || '".'
                    END
-                -- object variables
+                -- local object variables
                 WHEN     parent_usage = 'DECLARATION'
                      AND parent_type = 'VARIABLE'
                      AND usage = 'REFERENCE'
                      AND type = 'OBJECT'
                      AND object_type != 'TYPE'
+                     AND NOT regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                 THEN
                    CASE
-                      WHEN regexp_like(parent_name, :OBJECT_VARIABLE_REGEX, 'i') THEN
+                      WHEN regexp_like(parent_name, nvl(:LOCAL_OBJECT_VARIABLE_REGEX, '^o_.*'), 'i') THEN
                          'OK'
                       ELSE
-                         'Object variables should match the regular expression "' || :OBJECT_VARIABLE_REGEX || '".'
+                         'Local object variable does not match regex "' || nvl(:LOCAL_OBJECT_VARIABLE_REGEX, '^o_.*') || '".'
                    END
                 -- local variables for other types
                 WHEN     parent_usage = 'DECLARATION'
                      AND parent_type = 'VARIABLE'
                      AND usage = 'REFERENCE'
                      AND object_type != 'TYPE'
+                     AND NOT regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                 THEN
                    CASE
-                      WHEN regexp_like(parent_name, :LOCAL_VARIABLE_REGEX, 'i') THEN
+                      WHEN regexp_like(parent_name, nvl(:LOCAL_VARIABLE_REGEX, '^l_.*'), 'i') THEN
                          'OK'
                       ELSE
-                         'Local variable should match the regular expression "' || :LOCAL_VARIABLE_REGEX || '".'
+                         'Local variable does not match regex "' || nvl(:LOCAL_VARIABLE_REGEX, '^l_.*') || '".'
                    END
                 -- cursors
                 WHEN     usage = 'DECLARATION'
                      AND type = 'CURSOR'
                 THEN
                    CASE
-                      WHEN regexp_like(name, :CURSOR_REGEX, 'i') THEN
+                      WHEN regexp_like(name, nvl(:CURSOR_REGEX, '^c_.*'), 'i') THEN
                          'OK'
                       ELSE
-                         'Cursor should match the regular expression "' || :CURSOR_REGEX || '".'
+                         'Cursor does not match regex "' || nvl(:CURSOR_REGEX, '^c_.*') || '".'
                    END
                 -- cursor parameters
                 WHEN     parent_usage = 'DECLARATION'
@@ -821,90 +827,96 @@ SELECT CASE
                      AND type LIKE 'FORMAL%'
                 THEN
                    CASE
-                      WHEN regexp_like(name, :CURSOR_PARAMETER_REGEX, 'i') THEN
+                      WHEN regexp_like(name, nvl(:CURSOR_PARAMETER_REGEX, '^p_.*'), 'i') THEN
                          'OK'
                       ELSE
-                         'Cursor parameter should match the regular expression "' || :CURSOR_PARAMETER_REGEX || '".'
+                         'Cursor parameter does not match regex "' || nvl(:CURSOR_PARAMETER_REGEX, '^p_.*') || '".'
                    END
                 -- IN parameters
                 WHEN     usage = 'DECLARATION'
-                     AND type LIKE 'FORMAL IN'
+                     AND type = 'FORMAL IN'
                 THEN
                    CASE
-                      WHEN regexp_like(name, :IN_PARAMETER_REGEX, 'i') THEN
+                      WHEN    regexp_like(name, nvl(:IN_PARAMETER_REGEX, '^in_.*'), 'i')   
+                           OR (object_type IN ('TYPE', 'TYPE BODY') AND name = 'SELF')
+                      THEN
                          'OK'
                       ELSE
-                         'IN parameter should match the regular expression "' || :IN_PARAMETER_REGEX || '".'
+                         'IN parameter does not match regex "' || nvl(:IN_PARAMETER_REGEX, '^in_.*') || '".'
                    END
                 -- OUT parameters
                 WHEN     usage = 'DECLARATION'
-                     AND type LIKE 'FORMAL OUT'
+                     AND type = 'FORMAL OUT'
                 THEN
                    CASE
-                      WHEN regexp_like(name, :OUT_PARAMETER_REGEX, 'i') THEN
+                      WHEN    regexp_like(name, nvl(:OUT_PARAMETER_REGEX, '^out_.*'), 'i')   
+                           OR (object_type IN ('TYPE', 'TYPE BODY') AND name = 'SELF')
+                      THEN
                          'OK'
                       ELSE
-                         'OUT parameter should match the regular expression "' || :OUT_PARAMETER_REGEX || '".'
+                         'OUT parameter does not match regex "' || nvl(:OUT_PARAMETER_REGEX, '^out_.*') || '".'
                    END
                 -- IN OUT parameters
                 WHEN     usage = 'DECLARATION'
-                     AND type LIKE 'FORMAL IN OUT'
+                     AND type = 'FORMAL IN OUT'
                 THEN
                    CASE
-                      WHEN regexp_like(name, :IN_OUT_PARAMETER_REGEX, 'i') THEN
+                      WHEN regexp_like(name, nvl(:IN_OUT_PARAMETER_REGEX, '^io_.*'), 'i')   
+                           OR (object_type IN ('TYPE', 'TYPE BODY') AND name = 'SELF')
+                      THEN
                          'OK'
                       ELSE
-                         'IN OUT parameter should match the regular expression "' || :IN_OUT_PARAMETER_REGEX || '".'
+                         'IN OUT parameter does not match regex "' || nvl(:IN_OUT_PARAMETER_REGEX, '^io_.*') || '".'
                    END
                 -- records
                 WHEN     usage = 'DECLARATION'
                      AND type = 'RECORD'
                 THEN
                    CASE
-                      WHEN regexp_like(name, :RECORD_REGEX, 'i') THEN
+                      WHEN regexp_like(name, nvl(:RECORD_REGEX, '^r_.*_type$'), 'i') THEN
                          'OK'
                       ELSE
-                         'Record should match the regular expression "' || :RECORD_REGEX || '".'
+                         'Record does not match regex "' || nvl(:RECORD_REGEX, '^r_.*_type$') || '".'
                    END
                 -- arrays/tables
                 WHEN     usage = 'DECLARATION'
-                     AND (type LIKE '%ARRAY' OR type LIKE '%TABLE')
+                     AND type IN ('ASSOCIATIVE ARRAY', 'VARRAY', 'INDEX TABLE', 'NESTED TABLE')
                 THEN
                    CASE
-                      WHEN regexp_like(name, :ARRAY_REGEX, 'i') THEN
+                      WHEN regexp_like(name, nvl(:ARRAY_REGEX, '^t_.*_type$'), 'i') THEN
                          'OK'
                       ELSE
-                         'Array/table should match the regular expression "' || :ARRAY_REGEX || '".'
+                         'Array/table does not match regex "' || nvl(:ARRAY_REGEX, '^t_.*_type$') || '".'
                    END
                 -- exceptions
                 WHEN     usage = 'DECLARATION'
                      AND type = 'EXCEPTION'
                 THEN
                    CASE
-                      WHEN regexp_like(name, :EXCEPTION_REGEX, 'i') THEN
+                      WHEN regexp_like(name, nvl(:EXCEPTION_REGEX, '^e_.*'), 'i') THEN
                          'OK'
                       ELSE
-                         'Exception should match the regular expression "' || :EXCEPTION_REGEX || '".'
+                         'Exception does not match regex "' || nvl(:EXCEPTION_REGEX, '^e_.*') || '".'
                    END
                 -- constants
                 WHEN     usage = 'DECLARATION'
                      AND type = 'CONSTANT'
                 THEN
                    CASE
-                      WHEN regexp_like(name, :CONSTANT_REGEX, 'i') THEN
+                      WHEN regexp_like(name, nvl(:CONSTANT_REGEX, '^co_.*'), 'i') THEN
                          'OK'
                       ELSE
-                         'Constant should match the regular expression "' || :CONSTANT_REGEX || '".'
+                         'Constant does not match regex "' || nvl(:CONSTANT_REGEX, '^co_.*') || '".'
                    END
                 -- subtypes
                 WHEN     usage = 'DECLARATION'
                      AND type = 'SUBTYPE'
                 THEN
                    CASE
-                      WHEN regexp_like(name, :SUBTYPE_REGEX, 'i') THEN
+                      WHEN regexp_like(name, nvl(:SUBTYPE_REGEX, '.*_type$'), 'i') THEN
                          'OK'
                       ELSE
-                         'Subtype should match the regular expression "' || :SUBTYPE_REGEX || '".'
+                         'Subtype does not match regex "' || nvl(:SUBTYPE_REGEX, '.*_type$') || '".'
                    END
              END AS message,
              CASE 
@@ -945,7 +957,7 @@ SELECT CASE
  ORDER BY owner, object_type, object_name, line, col]]></sql>
 			<binds>
 				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner]]></prompt>
+					<prompt><![CDATA[Owner like]]></prompt>
 					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
 					<value><![CDATA[NULL_VALUE]]></value>
 					<bracket><![CDATA[null]]></bracket>
@@ -956,21 +968,21 @@ SELECT CASE
 					<value><![CDATA[^g_.*]]></value>
 					<bracket><![CDATA[null]]></bracket>
 				</bind>
-				<bind id="RECORD_VARIABLE_REGEX">
-					<prompt><![CDATA[Record variable regex]]></prompt>
-					<tooltip><![CDATA[RECORD_VARIABLE_REGEX]]></tooltip>
+				<bind id="LOCAL_RECORD_VARIABLE_REGEX">
+					<prompt><![CDATA[Local record variable regex]]></prompt>
+					<tooltip><![CDATA[LOCAL_RECORD_VARIABLE_REGEX]]></tooltip>
 					<value><![CDATA[^r_.*]]></value>
 					<bracket><![CDATA[null]]></bracket>
 				</bind>
-				<bind id="ARRAY_VARIABLE_REGEX">
-					<prompt><![CDATA[Array/table variable regex]]></prompt>
-					<tooltip><![CDATA[ARRAY_VARIABLE_REGEX]]></tooltip>
+				<bind id="LOCAL_ARRAY_VARIABLE_REGEX">
+					<prompt><![CDATA[Local array/table variable regex]]></prompt>
+					<tooltip><![CDATA[LOCAL_ARRAY_VARIABLE_REGEX]]></tooltip>
 					<value><![CDATA[^t_.*]]></value>
 					<bracket><![CDATA[null]]></bracket>
 				</bind>
-				<bind id="OBJECT_VARIABLE_REGEX">
-					<prompt><![CDATA[Object variable regex]]></prompt>
-					<tooltip><![CDATA[OBJECT_VARIABLE_REGEX]]></tooltip>
+				<bind id="LOCAL_OBJECT_VARIABLE_REGEX">
+					<prompt><![CDATA[Local object variable regex]]></prompt>
+					<tooltip><![CDATA[LOCAL_OBJECT_VARIABLE_REGEX]]></tooltip>
 					<value><![CDATA[^o_.*]]></value>
 					<bracket><![CDATA[null]]></bracket>
 				</bind>
