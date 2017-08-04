@@ -3,10 +3,23 @@
 ## Introduction
 This component of plscope-utils extends SQL Developer by the following:
 
-- ```PL/Scope``` node in the database navigator tree;
-- ```Compile with PL/Scope``` context menu on the connection and PL/Scope node;
-- ```Identifiers```, ```Statements```, ```Used by```, ```Table Usages```and ```Column Usages``` viewers shown for tables, views and PL/SQL nodes;
-- ```CRUD Operations```, ```Duplicate SQL Statements```, ```PL/SQL Naming Conventions```, ```UDF Calls in SQL Statements``` and ```Unused Local Identifiers```reports.
+- ```PL/Scope``` node in the Connections window
+
+- ```Compile with PL/Scope``` context menu on the connection and PL/Scope node
+
+- Viewers shown for tables, views and PL/SQL nodes
+  - Identifiers
+  - Statements
+  - Used by
+  - Table Usages
+  - Column Usages
+
+- ```plscope-utils Reports``` node in the Reports window
+  - CRUD Operations
+  - Duplicate SQL Statements
+  - PL/SQL Naming Conventions
+  - UDF Calls in SQL Statements
+  - Unused Local Identifiers
 
 Requires a client side installation only. All operations are based on components available in an Oracle Database Server version 11.1. However, viewers and reports querying the ```all_statements``` view require an Oracle Database version 12.2 or higher.
 
