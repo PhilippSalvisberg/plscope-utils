@@ -71,7 +71,7 @@ WITH
         JOIN dba_tab_columns tc
           ON tc.owner = t.owner
              AND tc.table_name = coalesce(o.object_name,t.ref_object_name)
-       WHERE direct_dependency = 'YES'
+       WHERE t.direct_dependency = 'YES'
          AND c.owner IS NULL
          AND t.operation IN ('INSERT', 'SELECT')
    ),
