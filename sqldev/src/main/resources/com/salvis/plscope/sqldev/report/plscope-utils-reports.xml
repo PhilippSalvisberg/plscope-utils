@@ -624,6 +624,7 @@ SELECT CASE
                 0
              ) AS usage_context_id -- fix broken hierarchies
         FROM base_ids
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    ),
    tree AS (
        SELECT ids.owner,
@@ -729,8 +730,7 @@ SELECT CASE
        col AS "Col",
        text AS "Text" 
   FROM plscope_identifiers
- WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
-   AND usage = 'DECLARATION'
+ WHERE usage = 'DECLARATION'
    AND is_used = 'NO'
  ORDER BY owner, object_type, object_name, line, col]]></sql>
 			<binds>
