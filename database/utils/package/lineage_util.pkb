@@ -298,8 +298,7 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
             AND col.object_type     = p_object_type
             AND col.object_name     = p_object_name;
       CURSOR c_all_col (
-         p_owner       IN VARCHAR2, 
-         p_object_type IN VARCHAR2, 
+         p_owner       IN VARCHAR2,
          p_object_name IN VARCHAR2
       ) IS
          SELECT column_name
@@ -338,8 +337,7 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
                 -- no columns found, all-column wildcard expression
                 <<all_cols>>
                 FOR r_col IN c_all_col (
-                   p_owner       => r_target.owner, 
-                   p_object_type => r_target.object_type, 
+                   p_owner       => r_target.owner,
                    p_object_name => r_target.object_name
                 ) LOOP
                    t_result.extend;
