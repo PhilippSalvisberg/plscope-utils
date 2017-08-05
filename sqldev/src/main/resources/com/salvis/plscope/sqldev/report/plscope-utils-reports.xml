@@ -141,6 +141,7 @@ SELECT CASE
                 0
              ) AS usage_context_id -- fix broken hierarchies
         FROM base_ids
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    ),
    tree AS (
        SELECT ids.owner,
@@ -253,8 +254,6 @@ SELECT CASE
    AND (parent_statement_path_len >= path_len -2)
    -- do not report function calls from standard package such as USER, REPLACE, SUBSTR, etc.
    AND NOT (ref_owner = 'SYS' AND ref_object_type = 'PACKAGE' AND ref_object_name = 'STANDARD')
-   -- reduce scope to a single schema
-   AND owner LIKE nvl(:OBJECT_OWNER, USER)
  ORDER BY owner, object_type, object_name, line, col]]></sql>
 			<binds>
 				<bind id="OBJECT_OWNER">
