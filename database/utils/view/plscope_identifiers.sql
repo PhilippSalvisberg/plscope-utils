@@ -69,6 +69,7 @@ WITH
              ) AS usage_context_id, -- fix broken hierarchies
              origin_con_id
         FROM base_ids
+       WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)
    ),
    tree AS (
        SELECT ids.owner,

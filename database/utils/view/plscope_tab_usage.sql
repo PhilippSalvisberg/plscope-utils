@@ -35,7 +35,8 @@ WITH
        WHERE type IN ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
    ),
    dep_graph AS (
-      SELECT DISTINCT
+      SELECT /*+materialize */ 
+             DISTINCT
              owner,
              type                          AS object_type,
              name                          AS object_name,

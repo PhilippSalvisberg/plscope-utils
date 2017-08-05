@@ -57,6 +57,7 @@ WITH
              col,
              usage_context_id
         FROM sys.dba_identifiers
+       WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)
    ),   
    tree AS (
        SELECT ids.owner,

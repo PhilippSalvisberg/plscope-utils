@@ -40,4 +40,5 @@ SELECT owner,
        text, 
        full_text, 
        origin_con_id
-  FROM dba_statements stmt;
+  FROM dba_statements stmt
+ WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER);
