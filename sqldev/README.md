@@ -29,6 +29,7 @@ See https://www.salvis.com/blog/plscope-utils-for-sql-developer/ for screenshots
 
 * Oracle Database 11.1 or higher
 * Oracle SQL Developer 4.0 or higher
+* Access to DBA views to run reports (SELECT_CATALOG_ROLE)
 
 ## How to Build
 
