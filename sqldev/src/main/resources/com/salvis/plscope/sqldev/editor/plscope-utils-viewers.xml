@@ -302,44 +302,49 @@ SELECT CASE
 		<queries>
 			<query minversion="11.1">
 				<sql><![CDATA[
- SELECT CASE
-           WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-              'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
-                 to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' || 'Source' ||
-                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-           ELSE
-              NULL
-        END AS "Link",
-        ids.owner AS "Owner",
-        ids.object_type AS "Object type",
-        ids.object_name AS "Object name",
-        ids.usage AS "Usage",
-        ids.type AS "Type",
-        ids.name AS "Name",
-        ids.line AS "Line",
-        ids.col aS "Col",
-        (
-           SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-             FROM sys.all_source src
-            WHERE src.owner = ids.owner
-              AND src.type = ids.object_type
-              AND src.name = ids.object_name
-              AND src.line = ids.line
-        ) AS "Text"
-   FROM sys.all_identifiers ids
-   JOIN sys.all_identifiers refs
-     ON refs.signature = ids.signature
-        AND refs.usage = 'DECLARATION'
-  WHERE (refs.owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
-    AND refs.object_type = upper(replace(:OBJECT_TYPE,'plscope-utils-')) 
-    AND refs.object_name = :OBJECT_NAME
-    AND NOT (
-               ids.owner       = :OBJECT_OWNER
-           AND ids.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-           AND ids.object_name = :OBJECT_NAME
-        )
-    
-  ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
+WITH
+   refs AS (
+      SELECT /*+materialize */ 
+             signature
+        FROM sys.all_identifiers refs
+       WHERE usage = 'DECLARATION'
+         AND (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
+         AND object_type = upper(replace(:OBJECT_TYPE,'plscope-utils-')) 
+         AND object_name = :OBJECT_NAME
+   )
+SELECT CASE
+          WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
+                to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' || 'Source' ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             NULL
+       END AS "Link",
+       ids.owner AS "Owner",
+       ids.object_type AS "Object type",
+       ids.object_name AS "Object name",
+       ids.usage AS "Usage",
+       ids.type AS "Type",
+       ids.name AS "Name",
+       ids.line AS "Line",
+       ids.col aS "Col",
+       (
+          SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
+            FROM sys.all_source src
+           WHERE src.owner = ids.owner
+             AND src.type = ids.object_type
+             AND src.name = ids.object_name
+             AND src.line = ids.line
+       ) AS "Text"
+  FROM refs
+  JOIN sys.all_identifiers ids
+    ON ids.signature = refs.signature
+ WHERE NOT (
+              ids.owner       = :OBJECT_OWNER
+          AND ids.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+          AND ids.object_name = :OBJECT_NAME
+       )   
+ ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
 				]]></sql>
 			</query>
 		</queries>
@@ -432,7 +437,8 @@ WITH
               AND PRIOR ids.object_name = ids.object_name
    ), 
    plscope_identifiers AS (
-      SELECT tree.owner,
+      SELECT /*+use_hash(tree) use_hash(refs) */
+             tree.owner,
              tree.object_type,
              tree.object_name,
              last_value (
@@ -517,8 +523,9 @@ WITH
               AND PRIOR dep.type  = dep.referenced_type
               AND PRIOR dep.name  = dep.referenced_name
    ),
-   tab_usage AS (
-      SELECT ids.owner,
+   plscope_tab_usage AS (
+      SELECT /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
+             ids.owner,
              ids.object_type,
              ids.object_name,
              ids.line,
@@ -571,7 +578,7 @@ SELECT CASE
        line AS "Line",
        col AS "Col",
        text AS "Text"
-  FROM tab_usage
+  FROM plscope_tab_usage
  WHERE (ref_object_type != 'SYNONYM' OR next_ref_object_type_path IN ('/VIEW/SYNONYM','/TABLE/SYNONYM'))
        -- resolve synonyms as indirect dependencies only (do not resolve table usages in views)
    AND (path_len = 1 OR path_len = 2 AND ref_object_type_path LIKE '%SYNONYM')
@@ -668,7 +675,8 @@ WITH
               AND PRIOR ids.object_name = ids.object_name
    ), 
    plscope_identifiers AS (
-      SELECT tree.owner,
+      SELECT /*+use_hash(tree) use_hash(refs) */
+             tree.owner,
              tree.object_type,
              tree.object_name,
              last_value (
@@ -743,7 +751,8 @@ WITH
               AND PRIOR dep.name  = dep.referenced_name
    ),
    plscope_tab_usage AS (
-      SELECT ids.owner,
+      SELECT /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
+             ids.owner,
              ids.object_type,
              ids.object_name,
              ids.line,
@@ -776,7 +785,8 @@ WITH
          AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'))
    ),
    scope_cols AS (
-      SELECT ids.owner,
+      SELECT /*+use_hash(ids) use_hash(refs) */
+             ids.owner,
              ids.object_type,
              ids.object_name,
              ids.line,
@@ -800,7 +810,8 @@ WITH
          AND ids.usage != 'DECLARATION'
    ),
    missing_cols AS (
-      SELECT t.owner,
+      SELECT /*+use_hash(t) use_hash(s) use_hash(o) use_hash(c) use_hash(tc) */
+             t.owner,
              t.object_type,
              t.object_name,
              t.line,
