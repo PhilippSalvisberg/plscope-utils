@@ -292,6 +292,99 @@ SELECT CASE
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
+		objectType="FUNCTION,PACKAGE,PROCEDURE,TRIGGER,TYPE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-trigger,plscope-utils-type">
+		<name><![CDATA[Uses]]></name>
+		<description><![CDATA[]]>
+		</description>
+		<tooltip><![CDATA[]]>
+		</tooltip>
+		<drillclass><![CDATA[null]]></drillclass>
+		<queries>
+			<query minversion="11.1">
+				<sql><![CDATA[
+WITH
+   ids AS (
+      SELECT /*+materialize */
+             owner,
+             object_type,
+             object_name,
+             signature,
+             usage,
+             type,
+             name,
+             line,
+             col
+        FROM sys.all_identifiers
+       WHERE usage IN ('CALL','REFERENCE')
+         AND (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
+         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')
+         AND object_name = :OBJECT_NAME
+   )
+SELECT CASE
+          WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
+                to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' || 'Source' ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             NULL
+       END AS "Link",
+       CASE
+          WHEN refs.object_type = 'SYNONYM' THEN
+             s.table_owner
+          ELSE
+             refs.owner
+       END AS "Owner",
+       CASE
+          WHEN refs.object_type = 'SYNONYM' THEN
+             o.object_type
+          ELSE
+             refs.object_type
+       END AS "Object type",
+       CASE
+          WHEN refs.object_type = 'SYNONYM' THEN
+             s.table_name
+          ELSE
+             refs.object_name
+       END AS "Object name",
+       ids.usage AS "Usage",
+       ids.type AS "Type",
+       ids.name AS "Name",
+       ids.line AS "Line",
+       ids.col aS "Col",
+       (
+          SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
+            FROM sys.all_source src
+           WHERE src.owner = ids.owner
+             AND src.type = ids.object_type
+             AND src.name = ids.object_name
+             AND src.line = ids.line
+       ) AS "Text"
+  from ids
+  JOIN sys.all_identifiers refs
+    ON ids.signature = refs.signature
+  LEFT JOIN sys.all_synonyms s
+    ON s.owner = refs.owner
+       AND s.synonym_name = refs.object_name
+  LEFT JOIN sys.all_objects o
+    ON o.owner = s.table_owner
+       AND o.object_name = s.table_name
+ WHERE refs.usage = 'DECLARATION'
+   AND NOT (
+              refs.owner       = :OBJECT_OWNER
+          AND refs.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+          AND refs.object_name = :OBJECT_NAME
+       )
+   AND NOT (
+              refs.owner = 'SYS'
+          AND refs.object_type = 'PACKAGE'
+          AND refs.object_name = 'STANDARD'
+       )
+ ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
+				]]></sql>
+			</query>
+		</queries>
+	</display>
+	<display type="editor" style="null" enable="true" connType="Oracle"
 		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view">
 		<name><![CDATA[Used by]]></name>
 		<description><![CDATA[]]>
