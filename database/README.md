@@ -85,7 +85,7 @@ Here's an example to set the context to a chosen PL/SQL package of the [Alexandr
 	EXEC plscope_context.set_attr('OBJECT_NAME', 'APEX_UTIL_PKG');
  
 
-### View PLSCOPE\_IDENTIFIERS
+### [View PLSCOPE\_IDENTIFIERS](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_identifiers.sql)
 
 This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_source``` views. It provides all columns from ```dba_identifiers``` plus the following:
 
@@ -140,7 +140,7 @@ Column Name           | Description
 	19 rows selected.
 
 
-### View PLSCOPE\_STATEMENTS
+### [View PLSCOPE\_STATEMENTS](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_statements.sql)
 
 This view is based on the ```dba_statements``` view and adds a ```is_duplicate``` column.
 
@@ -166,7 +166,7 @@ The [etl](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/databas
 
 	  12    4 COMMIT                  NO           
 
-### View PLSCOPE\_TAB\_USAGE
+### [View PLSCOPE\_TAB\_USAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_tab_usage.sql)
 
 This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```. Usages of synonyms and views are resolved and reporteded with a ```NO``` in the column ```DIRECT_DEPENDENCY```.
 
@@ -196,7 +196,7 @@ This view reports table usages. It is based on the views ```dba_tables```, ```db
 	11 rows selected. 
 
 
-### View PLSCOPE\_COL\_USAGE
+### [View PLSCOPE\_COL\_USAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_col_usage.sql)
 
 This view reports column usages. It is based on the views ```plscope_identifiers```, ```plscope_tab_usage```, ```dba_synonyms```, ```dba_objects``` and ```dba_tab_columns```. Column-less table/view/synonym accesses are resolved and reporteded with a ```NO``` in the column ```DIRECT_DEPENDENCY```.
 
@@ -248,7 +248,7 @@ This view reports column usages. It is based on the views ```plscope_identifiers
 	
 	34 rows selected.
 	
-### View PLSCOPE\_NAMING
+### [View PLSCOPE\_NAMING](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_naming.sql)
 
 This view checks if PL/SQL identifier names comply to the [Trivadis PL/SQL & SQL Coding Guidelines Version 3.2](https://www.salvis.com/download/guidelines/PLSQL_and_SQL_Coding_Guidelines_3_2.pdf). This view provides chosen columns from ```dba_identifiers``` plus the following:
 
@@ -367,7 +367,7 @@ If you are interested in naming convention violations only extend the where clau
 
 	EXEC plscope_context.remove_all;
 
-### View PLSCOPE\_INS\_LINEAGE
+### [View PLSCOPE\_INS\_LINEAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_ins_lineage.sql)
 
 **_Experimental_**
 
