@@ -66,6 +66,25 @@ The following example is based on demo [tables](https://github.com/PhilippSalvis
 	END load_from_tab;
 	/
 
+### Set Session Context (optional)
+
+All views are filtered by the following session context attributes:
+
+Attribute | Default Value (when NULL) | Predicate used in views
+--------- | ------------------------- | -----------------------
+OWNER | ```USER``` | ```owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)```
+OBJECT_TYPE | ```%``` | ```object_type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')```
+OBJECT_NAME | ```%``` | ```object_name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')```
+
+The filter is applied in the views as early as possible to improve runtime performance. You may set the ```OWNER``` attribute to ```%``` and filter the owner in the where clause, e.g. to analyse several schemas in one go. 
+
+Here's an example to set the context to a chosen PL/SQL package of the [Alexandria PL/SQL Utility Library](https://github.com/mortenbra/alexandria-plsql-utils):
+
+	EXEC plscope_context.set_attr('OWNER', 'AX');
+	EXEC plscope_context.set_attr('OBJECT_TYPE', 'PACKAGE%');
+	EXEC plscope_context.set_attr('OBJECT_NAME', 'APEX_UTIL_PKG');
+ 
+
 ### View PLSCOPE\_IDENTIFIERS
 
 This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_source``` views. It provides all columns from ```dba_identifiers``` plus the following:
