@@ -42,5 +42,6 @@ SELECT ids.owner,
        l.to_object_type, 
        l.to_object_name, 
        l.to_column_name
-  FROM ids,
+  FROM ids
+ CROSS JOIN
        TABLE(lineage_util.get_dep_cols_from_insert(ids.signature)) l;
