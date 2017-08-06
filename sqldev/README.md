@@ -10,6 +10,7 @@ This component of plscope-utils extends SQL Developer by the following:
 - Viewers shown for tables, views and PL/SQL nodes
   - Identifiers
   - Statements
+  - Uses
   - Used by
   - Table Usages
   - Column Usages
