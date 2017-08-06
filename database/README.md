@@ -70,8 +70,8 @@ The following example is based on demo [tables](https://github.com/PhilippSalvis
 
 All views are filtered by the following session context attributes:
 
-Attribute | Default Value (when NULL) | Predicate used in views
---------- | ------------------------- | -----------------------
+Attribute | Default Value | Predicate used in views
+--------- | ------------- | -----------------------
 OWNER | ```USER``` | ```owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)```
 OBJECT_TYPE | ```%``` | ```object_type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')```
 OBJECT_NAME | ```%``` | ```object_name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')```
