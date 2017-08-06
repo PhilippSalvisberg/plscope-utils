@@ -17,7 +17,8 @@
 CREATE OR REPLACE VIEW plscope_col_usage AS
 WITH
    scope_cols AS (
-      SELECT ids.owner,
+      SELECT /*+use_hash(ids) use_hash(refs) */
+             ids.owner,
              ids.object_type,
              ids.object_name,
              ids.line,
@@ -41,7 +42,8 @@ WITH
          AND ids.usage != 'DECLARATION'
    ),
    missing_cols AS (
-      SELECT t.owner,
+      SELECT /*+use_hash(t) use_hash(s) use_hash(o) use_hash(c) use_hash(tc) */
+             t.owner,
              t.object_type,
              t.object_name,
              t.line,
@@ -134,7 +136,8 @@ SELECT c.owner,
        d.column_name,
        'NO' AS direct_dependency,
        c.text
-  FROM base_cols c,
+  FROM base_cols c
+ CROSS JOIN
        TABLE(
           lineage_util.get_dep_cols_from_view(
              in_owner       => c.ref_owner,

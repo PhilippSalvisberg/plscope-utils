@@ -51,7 +51,8 @@ WITH
               AND PRIOR dep.name  = dep.referenced_name
    ),
    tab_usage AS (
-      SELECT ids.owner,
+      SELECT /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
+             ids.owner,
              ids.object_type,
              ids.object_name,
              ids.line,
