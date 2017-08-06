@@ -105,6 +105,7 @@ GRANT EXECUTE ON dd_util TO PUBLIC;
 GRANT EXECUTE ON lineage_util TO PUBLIC;
 GRANT EXECUTE ON parse_util TO PUBLIC;
 GRANT EXECUTE ON type_util TO PUBLIC;
+GRANT EXECUTE ON plscope_context TO PUBLIC;
 
 PROMPT ====================================================================
 PROMPT Synonyms
