@@ -70,6 +70,8 @@ WITH
              origin_con_id
         FROM base_ids
        WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)
+         AND object_type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+         AND object_name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
    ),
    tree AS (
        SELECT ids.owner,
@@ -93,7 +95,8 @@ WITH
               AND PRIOR ids.object_type = ids.object_type
               AND PRIOR ids.object_name = ids.object_name
    )
- SELECT tree.owner,
+ SELECT /*+use_hash(tree) use_hash(refs) */
+        tree.owner,
         tree.object_type,
         tree.object_name,
         tree.line,

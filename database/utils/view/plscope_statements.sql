@@ -41,4 +41,6 @@ SELECT owner,
        full_text, 
        origin_con_id
   FROM dba_statements stmt
- WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER);
+ WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)
+   AND object_type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+   AND object_name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%');
