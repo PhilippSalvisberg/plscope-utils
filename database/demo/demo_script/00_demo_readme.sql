@@ -48,7 +48,6 @@ SELECT procedure_name, line, col, name, name_path, path_len, type, usage,
        text, parent_statement_type, parent_statement_signature, signature
   FROM plscope_identifiers
  WHERE object_name = 'LOAD_FROM_TAB'
-   AND owner = USER
  ORDER BY line, col;
  
 -- ## View PLSCOPE_STATEMENTS
@@ -61,7 +60,6 @@ COLUMN IS_DUPLICATE FORMAT A12
 SELECT line, col, type, sql_id, is_duplicate, full_text
   FROM plscope_statements S
  WHERE object_name = 'LOAD_FROM_TAB'
-   AND owner = USER
  ORDER BY owner, object_type, object_name, line, col;
  
 -- ## View PLSCOPE_TAB_USAGE
@@ -74,7 +72,6 @@ COLUMN PROCEDURE_NAME FORMAT A18
 SELECT * 
   FROM plscope_tab_usage
  WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
-   AND owner = USER
  ORDER BY owner, object_type, object_name, line, col, direct_dependency;
 
 -- ## View PLSCOPE_COL_USAGE
@@ -88,7 +85,6 @@ COLUMN OPERATION FORMAT A9
 SELECT * 
   FROM plscope_col_usage
  WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
-   AND owner = USER
  ORDER BY owner, object_type, object_name, line, col, direct_dependency;
  
 -- ## View PLSCOPE_NAMING
@@ -139,8 +135,7 @@ END;
 
 SELECT object_type, procedure_name, type, name, message, line, col, text
   FROM plscope_naming
- WHERE owner = USER
-   AND object_name = 'PKG'
+ WHERE object_name = 'PKG'
  ORDER BY object_type, line, col;  
  
 -- ### Query (adapted Naming Conventions) 
@@ -177,8 +172,7 @@ COLUMN PROCEDURE_NAME FORMAT A18
 EXEC lineage_util.set_recursive(1);
 SELECT *
   FROM plscope_ins_lineage
- WHERE owner = USER
-   AND object_name IN ('ETL', 'LOAD_FROM_TAB')
+ WHERE object_name IN ('ETL', 'LOAD_FROM_TAB')
    AND procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
  ORDER BY owner, object_type, object_name, line, col, 
        to_object_name, to_column_name, 
@@ -189,8 +183,7 @@ SELECT *
 EXEC lineage_util.set_recursive(0);
 SELECT *
   FROM plscope_ins_lineage
- WHERE owner = USER
-   AND object_name IN ('ETL', 'LOAD_FROM_TAB')
+ WHERE object_name IN ('ETL', 'LOAD_FROM_TAB')
    AND procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
  ORDER BY owner, object_type, object_name, line, col, 
        to_object_name, to_column_name, 

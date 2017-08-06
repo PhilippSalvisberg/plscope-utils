@@ -1,6 +1,6 @@
 -- 1. parse the insert statement using sys.utl_xml.parsequery
-SELECT full_text, parse_util.parse_query(in_parse_user => owner, in_query => full_text) 
-  FROM all_statements
+SELECT full_text, parse_util.parse_query(in_parse_user => USER, in_query => full_text) 
+  FROM user_statements
  WHERE type = 'INSERT'
    AND object_name = 'LOAD_FROM_TAB'
    AND type = 'INSERT';
@@ -8,7 +8,7 @@ SELECT full_text, parse_util.parse_query(in_parse_user => owner, in_query => ful
 -- 2. get taget tables via XQuery
 SELECT t.schema_name,
        t.table_name
-  FROM all_statements s
+  FROM user_statements s
  CROSS JOIN
        xmltable(q'{
                      for $tar in /QUERY/FROM/FROM_ITEM
@@ -18,7 +18,7 @@ SELECT t.schema_name,
                            <tableName>{$tar/TABLE/text()}</tableName>
                         </target>
                   }'
-          PASSING parse_util.parse_query(in_parse_user => s.owner, in_query => s.full_text)
+          PASSING parse_util.parse_query(in_parse_user => USER, in_query => s.full_text)
           COLUMNS schema_name VARCHAR2(128 CHAR) PATH '/target/schemaName',
                   table_name  VARCHAR2(128 CHAR) PATH '/target/tableName'
        ) t
@@ -28,21 +28,21 @@ SELECT t.schema_name,
 
 -- 3. get target tables from table function
 SELECT t.* 
-  FROM all_statements s
+  FROM user_statements s
  CROSS JOIN
-       TABLE(parse_util.get_insert_targets(in_parse_user => s.owner, in_sql => s.full_text)) t
+       TABLE(parse_util.get_insert_targets(in_parse_user => USER, in_sql => s.full_text)) t
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB';
          
 -- 4. get fully qualified target tables from table functions
 SELECT t.* 
-  FROM all_statements s
+  FROM user_statements s
  CROSS JOIN
        TABLE(
           dd_util.get_objects(
-             in_parse_user => s.owner, 
+             in_parse_user => USER, 
              in_t_obj      => parse_util.get_insert_targets(
-                                 in_parse_user => s.owner, 
+                                 in_parse_user => USER, 
                                  in_sql        => s.full_text
                               )
              )
@@ -53,13 +53,13 @@ SELECT t.*
 -- 5. get subquery from insert statement
 SELECT s.full_text, 
        regexp_substr(s.full_text, '(\s|\()+SELECT\s+(.+)', 1, 1, 'i') AS subquery 
-  FROM all_statements s
+  FROM user_statements s
  CROSS JOIN
        TABLE(
           dd_util.get_objects(
-             in_parse_user => s.owner, 
+             in_parse_user => USER, 
              in_t_obj      => parse_util.get_insert_targets(
-                                 in_parse_user => s.owner, 
+                                 in_parse_user => USER, 
                                  in_sql        => s.full_text
                               )
           )
@@ -70,13 +70,13 @@ SELECT s.full_text,
 -- 6. get subquery from function, handling more cases (e.g. with_clause, error_logging_clause)    
 SELECT s.full_text, 
        parse_util.get_insert_subquery(in_sql => s.full_text) AS subquery 
-  FROM all_statements s
+  FROM user_statements s
  CROSS JOIN
        TABLE(
           dd_util.get_objects(
-             in_parse_user => s.owner, 
+             in_parse_user => USER, 
              in_t_obj      => parse_util.get_insert_targets(
-                                 in_parse_user => s.owner, 
+                                 in_parse_user => USER, 
                                  in_sql => s.full_text
                               )
           )
@@ -87,10 +87,10 @@ SELECT s.full_text,
 -- 7. parse the subquery using sys.utl_xml.parsequery
 SELECT full_text, 
        parse_util.parse_query(
-          in_parse_user => s.owner, 
+          in_parse_user => USER, 
           in_query => parse_util.get_insert_subquery(in_sql => s.full_text)
        ) 
-  FROM all_statements s
+  FROM user_statements s
  WHERE s.type = 'INSERT'
    AND s.object_name = 'LOAD_FROM_TAB'
    AND type = 'INSERT';
@@ -99,7 +99,7 @@ SELECT full_text,
 SELECT t.schema_name,
        t.table_name,
        t.column_name
-  FROM all_statements s
+  FROM user_statements s
  CROSS JOIN
        xmltable(q'{
                      declare function local:analyze-col($col as element()) as element()* {
@@ -164,7 +164,7 @@ SELECT t.schema_name,
                      return $res
                   }'
           PASSING parse_util.parse_query(
-                     in_parse_user => s.owner, 
+                     in_parse_user => USER, 
                      in_query      => parse_util.get_insert_subquery(in_sql => s.full_text)
                   ), 
                   3 AS "columnPos" 
@@ -184,7 +184,7 @@ SELECT l.owner,
  CROSS JOIN
        TABLE(
           lineage_util.get_dep_cols_from_query(
-             in_parse_user => s.owner, 
+             in_parse_user => USER, 
              in_query      => parse_util.get_insert_subquery(in_sql => s.full_text), 
              in_column_pos => 3
            )
@@ -220,7 +220,6 @@ SELECT line, col,
 -- 12. where-lineage of all insert statements collected by PL/Scope (default behaviour)
 SELECT *
   FROM plscope_ins_lineage
- WHERE owner = USER
  ORDER BY owner, object_type, object_name, line, col, 
        to_object_name, to_column_name, 
        from_owner, from_object_type, from_object_name, from_column_name;
@@ -229,7 +228,6 @@ SELECT *
 EXEC lineage_util.set_recursive(0);
 SELECT *
   FROM plscope_ins_lineage
- WHERE owner = USER
  ORDER BY owner, object_type, object_name, line, col, 
        to_object_name, to_column_name, 
        from_owner, from_object_type, from_object_name, from_column_name;
@@ -238,8 +236,7 @@ SELECT *
 EXEC lineage_util.set_recursive(1);
 SELECT *
   FROM plscope_ins_lineage
- WHERE owner = USER
-   AND from_object_type = 'TABLE' 
+ WHERE from_object_type = 'TABLE' 
  ORDER BY owner, object_type, object_name, line, col, 
        to_object_name, to_column_name, 
        from_owner, from_object_type, from_object_name, from_column_name;
