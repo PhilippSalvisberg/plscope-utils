@@ -5,7 +5,7 @@
 	<!-- The Basics -->
 	<groupId>com.salvis</groupId>
 	<artifactId>com.salvis.plscope.sqldev</artifactId>
-	<version>0.5.0</version>
+	<version>0.6.0-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -68,11 +68,11 @@
 					<execution>
 						<phase>prepare-package</phase>
 						<configuration>
-							<tasks>
+							<target>
 								<copy failonerror="true" file="sqldeveloper.xml" tofile="target/sqldeveloper.xml" />
 								<copy failonerror="true" file="bundle.xml" tofile="target/bundle.xml" />
 								<copy failonerror="true" file="extension.xml" tofile="target/classes/META-INF/extension.xml" />
-							</tasks>
+							</target>
 						</configuration>
 						<goals>
 							<goal>run</goal>
@@ -103,7 +103,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>1.12</version>
+				<version>3.0.0</version>
 				<executions>
 					<execution>
 						<id>parse-version</id>
@@ -162,7 +162,7 @@
 			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>3.3.0</version>
 				<extensions>true</extensions>
 				<configuration>
 					<finalName>${project.name}</finalName>
@@ -188,7 +188,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
-				<version>2.6</version>
+				<version>3.0.0</version>
 				<configuration>
 					<finalName>${final.name}</finalName>
 					<appendAssemblyId>false</appendAssemblyId>
@@ -221,7 +221,7 @@
 									<pluginExecutionFilter>
 										<groupId>org.apache.maven.plugins</groupId>
 										<artifactId>maven-dependency-plugin</artifactId>
-										<versionRange>[2.10,)</versionRange>
+										<versionRange>[3.0.1,)</versionRange>
 										<goals>
 											<goal>copy-dependencies</goal>
 										</goals>
@@ -239,7 +239,7 @@
 											build-helper-maven-plugin
 										</artifactId>
 										<versionRange>
-											[1.12,)
+											[3.0.0,)
 										</versionRange>
 										<goals>
 											<goal>parse-version</goal>
@@ -302,10 +302,4 @@
 		<tag>master</tag>
 		<url>https://github.com/PhilippSalvisberg/plscope-utils/</url>
 	</scm>
-	<prerequisites>
-		<!-- SQL Developer 4.2.0 installation for Oracle dependencies, see sqldev.basedir -->
-		<!-- JDK 1.7 to ensure compatiblity to SQL Developer 4.0.x, using JDK 1.8 with target 1.7 should be OK -->
-		<maven>3.5.0</maven>
-	</prerequisites>
-
 </project>
