@@ -8,14 +8,14 @@
 	<fileSets>
 		<fileSet>
 			<directory>${project.build.directory}</directory>
-			<outputDirectory>/</outputDirectory>
+			<outputDirectory>${file.separator}</outputDirectory>
 			<includes>
 				<include>${project.name}.jar</include>
 			</includes>
 		</fileSet>
 		<fileSet>
 			<directory>${project.build.directory}</directory>
-			<outputDirectory>/META-INF</outputDirectory>
+			<outputDirectory>${file.separator}META-INF</outputDirectory>
 			<includes>
 				<include>bundle.xml</include>
 			</includes>
