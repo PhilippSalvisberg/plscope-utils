@@ -12,8 +12,8 @@ BEGIN
    SELECT /*+ordered */
           d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
     FROM dept d
-    LEFT JOIN (SELECT * 
-                 FROM emp 
+    LEFT JOIN (SELECT *
+                 FROM emp
                 WHERE hiredate > DATE '1980-01-01') e
       ON e.deptno = d.deptno
    GROUP BY d.deptno, d.dname;
@@ -43,13 +43,13 @@ COLUMN TEXT FORMAT A63
 COLUMN PARENT_STATEMENT_TYPE FORMAT A21
 COLUMN PARENT_STATEMENT_SIGNATURE FORMAT A32
 COLUMN SIGNATURE FORMAT A32
-SELECT procedure_name, line, col, name, name_path, path_len, type, usage, 
+SELECT procedure_name, line, col, name, name_path, path_len, type, usage,
        ref_owner, ref_object_type, ref_object_name,
        text, parent_statement_type, parent_statement_signature, signature
   FROM plscope_identifiers
  WHERE object_name = 'LOAD_FROM_TAB'
  ORDER BY line, col;
- 
+
 -- ## View PLSCOPE_STATEMENTS
 
 -- ### Query
@@ -61,7 +61,7 @@ SELECT line, col, type, sql_id, is_duplicate, full_text
   FROM plscope_statements S
  WHERE object_name = 'LOAD_FROM_TAB'
  ORDER BY owner, object_type, object_name, line, col;
- 
+
 -- ## View PLSCOPE_TAB_USAGE
 
 -- ### Query
@@ -69,7 +69,7 @@ SELECT line, col, type, sql_id, is_duplicate, full_text
 COLUMN TEXT FORMAT A81
 COLUMN DIRECT_DEPENDENCY FORMAT A17
 COLUMN PROCEDURE_NAME FORMAT A18
-SELECT * 
+SELECT *
   FROM plscope_tab_usage
  WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
  ORDER BY owner, object_type, object_name, line, col, direct_dependency;
@@ -82,11 +82,11 @@ COLUMN TEXT FORMAT A81
 COLUMN COLUMN_NAME FORMAT A11
 COLUMN OBJECT_NAME FORMAT A13
 COLUMN OPERATION FORMAT A9
-SELECT * 
+SELECT *
   FROM plscope_col_usage
  WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
  ORDER BY owner, object_type, object_name, line, col, direct_dependency;
- 
+
 -- ## View PLSCOPE_NAMING
 
 -- ### Create/compile a package
@@ -136,9 +136,9 @@ END;
 SELECT object_type, procedure_name, type, name, message, line, col, text
   FROM plscope_naming
  WHERE object_name = 'PKG'
- ORDER BY object_type, line, col;  
- 
--- ### Query (adapted Naming Conventions) 
+ ORDER BY object_type, line, col;
+
+-- ### Query (adapted Naming Conventions)
 
 BEGIN
    plscope_context.set_attr('GLOBAL_VARIABLE_REGEX', '^(g|m)_.*');
@@ -152,7 +152,7 @@ SELECT object_type, procedure_name, type, name, message, line, col, text
   FROM plscope_naming
  WHERE owner = USER
    AND object_name = 'PKG'
- ORDER BY object_type, line, col;  
+ ORDER BY object_type, line, col;
 
 -- ## View PLSCOPE_INS_LINEAGE
 
@@ -174,8 +174,8 @@ SELECT *
   FROM plscope_ins_lineage
  WHERE object_name IN ('ETL', 'LOAD_FROM_TAB')
    AND procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
- ORDER BY owner, object_type, object_name, line, col, 
-       to_object_name, to_column_name, 
+ ORDER BY owner, object_type, object_name, line, col,
+       to_object_name, to_column_name,
        from_owner, from_object_type, from_object_name, from_column_name;
 
 -- ### Query (non-recursive)
@@ -185,8 +185,8 @@ SELECT *
   FROM plscope_ins_lineage
  WHERE object_name IN ('ETL', 'LOAD_FROM_TAB')
    AND procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
- ORDER BY owner, object_type, object_name, line, col, 
-       to_object_name, to_column_name, 
+ ORDER BY owner, object_type, object_name, line, col,
+       to_object_name, to_column_name,
        from_owner, from_object_type, from_object_name, from_column_name;
 
 EXEC lineage_util.set_recursive(1);
