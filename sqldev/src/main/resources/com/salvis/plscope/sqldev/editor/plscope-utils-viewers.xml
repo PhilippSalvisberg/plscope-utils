@@ -30,7 +30,7 @@ WITH
        WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND name = :OBJECT_NAME 
    ),
-   base_ids AS (
+   prep_ids AS (
       SELECT owner,
              name,
              signature,
@@ -57,6 +57,48 @@ WITH
              usage_context_id
        FROM sys.all_statements
    ),
+   fids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id
+        FROM prep_ids
+       WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
+         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND object_name = :OBJECT_NAME
+   ),
+   base_ids AS (
+      SELECT fids.owner,
+             fids.name,
+             fids.signature,
+             fids.type,
+             fids.object_name,
+             fids.object_type,
+             fids.usage,
+             fids.usage_id,
+             CASE
+                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS sane_fk,
+             fids.line,
+             fids.col,
+             fids.usage_context_id
+        FROM fids
+        LEFT JOIN fids fk
+          ON fk.owner = fids.owner
+             AND fk.object_type = fids.object_type
+             AND fk.object_name = fids.object_name
+             AND fk.usage_id = fids.usage_context_id
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -68,21 +110,17 @@ WITH
              usage_id,
              line,
              col,
-             coalesce(
-                least(
-                   usage_context_id,
-                   max(usage_id) over (
+             CASE
+                WHEN sane_fk = 'YES' THEN
+                   usage_context_id
+                ELSE
+                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
                       PARTITION BY owner, object_name, object_type
-                      ORDER BY usage_id
+                      ORDER BY line, col
                       ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
                    )
-                ),
-                0
-             ) AS usage_context_id -- fix broken hierarchies
+             END AS usage_context_id -- fix broken hierarchies
         FROM base_ids
-       WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
-         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND object_name = :OBJECT_NAME
    ),
    tree AS (
        SELECT ids.owner,
@@ -166,6 +204,48 @@ WITH
        WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND name = :OBJECT_NAME 
    ),
+   fids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id
+        FROM prep_ids
+       WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
+         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND object_name = :OBJECT_NAME
+   ),
+   base_ids AS (
+      SELECT fids.owner,
+             fids.name,
+             fids.signature,
+             fids.type,
+             fids.object_name,
+             fids.object_type,
+             fids.usage,
+             fids.usage_id,
+             CASE
+                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS sane_fk,
+             fids.line,
+             fids.col,
+             fids.usage_context_id
+        FROM fids
+        LEFT JOIN fids fk
+          ON fk.owner = fids.owner
+             AND fk.object_type = fids.object_type
+             AND fk.object_name = fids.object_name
+             AND fk.usage_id = fids.usage_context_id
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -177,21 +257,17 @@ WITH
              usage_id,
              line,
              col,
-             coalesce(
-                least(
-                   usage_context_id,
-                   max(usage_id) over (
+             CASE
+                WHEN sane_fk = 'YES' THEN
+                   usage_context_id
+                ELSE
+                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
                       PARTITION BY owner, object_name, object_type
-                      ORDER BY usage_id
+                      ORDER BY line, col
                       ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
                    )
-                ),
-                0
-             ) AS usage_context_id -- fix broken hierarchies
-        FROM sys.all_identifiers
-       WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
-         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND object_name = :OBJECT_NAME
+             END AS usage_context_id -- fix broken hierarchies
+        FROM base_ids
    ),
    tree AS (
        SELECT ids.owner,
@@ -501,7 +577,7 @@ WITH
        WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND name = :OBJECT_NAME 
    ),
-   base_ids AS (
+   prep_ids AS (
       SELECT owner,
              name,
              signature,
@@ -528,6 +604,48 @@ WITH
              usage_context_id
        FROM sys.all_statements
    ),
+   fids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id
+        FROM prep_ids
+       WHERE owner       = :OBJECT_OWNER
+         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND object_name = :OBJECT_NAME
+   ),
+   base_ids AS (
+      SELECT fids.owner,
+             fids.name,
+             fids.signature,
+             fids.type,
+             fids.object_name,
+             fids.object_type,
+             fids.usage,
+             fids.usage_id,
+             CASE
+                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS sane_fk,
+             fids.line,
+             fids.col,
+             fids.usage_context_id
+        FROM fids
+        LEFT JOIN fids fk
+          ON fk.owner = fids.owner
+             AND fk.object_type = fids.object_type
+             AND fk.object_name = fids.object_name
+             AND fk.usage_id = fids.usage_context_id
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -539,21 +657,17 @@ WITH
              usage_id,
              line,
              col,
-             coalesce(
-                least(
-                   usage_context_id,
-                   max(usage_id) over (
+             CASE
+                WHEN sane_fk = 'YES' THEN
+                   usage_context_id
+                ELSE
+                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
                       PARTITION BY owner, object_name, object_type
-                      ORDER BY usage_id
+                      ORDER BY line, col
                       ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
                    )
-                ),
-                0
-             ) AS usage_context_id -- fix broken hierarchies
+             END AS usage_context_id -- fix broken hierarchies
         FROM base_ids
-       WHERE owner       = :OBJECT_OWNER
-         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND object_name = :OBJECT_NAME
    ),
    tree AS (
        SELECT ids.owner,
@@ -746,7 +860,7 @@ WITH
        WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND name = :OBJECT_NAME 
    ),
-   base_ids AS (
+   prep_ids AS (
       SELECT owner,
              name,
              signature,
@@ -773,6 +887,48 @@ WITH
              usage_context_id
        FROM sys.all_statements
    ),
+   fids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id
+        FROM prep_ids
+       WHERE owner       = :OBJECT_OWNER
+         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND object_name = :OBJECT_NAME
+   ),
+   base_ids AS (
+      SELECT fids.owner,
+             fids.name,
+             fids.signature,
+             fids.type,
+             fids.object_name,
+             fids.object_type,
+             fids.usage,
+             fids.usage_id,
+             CASE
+                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS sane_fk,
+             fids.line,
+             fids.col,
+             fids.usage_context_id
+        FROM fids
+        LEFT JOIN fids fk
+          ON fk.owner = fids.owner
+             AND fk.object_type = fids.object_type
+             AND fk.object_name = fids.object_name
+             AND fk.usage_id = fids.usage_context_id
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -784,21 +940,17 @@ WITH
              usage_id,
              line,
              col,
-             coalesce(
-                least(
-                   usage_context_id,
-                   max(usage_id) over (
+             CASE
+                WHEN sane_fk = 'YES' THEN
+                   usage_context_id
+                ELSE
+                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
                       PARTITION BY owner, object_name, object_type
-                      ORDER BY usage_id
+                      ORDER BY line, col
                       ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
                    )
-                ),
-                0
-             ) AS usage_context_id -- fix broken hierarchies
+             END AS usage_context_id -- fix broken hierarchies
         FROM base_ids
-       WHERE owner       = :OBJECT_OWNER
-         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND object_name = :OBJECT_NAME
    ),
    tree AS (
        SELECT ids.owner,

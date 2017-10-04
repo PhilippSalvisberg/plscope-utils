@@ -101,7 +101,7 @@ SELECT CASE
         FROM sys.all_source
        WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    ),
-   base_ids AS (
+   prep_ids AS (
       SELECT owner,
              name,
              signature,
@@ -128,6 +128,46 @@ SELECT CASE
              usage_context_id
        FROM sys.all_statements
    ),
+   fids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id
+        FROM prep_ids
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
+   ),
+   base_ids AS (
+      SELECT fids.owner,
+             fids.name,
+             fids.signature,
+             fids.type,
+             fids.object_name,
+             fids.object_type,
+             fids.usage,
+             fids.usage_id,
+             CASE
+                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS sane_fk,
+             fids.line,
+             fids.col,
+             fids.usage_context_id
+        FROM fids
+        LEFT JOIN fids fk
+          ON fk.owner = fids.owner
+             AND fk.object_type = fids.object_type
+             AND fk.object_name = fids.object_name
+             AND fk.usage_id = fids.usage_context_id
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -139,19 +179,17 @@ SELECT CASE
              usage_id,
              line,
              col,
-             coalesce(
-                least(
-                   usage_context_id,
-                   max(usage_id) over (
+             CASE
+                WHEN sane_fk = 'YES' THEN
+                   usage_context_id
+                ELSE
+                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
                       PARTITION BY owner, object_name, object_type
-                      ORDER BY usage_id
+                      ORDER BY line, col
                       ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
                    )
-                ),
-                0
-             ) AS usage_context_id -- fix broken hierarchies
+             END AS usage_context_id -- fix broken hierarchies
         FROM base_ids
-       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    ),
    tree AS (
        SELECT ids.owner,
@@ -344,7 +382,7 @@ SELECT CASE
               AND PRIOR dep.type  = dep.referenced_type
               AND PRIOR dep.name  = dep.referenced_name
    ),
-   base_ids AS (
+   prep_ids AS (
       SELECT owner,
              name,
              signature,
@@ -355,8 +393,7 @@ SELECT CASE
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
         FROM sys.all_identifiers
       UNION ALL
       SELECT owner,
@@ -369,9 +406,48 @@ SELECT CASE
              usage_id,
              line,
              col,
-             usage_context_id,
-             origin_con_id
+             usage_context_id
        FROM sys.all_statements
+   ),
+   fids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id
+        FROM prep_ids
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
+   ),
+   base_ids AS (
+      SELECT fids.owner,
+             fids.name,
+             fids.signature,
+             fids.type,
+             fids.object_name,
+             fids.object_type,
+             fids.usage,
+             fids.usage_id,
+             CASE
+                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS sane_fk,
+             fids.line,
+             fids.col,
+             fids.usage_context_id
+        FROM fids
+        LEFT JOIN fids fk
+          ON fk.owner = fids.owner
+             AND fk.object_type = fids.object_type
+             AND fk.object_name = fids.object_name
+             AND fk.usage_id = fids.usage_context_id
    ),
    ids AS (
       SELECT owner,
@@ -384,20 +460,17 @@ SELECT CASE
              usage_id,
              line,
              col,
-             coalesce(
-                least(
-                   usage_context_id,
-                   max(usage_id) over (
+             CASE
+                WHEN sane_fk = 'YES' THEN
+                   usage_context_id
+                ELSE
+                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
                       PARTITION BY owner, object_name, object_type
-                      ORDER BY usage_id
+                      ORDER BY line, col
                       ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
                    )
-                ),
-                0
-             ) AS usage_context_id, -- fix broken hierarchies
-             origin_con_id
+             END AS usage_context_id -- fix broken hierarchies
         FROM base_ids
-       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    ),
    tree AS (
        SELECT ids.owner,
@@ -412,8 +485,7 @@ SELECT CASE
               ids.usage,
               ids.signature,
               ids.usage_id,
-              ids.usage_context_id,
-              ids.origin_con_id
+              ids.usage_context_id
          FROM ids
         START WITH ids.usage_context_id = 0
       CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
@@ -599,7 +671,7 @@ SELECT CASE
         FROM sys.all_source
        WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    ),
-   base_ids AS (
+   prep_ids AS (
       SELECT owner,
              name,
              signature,
@@ -626,6 +698,46 @@ SELECT CASE
              usage_context_id
        FROM sys.all_statements
    ),
+   fids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id
+        FROM prep_ids
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
+   ),
+   base_ids AS (
+      SELECT fids.owner,
+             fids.name,
+             fids.signature,
+             fids.type,
+             fids.object_name,
+             fids.object_type,
+             fids.usage,
+             fids.usage_id,
+             CASE
+                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS sane_fk,
+             fids.line,
+             fids.col,
+             fids.usage_context_id
+        FROM fids
+        LEFT JOIN fids fk
+          ON fk.owner = fids.owner
+             AND fk.object_type = fids.object_type
+             AND fk.object_name = fids.object_name
+             AND fk.usage_id = fids.usage_context_id
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -637,19 +749,17 @@ SELECT CASE
              usage_id,
              line,
              col,
-             coalesce(
-                least(
-                   usage_context_id,
-                   max(usage_id) over (
+             CASE
+                WHEN sane_fk = 'YES' THEN
+                   usage_context_id
+                ELSE
+                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
                       PARTITION BY owner, object_name, object_type
-                      ORDER BY usage_id
+                      ORDER BY line, col
                       ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
                    )
-                ),
-                0
-             ) AS usage_context_id -- fix broken hierarchies
+             END AS usage_context_id -- fix broken hierarchies
         FROM base_ids
-       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
    ),
    tree AS (
        SELECT ids.owner,
@@ -720,7 +830,7 @@ SELECT CASE
                       ELSE
                          'YES'
                    END
-             END AS is_used, -- wrong result, if used in statements which do not register usage, such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE. Bug?
+             END AS is_used, -- wrong result, if used in statements which do not register usage, such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE. Bug 26351814.
              tree.signature,
              tree.usage_id,
              tree.usage_context_id

@@ -28,7 +28,7 @@ WITH
          AND type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
          AND name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
    ),
-   base_ids AS (
+   prep_ids AS (
       SELECT owner,
              name,
              signature,
@@ -57,6 +57,50 @@ WITH
              origin_con_id
        FROM dba_statements
    ),
+   fids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             origin_con_id
+        FROM prep_ids
+       WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)
+         AND object_type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+         AND object_name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+   ),
+   base_ids AS (
+      SELECT fids.owner,
+             fids.name,
+             fids.signature,
+             fids.type,
+             fids.object_name,
+             fids.object_type,
+             fids.usage,
+             fids.usage_id,
+             CASE
+                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS sane_fk,
+             fids.line,
+             fids.col,
+             fids.usage_context_id,
+             fids.origin_con_id
+        FROM fids
+        LEFT JOIN fids fk
+          ON fk.owner = fids.owner
+             AND fk.object_type = fids.object_type
+             AND fk.object_name = fids.object_name
+             AND fk.usage_id = fids.usage_context_id
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -68,22 +112,18 @@ WITH
              usage_id,
              line,
              col,
-             coalesce(
-                least(
-                   usage_context_id,
-                   max(usage_id) over (
+             CASE
+                WHEN sane_fk = 'YES' THEN
+                   usage_context_id
+                ELSE
+                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
                       PARTITION BY owner, object_name, object_type
-                      ORDER BY usage_id
+                      ORDER BY line, col
                       ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
                    )
-                ),
-                0
-             ) AS usage_context_id, -- fix broken hierarchies
+             END AS usage_context_id, -- fix broken hierarchies
              origin_con_id
         FROM base_ids
-       WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)
-         AND object_type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
-         AND object_name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
    ),
    tree AS (
        SELECT ids.owner,
@@ -123,7 +163,7 @@ WITH
            ORDER BY tree.line, tree.col, tree.path_len
         ) AS procedure_name,
         last_value (
-           CASE 
+           CASE
               WHEN tree.object_type = 'PACKAGE BODY'
                 AND tree.type in ('PROCEDURE', 'FUNCTION')
                 AND tree.path_len = 2
@@ -136,7 +176,7 @@ WITH
                  END
            END
         ) IGNORE NULLS OVER (
-           PARTITION BY tree.owner, tree.object_name, tree.object_type 
+           PARTITION BY tree.owner, tree.object_name, tree.object_type
            ORDER BY tree.line, tree.col, tree.path_len
         ) AS procedure_scope,
         REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
@@ -187,20 +227,20 @@ WITH
                  ORDER BY tree.line, tree.col, tree.path_len
               )
         END AS parent_statement_path_len,
-        CASE 
+        CASE
            WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
               AND tree.usage = 'DECLARATION'
               AND tree.type NOT IN ('LABEL')
            THEN
               CASE
-                 WHEN 
+                 WHEN
                     count(
-                       CASE 
-                          WHEN tree.usage NOT IN ('DECLARATION', 'ASSIGNMENT') 
+                       CASE
+                          WHEN tree.usage NOT IN ('DECLARATION', 'ASSIGNMENT')
                              OR (tree.type IN ('FORMAL OUT', 'FORMAL IN OUT')
                                  AND tree.usage = 'ASSIGNMENT')
-                          THEN 
-                             1 
+                          THEN
+                             1
                        END
                     ) OVER (
                        PARTITION BY tree.owner, tree.object_name, tree.object_type, tree.signature
@@ -210,7 +250,7 @@ WITH
                  ELSE
                     'YES'
               END
-        END AS is_used, -- wrong result, if used in statements which do not register usage, such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE. Bug?
+        END AS is_used, -- wrong result, if used in statements which do not register usage, such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE. Bug 26351814.
         tree.signature,
         tree.usage_id,
         tree.usage_context_id,
