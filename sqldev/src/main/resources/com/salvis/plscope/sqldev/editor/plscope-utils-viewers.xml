@@ -19,6 +19,17 @@
 			<query minversion="12.2">
 				<sql><![CDATA[
 WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND name = :OBJECT_NAME 
+   ),
    base_ids AS (
       SELECT owner,
              name,
@@ -131,21 +142,30 @@ WITH
         END AS "Used?",
         tree.line AS "Line",
         tree.col AS "Col",
-        (
-           SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-             FROM sys.all_source src
-            WHERE src.owner = tree.owner
-              AND src.type = tree.object_type
-              AND src.name = tree.object_name
-              AND src.line = tree.line
-        ) AS "Text"
+        regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
    FROM tree
+   LEFT JOIN src
+     ON src.owner = tree.owner
+        AND src.type = tree.object_type
+        AND src.name = tree.object_name
+        AND src.line = tree.line
   ORDER BY length(tree.object_type), tree.line, tree.col, tree.path_len
 				]]></sql>
 			</query>
 			<query minversion="11.1">
 				<sql><![CDATA[
 WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND name = :OBJECT_NAME 
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -231,15 +251,13 @@ WITH
         END AS "Used?",
         tree.line AS "Line",
         tree.col AS "Col",
-        (
-           SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-             FROM sys.all_source src
-            WHERE src.owner = tree.owner
-              AND src.type = tree.object_type
-              AND src.name = tree.object_name
-              AND src.line = tree.line
-        ) AS "Text"
+        regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
    FROM tree
+   LEFT JOIN src
+     ON src.owner = tree.owner
+        AND src.type = tree.object_type
+        AND src.name = tree.object_name
+        AND src.line = tree.line
   ORDER BY length(tree.object_type), tree.line, tree.col, tree.path_len
 				]]></sql>
 			</query>
@@ -303,8 +321,19 @@ SELECT CASE
 			<query minversion="11.1">
 				<sql><![CDATA[
 WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND name = :OBJECT_NAME 
+   ),
    ids AS (
-      SELECT /*+materialize */
+      SELECT /*+ materialize */
              owner,
              object_type,
              object_name,
@@ -351,17 +380,15 @@ SELECT CASE
        ids.name AS "Name",
        ids.line AS "Line",
        ids.col aS "Col",
-       (
-          SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-            FROM sys.all_source src
-           WHERE src.owner = ids.owner
-             AND src.type = ids.object_type
-             AND src.name = ids.object_name
-             AND src.line = ids.line
-       ) AS "Text"
+       regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
   from ids
   JOIN sys.all_identifiers refs
     ON ids.signature = refs.signature
+  LEFT JOIN src
+     ON src.owner = ids.owner
+        AND src.type = ids.object_type
+        AND src.name = ids.object_name
+        AND src.line = ids.line
   LEFT JOIN sys.all_synonyms s
     ON s.owner = refs.owner
        AND s.synonym_name = refs.object_name
@@ -396,6 +423,17 @@ SELECT CASE
 			<query minversion="11.1">
 				<sql><![CDATA[
 WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND name = :OBJECT_NAME 
+   ),
    refs AS (
       SELECT /*+materialize */ 
              signature
@@ -421,17 +459,15 @@ SELECT CASE
        ids.name AS "Name",
        ids.line AS "Line",
        ids.col aS "Col",
-       (
-          SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-            FROM sys.all_source src
-           WHERE src.owner = ids.owner
-             AND src.type = ids.object_type
-             AND src.name = ids.object_name
-             AND src.line = ids.line
-       ) AS "Text"
+       regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
   FROM refs
   JOIN sys.all_identifiers ids
     ON ids.signature = refs.signature
+  LEFT JOIN src
+     ON src.owner = ids.owner
+        AND src.type = ids.object_type
+        AND src.name = ids.object_name
+        AND src.line = ids.line
  WHERE NOT (
               ids.owner       = :OBJECT_OWNER
           AND ids.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
@@ -454,6 +490,17 @@ SELECT CASE
 			<query minversion="12.2">
 				<sql><![CDATA[
 WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND name = :OBJECT_NAME 
+   ),
    base_ids AS (
       SELECT owner,
              name,
@@ -552,16 +599,7 @@ WITH
              refs.owner AS ref_owner,
              refs.object_type AS ref_object_type,
              refs.object_name AS ref_object_name,
-             (
-                -- this correlated subquery will be evaluated only,
-                -- if the column TEXT is selected
-                SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-                  FROM sys.all_source src
-                 WHERE src.owner = tree.owner
-                   AND src.type = tree.object_type
-                   AND src.name = tree.object_name
-                   AND src.line = tree.line
-             ) AS text,
+             regexp_replace(src.text, chr(10)||'+$', null) AS text, -- remove trailing new line character
              CASE
                 WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
                    -- ensure that this is really a child of a statement
@@ -582,6 +620,11 @@ WITH
         LEFT JOIN sys.all_identifiers refs
           ON refs.signature = tree.signature
              AND refs.usage = 'DECLARATION'
+        LEFT JOIN src
+          ON src.owner = tree.owner
+              AND src.type = tree.object_type
+              AND src.name = tree.object_name
+              AND src.line = tree.line
    ),
    dep AS (
       SELECT owner      AS owner,
@@ -692,6 +735,17 @@ SELECT CASE
 			<query minversion="12.2">
 				<sql><![CDATA[
 WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
+         AND name = :OBJECT_NAME 
+   ),
    base_ids AS (
       SELECT owner,
              name,
@@ -970,32 +1024,30 @@ WITH
         FROM missing_cols
    )
 SELECT CASE
-          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
-                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || 'Source' ||
+          WHEN base_cols.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || base_cols.owner || ':' || base_cols.object_type || ':' || base_cols.object_name || ':' ||
+                to_char(base_cols.line,'FM0000009') || ':' || to_char(base_cols.col,'FM0000009') || ':' || 'Source' ||
                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
           ELSE
              NULL
        END AS "Link",
-       procedure_name AS "Procedure name",
-       operation AS "Operation",
-       direct_dependency AS "Direct dep?",
-       ref_owner "Owner",
-       ref_object_type AS "Object type",
-       ref_object_name AS "Object name",
-       column_name AS "Column name",
-       line AS "Line",
-       col AS "Col",
-       (
-          SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-            FROM sys.all_source src
-           WHERE src.owner = base_cols.owner
-             AND src.type = base_cols.object_type
-             AND src.name = base_cols.object_name
-             AND src.line = base_cols.line
-       ) AS "Text"
+       base_cols.procedure_name AS "Procedure name",
+       base_cols.operation AS "Operation",
+       base_cols.direct_dependency AS "Direct dep?",
+       base_cols.ref_owner "Owner",
+       base_cols.ref_object_type AS "Object type",
+       base_cols.ref_object_name AS "Object name",
+       base_cols.column_name AS "Column name",
+       base_cols.line AS "Line",
+       base_cols.col AS "Col",
+       regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
   FROM base_cols
- ORDER BY length(object_type), line, col, path_len
+  LEFT JOIN src
+         ON src.owner = base_cols.owner
+            AND src.type = base_cols.object_type
+            AND src.name = base_cols.object_name
+            AND src.line = base_cols.line
+ ORDER BY length(base_cols.object_type), base_cols.line, base_cols.col, base_cols.path_len
 				]]></sql>
 			</query>
 		</queries>

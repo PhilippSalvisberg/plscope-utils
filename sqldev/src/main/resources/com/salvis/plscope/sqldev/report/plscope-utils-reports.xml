@@ -91,6 +91,16 @@ SELECT CASE
 		</CustomValues>
 		<query minversion="12.2">
 			<sql><![CDATA[WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
+   ),
    base_ids AS (
       SELECT owner,
              name,
@@ -187,16 +197,7 @@ SELECT CASE
              refs.owner AS ref_owner,
              refs.object_type AS ref_object_type,
              refs.object_name AS ref_object_name,
-             (
-                -- this correlated subquery will be evaluated only,
-                -- if the column TEXT is selected
-                SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-                  FROM sys.all_source src
-                 WHERE src.owner = tree.owner
-                   AND src.type = tree.object_type
-                   AND src.name = tree.object_name
-                   AND src.line = tree.line
-             ) AS text,
+             regexp_replace(src.text, chr(10)||'+$', null) text, -- remove trailing new line character
              CASE
                 WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
                    -- ensure that this is really a child of a statement
@@ -230,6 +231,11 @@ SELECT CASE
         LEFT JOIN sys.all_identifiers refs
           ON refs.signature = tree.signature
              AND refs.usage = 'DECLARATION'
+        LEFT JOIN src
+          ON src.owner = tree.owner
+             AND src.type = tree.object_type
+             AND src.name = tree.object_name
+             AND src.line = tree.line
    )
 SELECT CASE
           WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
@@ -295,6 +301,16 @@ SELECT CASE
 		</CustomValues>
 		<query minversion="12.2">
 			<sql><![CDATA[WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
+   ),
    dep AS (
       SELECT owner      AS owner,
              'TABLE'    AS type,
@@ -429,16 +445,7 @@ SELECT CASE
              refs.owner AS ref_owner,
              refs.object_type AS ref_object_type,
              refs.object_name AS ref_object_name,
-             (
-                -- this correlated subquery will be evaluated only,
-                -- if the column TEXT is selected
-                SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-                  FROM sys.all_source src
-                 WHERE src.owner = tree.owner
-                   AND src.type = tree.object_type
-                   AND src.name = tree.object_name
-                   AND src.line = tree.line
-             ) AS text,
+             regexp_replace(src.text, chr(10)||'+$', null) text, -- remove trailing new line character
              CASE
                 WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
                    -- ensure that this is really a child of a statement
@@ -459,6 +466,11 @@ SELECT CASE
         LEFT JOIN sys.all_identifiers refs
           ON refs.signature = tree.signature
              AND refs.usage = 'DECLARATION'
+        LEFT JOIN src
+          ON src.owner = tree.owner
+             AND src.type = tree.object_type
+             AND src.name = tree.object_name
+             AND src.line = tree.line
    ),
    tab_usage AS (
       SELECT /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
@@ -577,6 +589,16 @@ SELECT CASE
 		</CustomValues>
 		<query minversion="12.2">
 			<sql><![CDATA[WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
+   ),
    base_ids AS (
       SELECT owner,
              name,
@@ -674,16 +696,7 @@ SELECT CASE
              refs.owner AS ref_owner,
              refs.object_type AS ref_object_type,
              refs.object_name AS ref_object_name,
-             (
-                -- this correlated subquery will be evaluated only,
-                -- if the column TEXT is selected
-                SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-                  FROM sys.all_source src
-                 WHERE src.owner = tree.owner
-                   AND src.type = tree.object_type
-                   AND src.name = tree.object_name
-                   AND src.line = tree.line
-             ) AS text,
+             regexp_replace(src.text, chr(10)||'+$', null) text, -- remove trailing new line character
              CASE 
                 WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
                    AND tree.usage = 'DECLARATION'
@@ -715,6 +728,11 @@ SELECT CASE
         LEFT JOIN sys.all_identifiers refs
           ON refs.signature = tree.signature
              AND refs.usage = 'DECLARATION'
+        LEFT JOIN src
+          ON src.owner = tree.owner
+             AND src.type = tree.object_type
+             AND src.name = tree.object_name
+             AND src.line = tree.line
    )
 SELECT CASE
           WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
@@ -776,6 +794,16 @@ SELECT CASE
 		</CustomValues>
 		<query minversion="11.1">
 			<sql><![CDATA[WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -828,16 +856,7 @@ SELECT CASE
                 PARTITION BY tree.owner, tree.object_name, tree.object_type
                 ORDER BY tree.line, tree.col, tree.path_len
              ) AS procedure_name,
-             (
-                -- this correlated subquery will be evaluated only,
-                -- if the column TEXT is selected
-                SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-                  FROM sys.all_source src
-                 WHERE src.owner = tree.owner
-                   AND src.type = tree.object_type
-                   AND src.name = tree.object_name
-                   AND src.line = tree.line
-             ) AS text,
+             regexp_replace(src.text, chr(10)||'+$', null) text, -- remove trailing new line character
              tree.usage,
              tree.type,
              tree.name,
@@ -850,6 +869,11 @@ SELECT CASE
              tree.parent_line,
              tree.parent_col
         FROM tree
+        LEFT JOIN src
+          ON src.owner = tree.owner
+             AND src.type = tree.object_type
+             AND src.name = tree.object_name
+             AND src.line = tree.line
        WHERE tree.object_type IN ('FUNCTION', 'PROCEDURE', 'TRIGGER', 'PACKAGE', 'PACKAGE BODY', 'TYPE', 'TYPE BODY')
    ),
    checked AS (

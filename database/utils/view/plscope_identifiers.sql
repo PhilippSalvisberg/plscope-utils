@@ -16,6 +16,18 @@
 
 CREATE OR REPLACE VIEW plscope_identifiers AS
 WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM dba_source
+       WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)
+         AND type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+         AND name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+   ),
    base_ids AS (
       SELECT owner,
              name,
@@ -135,16 +147,7 @@ WITH
         refs.owner AS ref_owner,
         refs.object_type AS ref_object_type,
         refs.object_name AS ref_object_name,
-        (
-           -- this correlated subquery will be evaluated only,
-           -- if the column TEXT is selected
-           SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-             FROM dba_source src
-            WHERE src.owner = tree.owner
-              AND src.type = tree.object_type
-              AND src.name = tree.object_name
-              AND src.line = tree.line
-        ) AS text,
+        regexp_replace(src.text, chr(10)||'+$', null) AS text, -- remove trailing new line character
         CASE
            WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
               -- ensure that this is really a child of a statement
@@ -215,4 +218,9 @@ WITH
    FROM tree
    LEFT JOIN dba_identifiers refs
      ON refs.signature = tree.signature
-        AND refs.usage = 'DECLARATION';
+        AND refs.usage = 'DECLARATION'
+   LEFT JOIN src
+     ON src.owner = tree.owner
+        AND src.type = tree.object_type
+        AND src.name = tree.object_name
+        AND src.line = tree.line;

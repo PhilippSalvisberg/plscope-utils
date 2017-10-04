@@ -45,6 +45,18 @@ WITH
         END;
    * 
    */
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM dba_source
+       WHERE owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)
+         AND type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+         AND name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+   ),
    ids AS (
       SELECT owner,
              name,
@@ -99,16 +111,7 @@ WITH
                 PARTITION BY tree.owner, tree.object_name, tree.object_type
                 ORDER BY tree.line, tree.col, tree.path_len
              ) AS procedure_name,
-             (
-                -- this correlated subquery will be evaluated only,
-                -- if the column TEXT is selected
-                SELECT regexp_replace(src.text, chr(10)||'+$', null) -- remove trailing new line character
-                  FROM sys.dba_source src
-                 WHERE src.owner = tree.owner
-                   AND src.type = tree.object_type
-                   AND src.name = tree.object_name
-                   AND src.line = tree.line
-             ) AS text,
+             regexp_replace(src.text, chr(10)||'+$', null) AS text, -- remove trailing new line character
              tree.usage,
              tree.type,
              tree.name,
@@ -121,6 +124,11 @@ WITH
              tree.parent_line,
              tree.parent_col
         FROM tree
+        LEFT JOIN src
+          ON src.owner = tree.owner
+             AND src.type = tree.object_type
+             AND src.name = tree.object_name
+             AND src.line = tree.line
        WHERE tree.object_type IN ('FUNCTION', 'PROCEDURE', 'TRIGGER', 'PACKAGE', 'PACKAGE BODY', 'TYPE', 'TYPE BODY')
    ),
    checked AS (
