@@ -5,7 +5,7 @@
 	<!-- The Basics -->
 	<groupId>com.salvis</groupId>
 	<artifactId>com.salvis.plscope.sqldev</artifactId>
-	<version>0.5.2</version>
+	<version>0.6.0</version>
 	<packaging>bundle</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
