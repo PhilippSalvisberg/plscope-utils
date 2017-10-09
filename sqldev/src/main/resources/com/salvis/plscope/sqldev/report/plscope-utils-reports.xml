@@ -874,6 +874,194 @@ SELECT CASE
 				</bind>
 			</binds>
 		</query>
+		<query minversion="11.1">
+			<sql><![CDATA[WITH
+   src AS (
+      SELECT /*+ materialize */
+             owner,
+             type,
+             name,
+             line,
+             text
+        FROM sys.all_source
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
+   ),
+   fids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             usage_context_id
+        FROM sys.all_identifiers
+       WHERE owner LIKE nvl(:OBJECT_OWNER, USER)
+   ),
+   base_ids AS (
+      SELECT fids.owner,
+             fids.name,
+             fids.signature,
+             fids.type,
+             fids.object_name,
+             fids.object_type,
+             fids.usage,
+             fids.usage_id,
+             CASE
+                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+                   'YES'
+                ELSE
+                   'NO'
+             END AS sane_fk,
+             fids.line,
+             fids.col,
+             fids.usage_context_id
+        FROM fids
+        LEFT JOIN fids fk
+          ON fk.owner = fids.owner
+             AND fk.object_type = fids.object_type
+             AND fk.object_name = fids.object_name
+             AND fk.usage_id = fids.usage_context_id
+   ),
+   ids AS (
+      SELECT owner,
+             name,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage,
+             usage_id,
+             line,
+             col,
+             CASE
+                WHEN sane_fk = 'YES' THEN
+                   usage_context_id
+                ELSE
+                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
+                      PARTITION BY owner, object_name, object_type
+                      ORDER BY line, col
+                      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                   )
+             END AS usage_context_id -- fix broken hierarchies
+        FROM base_ids
+   ),
+   tree AS (
+       SELECT ids.owner,
+              ids.object_type,
+              ids.object_name,
+              ids.line,
+              ids.col,
+              ids.name,
+              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
+              level as path_len,
+              ids.type,
+              ids.usage,
+              ids.signature,
+              ids.usage_id,
+              ids.usage_context_id
+         FROM ids
+        START WITH ids.usage_context_id = 0
+      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
+              AND PRIOR ids.owner       = ids.owner
+              AND PRIOR ids.object_type = ids.object_type
+              AND PRIOR ids.object_name = ids.object_name
+   ),
+   plscope_identifiers AS (
+      SELECT /*+use_hash(tree) use_hash(refs) */
+             tree.owner,
+             tree.object_type,
+             tree.object_name,
+             tree.line,
+             tree.col,
+             last_value (
+                CASE
+                   WHEN tree.type in ('PROCEDURE', 'FUNCTION') AND tree.path_len = 2  THEN
+                      tree.name
+                END
+             ) IGNORE NULLS OVER (
+                PARTITION BY tree.owner, tree.object_name, tree.object_type
+                ORDER BY tree.line, tree.col, tree.path_len
+             ) AS procedure_name,
+             REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
+             REPLACE(tree.name_path, ':', NULL) AS name_path, -- remove intermediate statement marker
+             tree.path_len,
+             tree.type,
+             tree.usage,
+             refs.owner AS ref_owner,
+             refs.object_type AS ref_object_type,
+             refs.object_name AS ref_object_name,
+             regexp_replace(src.text, chr(10)||'+$', null) text, -- remove trailing new line character
+             CASE 
+                WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
+                   AND tree.usage = 'DECLARATION'
+                   AND tree.type NOT IN ('LABEL')
+                THEN
+                   CASE
+                      WHEN 
+                         count(
+                            CASE 
+                               WHEN tree.usage NOT IN ('DECLARATION', 'ASSIGNMENT') 
+                                  OR (tree.type IN ('FORMAL OUT', 'FORMAL IN OUT')
+                                      AND tree.usage = 'ASSIGNMENT')
+                               THEN 
+                                  1 
+                            END
+                         ) OVER (
+                            PARTITION BY tree.owner, tree.object_name, tree.object_type, tree.signature
+                         ) = 0
+                      THEN
+                        'NO'
+                      ELSE
+                         'YES'
+                   END
+             END AS is_used, -- wrong result, if used in statements which do not register usage, such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE. Bug 26351814.
+             tree.signature,
+             tree.usage_id,
+             tree.usage_context_id
+        FROM tree
+        LEFT JOIN sys.all_identifiers refs
+          ON refs.signature = tree.signature
+             AND refs.usage = 'DECLARATION'
+        LEFT JOIN src
+          ON src.owner = tree.owner
+             AND src.type = tree.object_type
+             AND src.name = tree.object_name
+             AND src.line = tree.line
+   )
+SELECT CASE
+          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
+             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
+                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || 'Source' ||
+                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          ELSE
+             NULL
+       END AS "Link",
+       owner AS "Owner",
+       object_type AS "Object type",
+       object_name AS "Object name",
+       procedure_name AS "Procedure name",
+       type AS "Type",
+       name AS "Name",
+       line AS "Line",
+       col AS "Col",
+       text AS "Text" 
+  FROM plscope_identifiers
+ WHERE usage = 'DECLARATION'
+   AND is_used = 'NO'
+ ORDER BY owner, object_type, object_name, line, col]]></sql>
+			<binds>
+				<bind id="OBJECT_OWNER">
+					<prompt><![CDATA[Owner like]]></prompt>
+					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
 			<pdf version="VERSION_1_7" compression="CONTENT">
 				<docproperty title="" author="" subject="" keywords="" />
 				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
