@@ -216,7 +216,7 @@ WITH
              line,
              col,
              usage_context_id
-        FROM prep_ids
+        FROM sys.all_identifiers
        WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
          AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
          AND object_name = :OBJECT_NAME
