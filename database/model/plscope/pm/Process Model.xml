@@ -1,0 +1,7 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<ProcessModel class="oracle.dbtools.crest.model.design.process.ProcessModel" name="Process Model" id="398AFC03-B39B-9B97-C65E-A894D422512D">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:19:57 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<shouldBeOpen>false</shouldBeOpen>
+</ProcessModel>

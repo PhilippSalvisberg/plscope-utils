@@ -1,0 +1,116 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Entity class="oracle.dbtools.crest.model.design.logical.Entity" directorySegmentName="seg_0" id="C72FF0FC-6FD8-2202-3E7B-B1EC27F37EAC" name="Identifier Declaration">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:59:58 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<adequatelyNormalized>NO</adequatelyNormalized>
+<expectedVolumes>0</expectedVolumes>
+<fwdEngineeringStrategyName>Single Table</fwdEngineeringStrategyName>
+<growthPercent>0</growthPercent>
+<growthType>Year</growthType>
+<maxVolumes>9999999</maxVolumes>
+<minVolumes>0</minVolumes>
+<normalForm>Third</normalForm>
+<attributes itemClass="oracle.dbtools.crest.model.design.logical.Attribute">
+<Attribute name="SIGNATURE" id="8BB66835-872C-C537-29F8-D459BD26CEB8">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 09:00:23 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>32 BYTE</dataTypeSize>
+<ownDataTypeParameters>32 BYTE,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="TYPE" id="46D342E5-1D9C-3B59-8B0B-BA10452E6886">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:51:04 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>5B5727B9-E0A7-182B-75ED-7C199DA6F339</domain>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="NAME" id="D7161B8C-6107-5F42-4B19-36A75B3BB2F7">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 09:16:54 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>128 BYTE</dataTypeSize>
+<ownDataTypeParameters>128 BYTE,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="OWNER" id="AA02883D-B883-2C33-D314-C4FC45A41222">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 09:10:35 UTC</createdTime>
+<generatorID>329BCE52-5633-253F-D089-8AB767AD4249</generatorID>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<referedAttribute>32C144FC-C1AC-F8F1-C17C-4B8049D3412C</referedAttribute>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>128 BYTE</dataTypeSize>
+<ownDataTypeParameters>128 BYTE,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="OBJECT_TYPE" id="E6D14267-1D8F-95DF-2E7E-421676E564FB">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 09:10:35 UTC</createdTime>
+<generatorID>329BCE52-5633-253F-D089-8AB767AD4249</generatorID>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<referedAttribute>1440FB38-E6C8-3A62-A37C-EE1F3DAC678D</referedAttribute>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>128 BYTE</dataTypeSize>
+<ownDataTypeParameters>128 BYTE,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="OBJECT_NAME" id="0004A3FD-B0BC-3A0E-B522-CC7282B380E6">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 09:10:35 UTC</createdTime>
+<generatorID>329BCE52-5633-253F-D089-8AB767AD4249</generatorID>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<referedAttribute>B962F95D-E39E-C90D-46D8-2504B03937B3</referedAttribute>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>128 BYTE</dataTypeSize>
+<ownDataTypeParameters>128 BYTE,,</ownDataTypeParameters>
+</Attribute>
+</attributes>
+<identifiers itemClass="oracle.dbtools.crest.model.design.logical.CandidateKey">
+<identifier id="A4682E19-D0FF-05D1-4B41-AE6C76B5F9E5" name="PL/Scope Object PK">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 09:01:31 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<pk>true</pk>
+<usedAttributes>
+<attributeRef>8BB66835-872C-C537-29F8-D459BD26CEB8</attributeRef>
+</usedAttributes>
+</identifier>
+</identifiers>
+</Entity>

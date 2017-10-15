@@ -1,0 +1,7 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<BusinessInfoDesign class="oracle.dbtools.crest.model.businessinfo.BusinessInfoDesign" name="Business Information" id="741F3BF1-748F-8EB0-1361-4F41F5B603A8">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:19:57 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<shouldBeOpen>false</shouldBeOpen>
+</BusinessInfoDesign>

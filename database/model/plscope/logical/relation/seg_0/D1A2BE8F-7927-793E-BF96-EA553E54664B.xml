@@ -1,0 +1,22 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Relation class="oracle.dbtools.crest.model.design.logical.Relation" name="Relation_11" directorySegmentName="seg_0" id="D1A2BE8F-7927-793E-BF96-EA553E54664B">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 09:46:06 UTC</createdTime>
+<comment>This hierarchy is used for&lt;br/&gt;- PL/SQL code objects&lt;br/&gt;- Data objects such as tables (level 1) and their columns (level 2)</comment>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<targetPk>612C21A2-44AC-E994-7EF8-8160E99602FB</targetPk>
+<identifying>false</identifying>
+<nameOnSource>parent of</nameOnSource>
+<nameOnTarget>child of</nameOnTarget>
+<optionalSource>true</optionalSource>
+<optionalTarget>false</optionalTarget>
+<sourceCardinality>1</sourceCardinality>
+<sourceEntity>9B6CCCFA-F84F-0A82-3325-335E5B08B9C9</sourceEntity>
+<targetCardinalityString>*</targetCardinalityString>
+<targetEntity>9B6CCCFA-F84F-0A82-3325-335E5B08B9C9</targetEntity>
+<transferable>true</transferable>
+<deleteRule>NO ACTION</deleteRule>
+</Relation>

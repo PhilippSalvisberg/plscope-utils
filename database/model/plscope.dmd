@@ -1,0 +1,8 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<OSDM_Design class="oracle.dbtools.crest.model.design.Design" name="plscope" id="99CEA60D-BC3C-3256-A5A5-6A50966995D8" version="3.5">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:19:57 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<capitalNames>false</capitalNames>
+<designId>99CEA60D-BC3C-3256-A5A5-6A50966995D8</designId>
+</OSDM_Design>

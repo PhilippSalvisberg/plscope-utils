@@ -1,0 +1,7 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<LogicalDesign class="oracle.dbtools.crest.model.design.logical.LogicalDesign" name="Logical" id="8CE12473-A423-4551-FFCD-EECD6C243855" mainViewID="BA1FE3C1-D425-4F50-DB51-6C2082272827">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:19:57 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<shouldBeOpen>false</shouldBeOpen>
+</LogicalDesign>

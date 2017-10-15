@@ -1,0 +1,35 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Entity class="oracle.dbtools.crest.model.design.logical.Entity" directorySegmentName="seg_0" id="49842DCE-6829-F1B8-EF5D-3AC3F7387BD4" name="SQL Stmt Usage">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:25:20 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<adequatelyNormalized>NO</adequatelyNormalized>
+<expectedVolumes>0</expectedVolumes>
+<fwdEngineeringStrategyName>Single Table</fwdEngineeringStrategyName>
+<growthPercent>0</growthPercent>
+<growthType>Year</growthType>
+<hierarchicalParent>9B6CCCFA-F84F-0A82-3325-335E5B08B9C9</hierarchicalParent>
+<maxVolumes>9999999</maxVolumes>
+<minVolumes>0</minVolumes>
+<normalForm>Third</normalForm>
+<attributes itemClass="oracle.dbtools.crest.model.design.logical.Attribute">
+<Attribute name="SQL_ID" id="CDCCF461-8323-A7A7-E301-4EFF2E3251B2">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:25:49 UTC</createdTime>
+<generatorID>358455D9-1B63-DD6C-F656-950A72CFC9D5</generatorID>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<referedAttribute>81EEA7AE-53C2-E094-C0D0-87B870E69D9E</referedAttribute>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>13 BYTE</dataTypeSize>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+</Attribute>
+</attributes>
+</Entity>

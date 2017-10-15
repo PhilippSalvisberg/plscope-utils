@@ -1,0 +1,74 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Entity class="oracle.dbtools.crest.model.design.logical.Entity" directorySegmentName="seg_0" id="E3246B95-471C-A82E-760F-012C719007FB" name="Database Object">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:34:59 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<adequatelyNormalized>NO</adequatelyNormalized>
+<expectedVolumes>0</expectedVolumes>
+<fwdEngineeringStrategyName>Single Table</fwdEngineeringStrategyName>
+<growthPercent>0</growthPercent>
+<growthType>Year</growthType>
+<maxVolumes>9999999</maxVolumes>
+<minVolumes>0</minVolumes>
+<normalForm>Third</normalForm>
+<attributes itemClass="oracle.dbtools.crest.model.design.logical.Attribute">
+<Attribute name="OWNER" id="32C144FC-C1AC-F8F1-C17C-4B8049D3412C">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:48:44 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>128 BYTE</dataTypeSize>
+<ownDataTypeParameters>128 BYTE,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="OBJECT_TYPE" id="1440FB38-E6C8-3A62-A37C-EE1F3DAC678D">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:49:15 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>128 BYTE</dataTypeSize>
+<ownDataTypeParameters>128 BYTE,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="OBJECT_NAME" id="B962F95D-E39E-C90D-46D8-2504B03937B3">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:51:40 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>128 BYTE</dataTypeSize>
+<ownDataTypeParameters>128 BYTE,,</ownDataTypeParameters>
+</Attribute>
+</attributes>
+<identifiers itemClass="oracle.dbtools.crest.model.design.logical.CandidateKey">
+<identifier id="CCF9843C-EAE1-2943-EC8A-7F040F2D4BE7" name="Database Object PK">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 08:49:13 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<pk>true</pk>
+<usedAttributes>
+<attributeRef>32C144FC-C1AC-F8F1-C17C-4B8049D3412C</attributeRef>
+<attributeRef>1440FB38-E6C8-3A62-A37C-EE1F3DAC678D</attributeRef>
+<attributeRef>B962F95D-E39E-C90D-46D8-2504B03937B3</attributeRef>
+</usedAttributes>
+</identifier>
+</identifiers>
+</Entity>

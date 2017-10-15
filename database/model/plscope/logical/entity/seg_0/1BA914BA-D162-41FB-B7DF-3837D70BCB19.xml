@@ -1,0 +1,156 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Entity class="oracle.dbtools.crest.model.design.logical.Entity" directorySegmentName="seg_0" id="1BA914BA-D162-41FB-B7DF-3837D70BCB19" name="SQL Statement">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 09:58:56 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<adequatelyNormalized>NO</adequatelyNormalized>
+<expectedVolumes>0</expectedVolumes>
+<fwdEngineeringStrategyName>Single Table</fwdEngineeringStrategyName>
+<growthPercent>0</growthPercent>
+<growthType>Year</growthType>
+<maxVolumes>9999999</maxVolumes>
+<minVolumes>0</minVolumes>
+<normalForm>Third</normalForm>
+<attributes itemClass="oracle.dbtools.crest.model.design.logical.Attribute">
+<Attribute name="SQL_ID" id="81EEA7AE-53C2-E094-C0D0-87B870E69D9E">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 09:59:59 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>13 BYTE</dataTypeSize>
+<ownDataTypeParameters>13 BYTE,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="HAS_HINT" id="AF462641-44CB-B894-0368-84CCD45FBA54">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:01:47 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>3 BYTE</dataTypeSize>
+<domain>B79382F5-0958-0A6F-004F-69877E09CBE4</domain>
+<ownDataTypeParameters>3 BYTE,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="HAS_INTO_BULK" id="64BF8DDF-3E38-95D8-2D7E-16A2CC8E206A">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:06:10 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>B79382F5-0958-0A6F-004F-69877E09CBE4</domain>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="HAS_INTO_RETURNING" id="A1A3DBF6-8675-FFCD-49CA-167F59E32772">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:06:37 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>B79382F5-0958-0A6F-004F-69877E09CBE4</domain>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="HAS_INTO_RECORD" id="61C961EA-C265-3492-2CCF-774F597CB107">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:06:53 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>B79382F5-0958-0A6F-004F-69877E09CBE4</domain>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="HAS_CURRENT_OF" id="A4CE22CD-2DA8-3ADC-FA29-708FE358361F">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:07:11 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>B79382F5-0958-0A6F-004F-69877E09CBE4</domain>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="HAS_FOR_UPDATE" id="BCEDF72A-FB80-D9DA-19D8-0C3AF46ED22C">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:07:29 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>B79382F5-0958-0A6F-004F-69877E09CBE4</domain>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="HAS_IN_BINDS" id="36D21B70-3BB3-4B01-2123-56F0B557D4CD">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:07:51 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>B79382F5-0958-0A6F-004F-69877E09CBE4</domain>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="TEXT" id="7F810E66-71FC-940E-40C8-483C656744D4">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:08:47 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>4000 BYTE</dataTypeSize>
+<ownDataTypeParameters>4000 BYTE,,</ownDataTypeParameters>
+</Attribute>
+<Attribute name="FULL_TEXT" id="FE7D0D83-9D92-35EA-0F4E-09A03C934E76">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:09:14 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT028</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+</Attribute>
+</attributes>
+<identifiers itemClass="oracle.dbtools.crest.model.design.logical.CandidateKey">
+<identifier id="04FF63B9-0AD1-D64C-87C8-54EF91597342" name="SQL Statement PK">
+<createdBy>phs</createdBy>
+<createdTime>2017-10-15 10:10:36 UTC</createdTime>
+<ownerDesignName>plscope</ownerDesignName>
+<engineerTo>
+<item key="826EEA7F-700F-9142-F357-A80620FB27E4" value="true"/>
+</engineerTo>
+<pk>true</pk>
+<usedAttributes>
+<attributeRef>81EEA7AE-53C2-E094-C0D0-87B870E69D9E</attributeRef>
+</usedAttributes>
+</identifier>
+</identifiers>
+</Entity>
