@@ -1,0 +1,94 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<DomainFile class="oracle.dbtools.crest.model.design.DomainFileWrapper" fileName="defaultdomains">
+   <domains>
+      <Domain class="oracle.dbtools.crest.model.design.Domain" name="USAGE" id="1A7CB5B0-94BB-74EF-3994-33C4860B62B7">
+         <createdBy>phs</createdBy>
+         <createdTime>2017-10-15 10:22:12 UTC</createdTime>
+         <ownerDesignName>System</ownerDesignName>
+         <avTSortOrder>0</avTSortOrder>
+         <dataTypeSize>11 BYTE</dataTypeSize>
+         <fileName>defaultdomains</fileName>
+         <logicalDatatype>LOGDT024</logicalDatatype>
+         <listOfValues>
+            <valueDef value="ASSIGNMENT" description=""/>
+            <valueDef value="CALL" description=""/>
+            <valueDef value="DECLARATION" description=""/>
+            <valueDef value="DEFINITION" description=""/>
+            <valueDef value="REFERENCE" description=""/>
+         </listOfValues>
+      </Domain>
+      <Domain class="oracle.dbtools.crest.model.design.Domain" name="TYPE" id="5B5727B9-E0A7-182B-75ED-7C199DA6F339">
+         <createdBy>phs</createdBy>
+         <createdTime>2017-10-15 10:14:56 UTC</createdTime>
+         <ownerDesignName>System</ownerDesignName>
+         <avTSortOrder>0</avTSortOrder>
+         <dataTypeSize>18 BYTE</dataTypeSize>
+         <fileName>defaultdomains</fileName>
+         <logicalDatatype>LOGDT024</logicalDatatype>
+         <listOfValues>
+            <valueDef value="ALIAS" description="12.2"/>
+            <valueDef value="ASSOCIATIVE ARRAY" description=""/>
+            <valueDef value="COLUMN" description="12.2"/>
+            <valueDef value="CONSTANT" description=""/>
+            <valueDef value="CURSOR" description=""/>
+            <valueDef value="BFILE DATATYPE" description=""/>
+            <valueDef value="BLOB DATATYPE" description=""/>
+            <valueDef value="BOOLEAN DATATYPE" description=""/>
+            <valueDef value="CHARACTER DATATYPE" description=""/>
+            <valueDef value="CLOB DATATYPE" description=""/>
+            <valueDef value="DATA DATATYPE" description=""/>
+            <valueDef value="NUMBER DATATYPE" description=""/>
+            <valueDef value="TIME DATATYPE" description=""/>
+            <valueDef value="TIMESTAMP DATATYPE" description=""/>
+            <valueDef value="EXCEPTION" description=""/>
+            <valueDef value="FORMAL IN" description=""/>
+            <valueDef value="FORMAL IN OUT" description=""/>
+            <valueDef value="FORMAL OUT" description=""/>
+            <valueDef value="FUNCTION" description=""/>
+            <valueDef value="INDEX TABLE" description=""/>
+            <valueDef value="ITERATOR" description=""/>
+            <valueDef value="LABEL" description=""/>
+            <valueDef value="LIBRARY" description=""/>
+            <valueDef value="MATERIALIZED VIEW" description="12.2"/>
+            <valueDef value="NESTED TABLE" description=""/>
+            <valueDef value="OBJECT" description=""/>
+            <valueDef value="OPAQUE" description=""/>
+            <valueDef value="OPERATOR" description=""/>
+            <valueDef value="PACKAGE" description=""/>
+            <valueDef value="PROCEDURE" description=""/>
+            <valueDef value="RECORD" description=""/>
+            <valueDef value="REFCURSOR" description=""/>
+            <valueDef value="SEQUENCE" description="12.2"/>
+            <valueDef value="SUBTYPE" description=""/>
+            <valueDef value="SYNONYM" description=""/>
+            <valueDef value="TABLE" description="12.2"/>
+            <valueDef value="TRIGGER" description=""/>
+            <valueDef value="UROWID" description=""/>
+            <valueDef value="VARIABLE" description=""/>
+            <valueDef value="VARRAY" description=""/>
+            <valueDef value="VIEW" description="12.2"/>
+         </listOfValues>
+      </Domain>
+      <Domain class="oracle.dbtools.crest.model.design.Domain" name="YES_NO" id="B79382F5-0958-0A6F-004F-69877E09CBE4">
+         <createdBy>phs</createdBy>
+         <createdTime>2017-10-15 10:04:04 UTC</createdTime>
+         <ownerDesignName>System</ownerDesignName>
+         <avTSortOrder>0</avTSortOrder>
+         <dataTypeSize>3 BYTE</dataTypeSize>
+         <fileName>defaultdomains</fileName>
+         <logicalDatatype>LOGDT024</logicalDatatype>
+         <listOfValues>
+            <valueDef value="NO" description=""/>
+            <valueDef value="YES" description=""/>
+         </listOfValues>
+      </Domain>
+      <Domain class="oracle.dbtools.crest.model.design.Domain" name="Unknown" id="DOM3000004">
+         <createdBy>phs</createdBy>
+         <createdTime>2017-10-15 08:19:57 UTC</createdTime>
+         <ownerDesignName>System</ownerDesignName>
+         <avTSortOrder>0</avTSortOrder>
+         <fileName>defaultdomains</fileName>
+         <logicalDatatype>LOGDT017</logicalDatatype>
+      </Domain>
+   </domains>
+</DomainFile>
