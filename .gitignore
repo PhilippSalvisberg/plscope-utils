@@ -3,6 +3,7 @@
 *.xtendbin
 *.DS_Store
 *.log
+code_coverage.html
 **/target
 **/bin
 **/test-output
