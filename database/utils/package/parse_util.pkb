@@ -53,7 +53,7 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
       t_obj t_obj_type := t_obj_type();
       l_xml xmltype;
    BEGIN
-      IF upper(substr(ltrim(in_sql),1,6)) = 'INSERT' THEN
+      IF regexp_like(in_sql, '^(\s*)(INSERT)(.+)$', 'in') THEN
          l_xml := parse_query(in_parse_user => in_parse_user, in_query => in_sql);
          <<targets>>
          FOR r_tar IN (
@@ -90,13 +90,13 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
       l_sql CLOB;
    BEGIN
       -- look for " WITH..."
-      l_sql := regexp_substr(in_sql, '\s+WITH\s+(.+)', 1, 1, 'i');
+      l_sql := regexp_substr(in_sql, '\s+WITH\s+(.+)', 1, 1, 'in');
       IF l_sql IS NULL OR sys.dbms_lob.getlength(l_sql) = 0 THEN
          -- look for "(SELECT..." or "SELECT..."
-         l_sql := regexp_substr(in_sql, '(\s|\()+SELECT\s+(.+)', 1, 1, 'i');
+         l_sql := regexp_substr(in_sql, '(\s|\()+SELECT\s+(.+)', 1, 1, 'in');
       END IF;
       -- remove error_logging_clause
-      l_sql := regexp_replace(l_sql, '(.+)(LOG\s+ERRORS.+)', '\1', 1, 1, 'i');
+      l_sql := regexp_replace(l_sql, '(.+)(LOG\s+ERRORS.+)', '\1', 1, 1, 'in');
       RETURN l_sql;
    END get_insert_subquery;
    
