@@ -49,6 +49,8 @@ SHOW ERRORS
 SHOW ERRORS
 @./test/package/test_plscope_context.pks
 SHOW ERRORS
+@./test/package/test_etl.pks
+SHOW ERRORS
 @./test/package/test_dd_util.pkb
 SHOW ERRORS
 @./test/package/test_lineage_util.pkb
@@ -59,12 +61,14 @@ SHOW ERRORS
 SHOW ERRORS
 @./test/package/test_plscope_context.pkb
 SHOW ERRORS
+@./test/package/test_etl.pkb
+SHOW ERRORS
 
 PROMPT ====================================================================
 PROMPT Run tests with 12.2 code coverage
 PROMPT ====================================================================
 
-DECLARE 
+DECLARE
    l_testsuite_run NUMBER;
 BEGIN
    dbms_plsql_code_coverage.create_coverage_tables(true);
@@ -82,8 +86,8 @@ COLUMN object_name FORMAT A30
 COLUMN covered_percent FORMAT 990.00
 WITH
    block_lines AS (
-      SELECT u.name AS object_name, 
-             b.line, 
+      SELECT u.name AS object_name,
+             b.line,
              b.col,
              CASE
                 WHEN b.line = 1 AND b.col = 1 AND b.covered = 0 THEN
@@ -99,10 +103,10 @@ WITH
                    1
                 ELSE
                    b.covered
-             END AS covered, 
+             END AS covered,
              b.not_feasible
-        FROM dbmspcc_runs r 
-        JOIN dbmspcc_units u 
+        FROM dbmspcc_runs r
+        JOIN dbmspcc_units u
           ON u.run_id = r.run_id
         JOIN dbmspcc_blocks b
           ON b.object_id = u.object_id
@@ -116,10 +120,10 @@ WITH
    )
 SELECT object_name,
        round((sum(least(covered + not_feasible, 1)) * 100) / count(*), 2) AS covered_percent
-  FROM block_lines 
+  FROM block_lines
  GROUP BY object_name
  ORDER BY covered_percent;
- 
+
 PROMPT ====================================================================
 PROMPT Code coverage - Uncovered and feasible lines
 PROMPT ====================================================================
@@ -128,8 +132,8 @@ COLUMN line FORMAT 99990
 COLUMN text FORMAT A120
 WITH
    block_lines AS (
-      SELECT u.name AS object_name, 
-             b.line, 
+      SELECT u.name AS object_name,
+             b.line,
              b.col,
              CASE
                 WHEN b.line = 1 AND b.col = 1 AND b.covered = 0 THEN
@@ -145,11 +149,11 @@ WITH
                    1
                 ELSE
                    b.covered
-             END AS covered, 
-             b.not_feasible, 
+             END AS covered,
+             b.not_feasible,
              regexp_replace(s.text, chr(10)||'+$', null) AS text
-        FROM dbmspcc_runs r 
-        JOIN dbmspcc_units u 
+        FROM dbmspcc_runs r
+        JOIN dbmspcc_units u
           ON u.run_id = r.run_id
         JOIN dbmspcc_blocks b
           ON b.object_id = u.object_id
