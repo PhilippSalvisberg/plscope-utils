@@ -170,4 +170,18 @@ SELECT object_name, line, text
  WHERE covered = 0
    AND not_feasible = 0;
 
+PROMPT ====================================================================
+PROMPT Create code_coverage.html using utPLSQL
+PROMPT ====================================================================
+
+SPOOL OFF
+-- reset package is necessary for correct coverage results
+EXEC dbms_session.reset_package;
+SET FEEDBACK OFF
+SET SERVEROUTPUT ON SIZE 1000000
+SPOOL code_coverage.html
+BEGIN
+  ut.run(ut_coverage_html_reporter());
+END;
+/
 SPOOL OFF
