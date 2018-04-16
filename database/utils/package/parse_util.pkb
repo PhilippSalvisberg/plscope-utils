@@ -16,6 +16,34 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
    */
 
    --
+   -- utl_xml_parse_query (private)
+   --
+   $IF DBMS_DB_VERSION.VER_LE_12_2 $THEN
+   $ELSE
+      -- workaround for utl_xml.parsequery which is protected by an accessible_by_clause
+      PROCEDURE utl_xml_parse_query (
+         in_current_userid IN NUMBER,
+         in_schema_name    IN VARCHAR2,
+         in_query          IN CLOB,
+         in_result         IN OUT NOCOPY CLOB
+      ) IS
+         LANGUAGE C 
+         LIBRARY sys.utl_xml_lib 
+         NAME "kuxParseQuery"
+         WITH CONTEXT PARAMETERS (
+            CONTEXT,
+            in_current_userid OCINUMBER,
+            in_current_userid INDICATOR,
+            in_schema_name    OCISTRING,
+            in_schema_name    INDICATOR,
+            in_query          OCILOBLOCATOR,
+            in_query          INDICATOR,
+            in_result         OCILOBLOCATOR,
+            in_result         INDICATOR
+         );
+   $END
+
+   --
    -- parse_query
    --
    FUNCTION parse_query(
@@ -30,8 +58,12 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
          
          -- parse query and get XML as CLOB
          -- parsing user must have access to objects in query
-         sys.utl_xml.parsequery(in_parse_user, in_query, l_clob);
-   
+         $IF DBMS_DB_VERSION.VER_LE_12_2 $THEN
+            sys.utl_xml.parsequery(in_parse_user, in_query, l_clob);
+         $ELSE
+            utl_xml_parse_query(sys_context('USERENV','SESSION_USERID'), in_parse_user, in_query, l_clob);
+         $END
+
          -- create XMLTYPE from CLOB
          IF sys.dbms_lob.getlength(l_clob) > 0 THEN
             -- parse successful, calling user has rights to access underlying objects

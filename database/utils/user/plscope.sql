@@ -53,7 +53,8 @@ GRANT SELECT_CATALOG_ROLE TO &&username;
 GRANT SELECT ANY DICTIONARY TO &&username;
 
 -- to parse queries in PL/SQL packages
-GRANT EXECUTE ON sys.utl_xml TO &&username;
+GRANT EXECUTE ON sys.utl_xml TO &&username;     -- for 12.2
+GRANT EXECUTE ON sys.utl_xml_lib TO &&username; -- for >= 18.0
 
 -- direct grants required for grant option
 GRANT SELECT ON sys.dba_identifiers  TO &&username WITH GRANT OPTION;
