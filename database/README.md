@@ -373,7 +373,7 @@ If you are interested in naming convention violations only extend the where clau
 
 This view reports the [where-lineage](http://ilpubs.stanford.edu:8090/918/1/lin_final.pdf) of insert statements. It is based on the view ```plscope_identifiers``` and the PL/SQL package ```lineage_util```. Behind the scenes insert statements are processed using the undocumented PL/SQL package procedure ```sys.utl_xml.parsequery```. This procedures supports select statements quite well including Oracle 12.2 grammar enhancements. However, it does not support PL/SQL at all, not even as part of the with_clause. Hence, not all select statements produce a parse-tree. Furthermore other statements such as insert, update, delete and merge produce incomplete parse-trees, which is somehow expected for a procedure called ```ParseQuery```. However, they are still useful to e.g. identify the target tables of an insert statement.
 
-Even if this view produces quite good results on wide range of "SELECT ... INSERT" statements, it is considered experimental. To produce reliable, more complete results a PL/SQL and SQL parser is required.
+Even if this view produces quite good results on wide range of `INSERT ... SELECT` statements, it is considered experimental. To produce reliable, more complete results a PL/SQL and SQL parser is required.
 
 Nonetheless this view shows the power of PL/Scope and its related database features.
 
