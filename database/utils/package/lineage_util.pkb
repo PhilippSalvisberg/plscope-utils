@@ -114,7 +114,7 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
          END IF;
       END IF;
 
-      RETURN t_col;      
+      RETURN type_util.dedup(in_t_col => t_col);      
    END get_dep_cols_from_query;
 
    --

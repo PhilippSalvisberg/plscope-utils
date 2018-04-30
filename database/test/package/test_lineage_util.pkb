@@ -36,8 +36,8 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                   );
       ut.expect(l_actual.count).to_equal(2);
       l_expected := t_col_type(
-                       col_type(USER, 'TABLE', 'EMP', 'SAL'),
-                       col_type(USER, 'TABLE', 'EMP', 'COMM')
+                       col_type(USER, 'TABLE', 'EMP', 'COMM'),
+                       col_type(USER, 'TABLE', 'EMP', 'SAL')
                     );
       ut.expect(anydata.convertCollection(l_actual))
          .to_equal(anydata.convertCollection(l_expected));
@@ -53,9 +53,9 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                   );
       ut.expect(l_actual.count).to_equal(3);
       l_expected := t_col_type(
-                       col_type(USER, 'VIEW', 'SOURCE_VIEW', 'SALARY'),
+                       col_type(USER, 'TABLE', 'EMP', 'COMM'),
                        col_type(USER, 'TABLE', 'EMP', 'SAL'),
-                       col_type(USER, 'TABLE', 'EMP', 'COMM')
+                       col_type(USER, 'VIEW', 'SOURCE_VIEW', 'SALARY')
                     );
       ut.expect(anydata.convertCollection(l_actual))
          .to_equal(anydata.convertCollection(l_expected));      
@@ -76,8 +76,8 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                   );
       ut.expect(l_actual.count).to_equal(2);
       l_expected := t_col_type(
-                       col_type(USER, 'TABLE', 'EMP', 'SAL'),
-                       col_type(USER, 'TABLE', 'EMP', 'COMM')
+                       col_type(USER, 'TABLE', 'EMP', 'COMM'),
+                       col_type(USER, 'TABLE', 'EMP', 'SAL')
                     );
       ut.expect(anydata.convertCollection(l_actual))
          .to_equal(anydata.convertCollection(l_expected));         

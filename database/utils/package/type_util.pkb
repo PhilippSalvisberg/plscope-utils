@@ -14,6 +14,7 @@ CREATE OR REPLACE PACKAGE BODY type_util IS
                    object_type,
                    object_name
               FROM TABLE(in_t_obj)
+             ORDER BY 1, 2, 3
          ) LOOP
             t_result.extend;
             t_result(t_result.count) := obj_type (
@@ -41,6 +42,7 @@ CREATE OR REPLACE PACKAGE BODY type_util IS
                    object_name,
                    column_name
               FROM TABLE(in_t_col)
+             ORDER BY 1, 2, 3
          ) LOOP
             t_result.extend;
             t_result(t_result.count) := col_type (
@@ -73,6 +75,7 @@ CREATE OR REPLACE PACKAGE BODY type_util IS
                    to_object_name,
                    to_column_name
               FROM TABLE(in_t_col_lineage)
+             ORDER BY 1, 2, 3, 4, 5, 6, 7, 8
          ) LOOP
             t_result.extend;
             t_result(t_result.count) := col_lineage_type (
