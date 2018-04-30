@@ -18,8 +18,7 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
    --
    -- utl_xml_parse_query (private)
    --
-   $IF DBMS_DB_VERSION.VER_LE_12_2 $THEN
-   $ELSE
+   $IF DBMS_DB_VERSION.VERSION >= 18 $THEN
       -- workaround for utl_xml.parsequery which is protected by an accessible_by_clause
       PROCEDURE utl_xml_parse_query (
          in_current_userid IN NUMBER,
