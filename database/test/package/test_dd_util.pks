@@ -16,6 +16,7 @@ CREATE OR REPLACE PACKAGE test_dd_util AUTHID CURRENT_USER IS
    */
    
    -- %suite
+   -- %suitepath(plscope.test)
    -- %rollback(manual)
    
    -- %beforeall

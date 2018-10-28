@@ -16,6 +16,7 @@ CREATE OR REPLACE PACKAGE test_plscope_context AUTHID CURRENT_USER IS
    */
    
    -- %suite
+   -- %suitepath(plscope.test)
    
    -- %test
    PROCEDURE test_set_attr;

@@ -16,6 +16,7 @@ CREATE OR REPLACE PACKAGE test_etl AUTHID CURRENT_USER IS
    */
    
    -- %suite
+   -- %suitepath(plscope.demo)
    -- %rollback(manual)
 
    -- %test

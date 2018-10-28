@@ -16,6 +16,7 @@ CREATE OR REPLACE PACKAGE test_parse_util AUTHID CURRENT_USER IS
    */
    
    -- %suite
+   -- %suitepath(plscope.test)
    
    -- %test
    PROCEDURE test_parse_query;
