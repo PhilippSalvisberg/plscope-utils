@@ -51,6 +51,8 @@ SHOW ERRORS
 SHOW ERRORS
 @./test/package/test_etl.pks
 SHOW ERRORS
+@./test/package/test_plscope_identifiers.pks
+SHOW ERRORS
 @./test/package/test_dd_util.pkb
 SHOW ERRORS
 @./test/package/test_lineage_util.pkb
@@ -62,6 +64,8 @@ SHOW ERRORS
 @./test/package/test_plscope_context.pkb
 SHOW ERRORS
 @./test/package/test_etl.pkb
+SHOW ERRORS
+@./test/package/test_plscope_identifiers.pkb
 SHOW ERRORS
 
 PROMPT ====================================================================
