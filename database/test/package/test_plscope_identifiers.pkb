@@ -10,7 +10,7 @@ CREATE OR REPLACE PACKAGE BODY test_plscope_identifiers IS
                 signature, usage_id, usage_context_id, origin_con_id
            FROM plscope_identifiers
           WHERE usage != 'EXECUTE' -- exclude SQL
-          --  AND name != 'LONG'
+            AND object_name = 'DD_UTIL'
           ORDER BY object_type, object_name, line, col, usage, usage_id;
 
       -- populate expected
@@ -18,6 +18,7 @@ CREATE OR REPLACE PACKAGE BODY test_plscope_identifiers IS
          SELECT object_type, object_name, line, col, name, type, usage, 
                 signature, usage_id, usage_context_id, origin_con_id
            FROM user_identifiers 
+          WHERE object_name = 'DD_UTIL'
           ORDER BY object_type, object_name, line, col, usage, usage_id;
 
       -- assert
