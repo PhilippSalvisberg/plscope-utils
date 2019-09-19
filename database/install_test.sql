@@ -20,7 +20,6 @@ SET ECHO OFF
 SET LINESIZE 200
 SET PAGESIZE 100
 SET SERVEROUTPUT ON SIZE 1000000
-SPOOL install_test.log
 
 PROMPT ====================================================================
 PROMPT This script installs test packages for plscope-utils.
@@ -41,10 +40,6 @@ PROMPT ====================================================================
 
 @./test/package/test_dd_util.pks
 SHOW ERRORS
-@./test/package/test_lineage_util.pks
-SHOW ERRORS
-@./test/package/test_parse_util.pks
-SHOW ERRORS
 @./test/package/test_type_util.pks
 SHOW ERRORS
 @./test/package/test_plscope_context.pks
@@ -55,10 +50,6 @@ SHOW ERRORS
 SHOW ERRORS
 @./test/package/test_dd_util.pkb
 SHOW ERRORS
-@./test/package/test_lineage_util.pkb
-SHOW ERRORS
-@./test/package/test_parse_util.pkb
-SHOW ERRORS
 @./test/package/test_type_util.pkb
 SHOW ERRORS
 @./test/package/test_plscope_context.pkb
@@ -67,6 +58,46 @@ SHOW ERRORS
 SHOW ERRORS
 @./test/package/test_plscope_identifiers.pkb
 SHOW ERRORS
+
+PROMPT ====================================================================
+PROMPT Options based on privileges
+PROMPT ====================================================================
+
+SET FEEDBACK OFF
+SET TERM OFF
+SPOOL install_options.tmp
+DECLARE
+   PROCEDURE print (in_line IN VARCHAR2) IS
+   BEGIN
+      dbms_output.put_line(in_line);
+   END print; 
+   --
+   PROCEDURE options IS
+      l_count INTEGER;
+   BEGIN
+      SELECT count(*)
+        INTO l_count
+        FROM all_objects
+       WHERE object_name IN ('UTL_XML', 'UTL_XML_LIB');
+      IF l_count > 0 THEN
+         print('@./test/package/test_lineage_util.pks');
+         print('SHOW ERRORS');
+         print('@./test/package/test_parse_util.pks');
+         print('SHOW ERRORS');
+         print('@./test/package/test_lineage_util.pkb');
+         print('SHOW ERRORS');
+         print('@./test/package/test_parse_util.pkb');
+         print('SHOW ERRORS');
+      END IF;
+   END options;
+BEGIN
+   options;
+END;
+/
+SPOOL OFF
+SET FEEDBACK ON
+SET TERM ON
+@install_options.tmp
 
 PROMPT ====================================================================
 PROMPT Run tests with 12.2 code coverage
@@ -174,18 +205,3 @@ SELECT object_name, line, text
  WHERE covered = 0
    AND not_feasible = 0;
 
-PROMPT ====================================================================
-PROMPT Create code_coverage.html using utPLSQL
-PROMPT ====================================================================
-
-SPOOL OFF
--- reset package is necessary for correct coverage results
-EXEC dbms_session.reset_package;
-SET FEEDBACK OFF
-SET SERVEROUTPUT ON SIZE 1000000
-SPOOL code_coverage.html
-BEGIN
-  ut.run(ut_coverage_html_reporter());
-END;
-/
-SPOOL OFF

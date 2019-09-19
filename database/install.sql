@@ -18,7 +18,6 @@ SET DEFINE OFF
 SET SCAN OFF
 SET ECHO OFF
 SET SERVEROUTPUT ON SIZE 100000
-SPOOL install.log
 
 PROMPT ====================================================================
 PROMPT This script installs plscope-utils.
@@ -55,19 +54,11 @@ PROMPT ====================================================================
 
 @./utils/package/dd_util.pks
 SHOW ERRORS
-@./utils/package/lineage_util.pks
-SHOW ERRORS
-@./utils/package/parse_util.pks
-SHOW ERRORS
 @./utils/package/type_util.pks
 SHOW ERRORS
 @./utils/package/plscope_context.pks
 SHOW ERRORS
 @./utils/package/dd_util.pkb
-SHOW ERRORS
-@./utils/package/lineage_util.pkb
-SHOW ERRORS
-@./utils/package/parse_util.pkb
 SHOW ERRORS
 @./utils/package/type_util.pkb
 SHOW ERRORS
@@ -84,10 +75,6 @@ SHOW ERRORS
 SHOW ERRORS
 @./utils/view/plscope_tab_usage.sql
 SHOW ERRORS
-@./utils/view/plscope_col_usage.sql
-SHOW ERRORS
-@./utils/view/plscope_ins_lineage.sql
-SHOW ERRORS
 @./utils/view/plscope_naming.sql
 SHOW ERRORS
 
@@ -98,21 +85,21 @@ PROMPT ====================================================================
 GRANT SELECT ON plscope_identifiers TO PUBLIC;
 GRANT SELECT ON plscope_statements TO PUBLIC;
 GRANT SELECT ON plscope_tab_usage TO PUBLIC;
-GRANT SELECT ON plscope_col_usage TO PUBLIC;
-GRANT SELECT ON plscope_ins_lineage TO PUBLIC;
 GRANT SELECT ON plscope_naming TO PUBLIC;
 GRANT EXECUTE ON dd_util TO PUBLIC;
-GRANT EXECUTE ON lineage_util TO PUBLIC;
-GRANT EXECUTE ON parse_util TO PUBLIC;
 GRANT EXECUTE ON type_util TO PUBLIC;
 GRANT EXECUTE ON plscope_context TO PUBLIC;
 
 PROMPT ====================================================================
-PROMPT Synonyms
+PROMPT Synonyms and options based on privileges
 PROMPT ====================================================================
 
--- anonymous PL/SQL block to handle target user
+SET FEEDBACK OFF
+SET TERM OFF
+SPOOL install_options.tmp
 DECLARE
+   l_count INTEGER;
+   --
    PROCEDURE cre_syn (in_name IN VARCHAR2) IS
       l_templ VARCHAR2(4000) :=
          'CREATE OR REPLACE PUBLIC SYNONYM ${name} FOR ${user}.${name}';
@@ -122,20 +109,56 @@ DECLARE
       l_sql := replace(l_sql, '${user}', USER);
       EXECUTE IMMEDIATE l_sql;
    END cre_syn;
+   --
+   PROCEDURE print (in_line IN VARCHAR2) IS
+   BEGIN
+      dbms_output.put_line(in_line);
+   END print; 
+   --
+   PROCEDURE options IS
+   BEGIN
+      SELECT count(*)
+        INTO l_count
+        FROM all_objects
+       WHERE object_name IN ('UTL_XML', 'UTL_XML_LIB');
+      IF l_count > 0 THEN
+         print('@./utils/package/parse_util.pks');
+         print('SHOW ERRORS');
+         print('@./utils/package/lineage_util.pks');
+         print('SHOW ERRORS');
+         print('@./utils/package/parse_util.pkb');
+         print('SHOW ERRORS');
+         print('@./utils/package/lineage_util.pkb');
+         print('SHOW ERRORS');
+         print('@./utils/view/plscope_col_usage.sql');
+         print('SHOW ERRORS');
+         print('@./utils/view/plscope_ins_lineage.sql');
+         print('SHOW ERRORS');
+         print('GRANT EXECUTE ON lineage_util TO PUBLIC;');
+         print('GRANT EXECUTE ON parse_util TO PUBLIC;');
+         print('GRANT SELECT ON plscope_col_usage TO PUBLIC;');
+         print('GRANT SELECT ON plscope_ins_lineage TO PUBLIC;');
+         cre_syn('plscope_col_usage');
+         cre_syn('plscope_ins_lineage');
+         cre_syn('lineage_util');
+         cre_syn('parse_util');
+      END IF;
+   END options;
 BEGIN
    cre_syn('plscope_identifiers');
    cre_syn('plscope_statements');
    cre_syn('plscope_tab_usage');
-   cre_syn('plscope_col_usage');
-   cre_syn('plscope_ins_lineage');
    cre_syn('plscope_naming');
    cre_syn('dd_util');
-   cre_syn('lineage_util');
-   cre_syn('parse_util');
    cre_syn('type_util');
    cre_syn('plscope_context');
+   options;
 END;
 /
+SPOOL OFF
+SET FEEDBACK ON
+SET TERM ON
+@install_options.tmp
 
 PROMPT ====================================================================
 PROMPT Create and populate demo tables
@@ -156,5 +179,3 @@ SHOW ERRORS
 @./demo/package/etl.pkb
 SHOW ERRORS
 ALTER SESSION SET plscope_settings='identifiers:none, statements:none';
-
-SPOOL OFF
