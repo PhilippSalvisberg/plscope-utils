@@ -11,7 +11,9 @@ CREATE OR REPLACE PACKAGE BODY test_dd_util IS
             NULL; 
          END;
       ]';
-      EXECUTE IMMEDIATE 'CREATE OR REPLACE SYNONYM s1 FOR p1';      
+      EXECUTE IMMEDIATE 'CREATE OR REPLACE SYNONYM s1 FOR p1';
+      -- issue 31: fix ORA-6550 that occurs from time to time while querying dba_synonyms
+      ut_runner.rebuild_annotation_cache(user);
    END setup;
    
    --
