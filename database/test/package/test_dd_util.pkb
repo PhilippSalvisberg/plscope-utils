@@ -11,7 +11,9 @@ CREATE OR REPLACE PACKAGE BODY test_dd_util IS
             NULL; 
          END;
       ]';
-      EXECUTE IMMEDIATE 'CREATE OR REPLACE SYNONYM s1 FOR p1';      
+      EXECUTE IMMEDIATE 'CREATE OR REPLACE SYNONYM s1 FOR p1';
+      -- issue 31: fix ORA-6550 that occurs from time to time while querying dba_synonyms
+      ut_runner.rebuild_annotation_cache(user);
    END setup;
    
    --
@@ -83,7 +85,6 @@ CREATE OR REPLACE PACKAGE BODY test_dd_util IS
    PROCEDURE test_get_objects IS
       l_input    t_obj_type;
       l_actual   t_obj_type;
-      l_sorted   t_obj_type;
       l_expected t_obj_type;
    BEGIN
       l_input := t_obj_type(
@@ -98,16 +99,8 @@ CREATE OR REPLACE PACKAGE BODY test_dd_util IS
                  );
       l_actual := dd_util.get_objects(USER, l_input);
       ut.expect(l_actual.count).to_equal(2);
-      SELECT obj_type(
-                owner,
-                object_type,
-                object_name
-             )
-        BULK COLLECT INTO l_sorted
-        FROM TABLE(l_actual)
-       ORDER BY owner, object_type, object_name;
-      ut.expect(anydata.convertCollection(l_sorted))
-         .to_equal(anydata.convertCollection(l_expected));
+      ut.expect(anydata.convertCollection(l_actual))
+         .to_equal(anydata.convertCollection(l_expected)).unordered;
    END test_get_objects;
 
    --

@@ -40,7 +40,7 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                        col_type(USER, 'TABLE', 'EMP', 'SAL')
                     );
       ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected));
+         .to_equal(anydata.convertCollection(l_expected)).unordered;
       -- recursive
       l_actual := lineage_util.get_dep_cols_from_query(
                      USER,
@@ -58,7 +58,7 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                        col_type(USER, 'VIEW', 'SOURCE_VIEW', 'SALARY')
                     );
       ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected));      
+         .to_equal(anydata.convertCollection(l_expected)).unordered;      
    END test_get_dep_cols_from_query;
 
    --
@@ -80,7 +80,7 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                        col_type(USER, 'TABLE', 'EMP', 'SAL')
                     );
       ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected));         
+         .to_equal(anydata.convertCollection(l_expected)).unordered;      
    END test_get_dep_cols_from_view;
 
    --
@@ -89,7 +89,6 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
    PROCEDURE test_get_dep_cols_from_insert IS
       l_signature VARCHAR2(32 BYTE);
       l_actual    t_col_lineage_type;
-      l_sorted    t_col_lineage_type;
       l_expected  t_col_lineage_type;
    BEGIN
       SELECT signature
@@ -99,44 +98,17 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
       -- non-recursive
       l_actual := lineage_util.get_dep_cols_from_insert(l_signature, 0);
       ut.expect(l_actual.count).to_equal(3);
-      SELECT col_lineage_type(
-                from_owner,
-                from_object_type,
-                from_object_name,
-                from_column_name,
-                to_owner,
-                to_object_type,
-                to_object_name,
-                to_column_name
-             )
-        BULK COLLECT INTO l_sorted
-        FROM TABLE(l_actual)
-       ORDER BY from_owner, from_object_type, from_object_name, from_column_name,
-             to_owner, to_object_type, to_object_name, to_column_name;      
       l_expected := t_col_lineage_type(
                        col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', USER, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
                        col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', USER, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
                        col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'SALARY', USER, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertCollection(l_sorted))
-         .to_equal(anydata.convertCollection(l_expected));
+      ut.expect(anydata.convertCollection(l_actual))
+         .to_equal(anydata.convertCollection(l_expected))
+         .join_by('FROM_COLUMN_NAME');
       -- recursive
       l_actual := lineage_util.get_dep_cols_from_insert(l_signature, 1);
       ut.expect(l_actual.count).to_equal(7);
-      SELECT col_lineage_type(
-                from_owner,
-                from_object_type,
-                from_object_name,
-                from_column_name,
-                to_owner,
-                to_object_type,
-                to_object_name,
-                to_column_name
-             )
-        BULK COLLECT INTO l_sorted
-        FROM TABLE(l_actual)
-       ORDER BY from_owner, from_object_type, from_object_name, from_column_name,
-             to_owner, to_object_type, to_object_name, to_column_name;   
       l_expected := t_col_lineage_type(
                        col_lineage_type(USER, 'TABLE', 'DEPT', 'DEPTNO', USER, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
                        col_lineage_type(USER, 'TABLE', 'DEPT', 'DNAME', USER, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
@@ -146,8 +118,8 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                        col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', USER, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
                        col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'SALARY', USER, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertCollection(l_sorted))
-         .to_equal(anydata.convertCollection(l_expected));
+      ut.expect(anydata.convertCollection(l_actual))
+         .to_equal(anydata.convertCollection(l_expected)).unordered;
    END test_get_dep_cols_from_insert;
    
    --
@@ -171,7 +143,7 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                        col_type(USER, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
       ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected));
+         .to_equal(anydata.convertCollection(l_expected)).unordered;
       -- implicit target columns
       SELECT signature
         INTO l_signature
@@ -185,7 +157,7 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                        col_type(USER, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
       ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected));
+         .to_equal(anydata.convertCollection(l_expected)).unordered;
    END test_get_target_cols_from_insert;
 
 END test_lineage_util;
