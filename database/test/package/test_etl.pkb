@@ -7,9 +7,9 @@ CREATE OR REPLACE PACKAGE BODY test_etl IS
       l_actual   sys_refcursor;
       l_expected sys_refcursor;
    BEGIN
-      OPEN l_actual FOR SELECT * FROM deptsal ORDER BY dept_no;
-      OPEN l_expected FOR SELECT * FROM source_view ORDER BY dept_no;
-      ut.expect(l_actual).to_equal(l_expected);
+      OPEN l_actual FOR SELECT * FROM deptsal;
+      OPEN l_expected FOR SELECT * FROM source_view;
+      ut.expect(l_actual).to_equal(l_expected).unordered;
    END check_deptsal_content;
    
    --
