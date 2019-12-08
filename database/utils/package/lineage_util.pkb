@@ -296,7 +296,8 @@ CREATE OR REPLACE PACKAGE BODY lineage_util IS
             AND cu.type             = 'COLUMN'
             AND col.owner           = p_owner
             AND col.object_type     = p_object_type
-            AND col.object_name     = p_object_name;
+            AND col.object_name     = p_object_name
+          ORDER BY cu.line, cu.col;
       CURSOR c_all_col (
          p_owner       IN VARCHAR2,
          p_object_name IN VARCHAR2
