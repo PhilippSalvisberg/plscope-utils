@@ -47,7 +47,7 @@ CREATE OR REPLACE PACKAGE BODY test_parse_util IS
                      ]'
                   );
       ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected));
+         .to_equal(anydata.convertCollection(l_expected)).unordered;
       -- multitable insert
       l_expected := t_obj_type(
                        obj_type(NULL, NULL, 'EMP'),
@@ -84,7 +84,7 @@ CREATE OR REPLACE PACKAGE BODY test_parse_util IS
                      ]'
                   );
       ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected));
+         .to_equal(anydata.convertCollection(l_expected)).unordered;
    END test_get_insert_targets;
 
    --
