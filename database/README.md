@@ -17,13 +17,13 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 		cd (...)
 
 3. Create an oracle user for the plscope-utils database objects. The default username and password is ```plscope```.
-   * optionally change username, password and tablespace in the installation script [database/utils/user/plscope.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/user/plscope.sql)
+   * optionally change username, password and tablespace in the installation script [database/utils/user/plscope.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/user/plscope.sql)
 
    * connect as sys to the target database
 
 			sqlplus / as sysdba
 
-   * execute the script [database/utils/user/plscope.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/user/plscope.sql)
+   * execute the script [database/utils/user/plscope.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/user/plscope.sql)
 
 			@database/utils/user/plscope.sql
 			EXIT
@@ -34,7 +34,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 
 			sqlplus plscope/plscope
 
-   * execute the script [database/install.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/install.sql)
+   * execute the script [database/install.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/install.sql)
 
 			@database/install.sql
 			EXIT
@@ -49,7 +49,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 
 #### Create/compile a procedure
 
-The following example is based on demo [tables](https://github.com/PhilippSalvisberg/plscope-utils/tree/master/database/demo/table) installed by plscope-utils.
+The following example is based on demo [tables](https://github.com/PhilippSalvisberg/plscope-utils/tree/main/database/demo/table) installed by plscope-utils.
 
 	CREATE OR REPLACE PROCEDURE load_from_tab IS
 	BEGIN
@@ -85,7 +85,7 @@ Here's an example to set the context to a chosen PL/SQL package of the [Alexandr
 	EXEC plscope_context.set_attr('OBJECT_NAME', 'APEX_UTIL_PKG');
  
 
-### [View PLSCOPE\_IDENTIFIERS](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_identifiers.sql)
+### [View PLSCOPE\_IDENTIFIERS](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_identifiers.sql)
 
 This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_source``` views. It provides all columns from ```dba_identifiers``` plus the following:
 
@@ -140,11 +140,11 @@ Column Name           | Description
 	19 rows selected.
 
 
-### [View PLSCOPE\_STATEMENTS](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_statements.sql)
+### [View PLSCOPE\_STATEMENTS](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_statements.sql)
 
 This view is based on the ```dba_statements``` view and adds a ```is_duplicate``` column.
 
-The [etl](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/demo/package/etl.pkb) package body contains various variants to load the ```deptsal``` target table. And the reported duplicate insert statement is used there as well.
+The [etl](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/demo/package/etl.pkb) package body contains various variants to load the ```deptsal``` target table. And the reported duplicate insert statement is used there as well.
 
 #### Query
 
@@ -166,7 +166,7 @@ The [etl](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/databas
 
 	  12    4 COMMIT                  NO           
 
-### [View PLSCOPE\_TAB\_USAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_tab_usage.sql)
+### [View PLSCOPE\_TAB\_USAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_tab_usage.sql)
 
 This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```. Usages of synonyms and views are resolved and reporteded with a ```NO``` in the column ```DIRECT_DEPENDENCY```.
 
@@ -196,7 +196,7 @@ This view reports table usages. It is based on the views ```dba_tables```, ```db
 	11 rows selected. 
 
 
-### [View PLSCOPE\_COL\_USAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_col_usage.sql)
+### [View PLSCOPE\_COL\_USAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_col_usage.sql)
 
 This view reports column usages. It is based on the views ```plscope_identifiers```, ```plscope_tab_usage```, ```dba_synonyms```, ```dba_objects``` and ```dba_tab_columns```. Column-less table/view/synonym accesses are resolved and reporteded with a ```NO``` in the column ```DIRECT_DEPENDENCY```.
 
@@ -248,7 +248,7 @@ This view reports column usages. It is based on the views ```plscope_identifiers
 	
 	34 rows selected.
 	
-### [View PLSCOPE\_NAMING](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_naming.sql)
+### [View PLSCOPE\_NAMING](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_naming.sql)
 
 This view checks if PL/SQL identifier names comply to the [Trivadis PL/SQL & SQL Coding Guidelines Version 3.2](https://www.salvis.com/download/guidelines/PLSQL_and_SQL_Coding_Guidelines_3_2.pdf). This view provides chosen columns from ```dba_identifiers``` plus the following:
 
@@ -367,7 +367,7 @@ If you are interested in naming convention violations only extend the where clau
 
 	EXEC plscope_context.remove_all;
 
-### [View PLSCOPE\_INS\_LINEAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_ins_lineage.sql)
+### [View PLSCOPE\_INS\_LINEAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_ins_lineage.sql)
 
 **_Experimental_**
 
