@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE dd_util IS
+create or replace package dd_util is
    /*
    * Copyright 2011-2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -29,9 +29,9 @@ CREATE OR REPLACE PACKAGE dd_util IS
    * @param in_obj partially qualified object (synonym)
    * @returns fully qualifed object
    */
-   FUNCTION resolve_synonym (
-      in_parse_user IN VARCHAR2,
-      in_obj        IN obj_type
+   function resolve_synonym(
+      in_parse_user in varchar2,
+      in_obj        in obj_type
    ) return obj_type;
 
    /**
@@ -41,10 +41,10 @@ CREATE OR REPLACE PACKAGE dd_util IS
    * @param in_obj partially qualified object
    * @returns fully qualifed object
    */
-   FUNCTION get_object(
-      in_parse_user IN VARCHAR2, 
-      in_obj        IN obj_type
-   ) RETURN obj_type;
+   function get_object(
+      in_parse_user in varchar2,
+      in_obj        in obj_type
+   ) return obj_type;
    
    /**
    * Gets fully qualified objects.
@@ -55,10 +55,10 @@ CREATE OR REPLACE PACKAGE dd_util IS
    * @param in_t_obj list of partially qualified objects
    * @returns table of objects
    */
-   FUNCTION get_objects(
-      in_parse_user IN VARCHAR2,
-      in_t_obj      IN t_obj_type
-   ) RETURN t_obj_type;
+   function get_objects(
+      in_parse_user in varchar2,
+      in_t_obj      in t_obj_type
+   ) return t_obj_type;
    
    /**
    * Gets the column id of a view or table column.
@@ -68,11 +68,11 @@ CREATE OR REPLACE PACKAGE dd_util IS
    * @param in_column_name column name to get id for
    * @returns column_id (position in the view)
    */
-   FUNCTION get_column_id(
-      in_owner       IN VARCHAR2,
-      in_object_name IN VARCHAR2,
-      in_column_name IN VARCHAR2
-   ) RETURN INTEGER;
+   function get_column_id(
+      in_owner       in varchar2,
+      in_object_name in varchar2,
+      in_column_name in varchar2
+   ) return integer;
    
    /**
    * Gets the view source (query) of a given view.
@@ -80,9 +80,9 @@ CREATE OR REPLACE PACKAGE dd_util IS
    * @param in_obj fully qualified object 
    * @returns source of the view as CLOB
    */
-   FUNCTION get_view_source(
-      in_obj IN obj_type
-   ) RETURN CLOB;
-      
-END dd_util;
+   function get_view_source(
+      in_obj in obj_type
+   ) return clob;
+
+end dd_util;
 /

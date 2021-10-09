@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE test_dd_util AUTHID CURRENT_USER IS
+create or replace package test_dd_util authid current_user is
    /*
    * Copyright 2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -20,25 +20,25 @@ CREATE OR REPLACE PACKAGE test_dd_util AUTHID CURRENT_USER IS
    -- %rollback(manual)
    
    -- %beforeall
-   PROCEDURE setup;
+   procedure setup;
 
    -- %afterall
-   PROCEDURE teardown;
+   procedure teardown;
    
    -- %test
-   PROCEDURE test_resolve_synonym;
+   procedure test_resolve_synonym;
 
    -- %test
-   PROCEDURE test_get_object;
+   procedure test_get_object;
    
    -- %test
-   PROCEDURE test_get_objects;
+   procedure test_get_objects;
 
    -- %test   
-   PROCEDURE test_get_column_id;
+   procedure test_get_column_id;
    
    -- %test
-   PROCEDURE test_get_view_source;   
-      
-END test_dd_util;
+   procedure test_get_view_source;
+
+end test_dd_util;
 /

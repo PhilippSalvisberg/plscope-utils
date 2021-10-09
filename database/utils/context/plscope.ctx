@@ -14,4 +14,4 @@
 * limitations under the License.
 */
 
-CREATE OR REPLACE CONTEXT plscope USING plscope_context;
+create or replace context plscope using plscope_context;

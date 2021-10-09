@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE lineage_util IS
+create or replace package lineage_util is
    /*
    * Copyright 2011-2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -22,14 +22,14 @@ CREATE OR REPLACE PACKAGE lineage_util IS
    *
    * @param in_recursive 1=true, 0=false
    */
-   PROCEDURE set_recursive (in_recursive IN INTEGER);
+   procedure set_recursive(in_recursive in integer);
 
    /**
    * Gets the current default value of the in_recursive parameter in get_dep_cals_from_insert calls.
    *
    * @returns 1=true, 0=false
    */
-   FUNCTION get_recursive RETURN INTEGER;
+   function get_recursive return integer;
 
    /**
    * Gets the dependent columns of a given column in a query.
@@ -39,13 +39,13 @@ CREATE OR REPLACE PACKAGE lineage_util IS
    * @param in_column_pos position/id of the column in the query to analyze
    * @param in_recursive 1=true, 0=false
    * @returns a table of col_type
-   */   
-   FUNCTION get_dep_cols_from_query(
-      in_parse_user  IN VARCHAR2,
-      in_query       IN CLOB,
-      in_column_pos  IN INTEGER,
-      in_recursive   IN INTEGER DEFAULT 1
-   ) RETURN t_col_type;
+   */
+   function get_dep_cols_from_query(
+      in_parse_user in varchar2,
+      in_query      in clob,
+      in_column_pos in integer,
+      in_recursive  in integer default 1
+   ) return t_col_type;
 
    /**
    * Gets the dependent columns of a given column in a view.
@@ -56,12 +56,12 @@ CREATE OR REPLACE PACKAGE lineage_util IS
    * @param in_recursive 1=true, 0=false
    * @returns a table of col_type
    */
-   FUNCTION get_dep_cols_from_view(
-      in_owner       IN VARCHAR2,
-      in_object_name IN VARCHAR2,
-      in_column_name IN VARCHAR2,
-      in_recursive   IN INTEGER DEFAULT 1
-   ) RETURN t_col_type;
+   function get_dep_cols_from_view(
+      in_owner       in varchar2,
+      in_object_name in varchar2,
+      in_column_name in varchar2,
+      in_recursive   in integer default 1
+   ) return t_col_type;
    
    /**
    * Gets the dependent columns of a given PL/Scope SQL insert statement
@@ -70,10 +70,10 @@ CREATE OR REPLACE PACKAGE lineage_util IS
    * @param in_recursive 1=true, 0=false
    * @returns a table of col_lineage_type
    */
-   FUNCTION get_dep_cols_from_insert(
-      in_signature IN VARCHAR2,
-      in_recursive IN INTEGER DEFAULT get_recursive()
-   ) RETURN t_col_lineage_type;
+   function get_dep_cols_from_insert(
+      in_signature in varchar2,
+      in_recursive in integer default get_recursive()
+   ) return t_col_lineage_type;
 
    /**
    * Get Insert target columns from a given PL/Scope SQL insert statement
@@ -81,8 +81,8 @@ CREATE OR REPLACE PACKAGE lineage_util IS
    * @param in_signature signature of PL/Scope Insert statement
    * @returns a table of col_type 
    */
-   FUNCTION get_target_cols_from_insert(
-      in_signature IN VARCHAR2
-   ) RETURN t_col_type;
-END lineage_util;
+   function get_target_cols_from_insert(
+      in_signature in varchar2
+   ) return t_col_type;
+end lineage_util;
 /

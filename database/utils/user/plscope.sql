@@ -14,113 +14,118 @@
 * limitations under the License.
 */
 
-SET DEFINE ON
-SET ECHO OFF
-SET VERIFY OFF
+set define on
+set echo off
+set verify off
 
-PROMPT ====================================================================
-PROMPT Parameter defaults for username (1), password (2) and tablespace (3)
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Parameter defaults for username (1), password (2) and tablespace (3)
+prompt ====================================================================
 
-COLUMN 1 NEW_VALUE 1 NOPRINT;
-COLUMN 2 NEW_VALUE 2 NOPRINT;
-COLUMN 3 NEW_VALUE 3 NOPRINT;
+-- use these intermediate substitution variables to avoid parse errors in SQLDev
+define param1 = 1
+define param2 = 2
+define param3 = 3
 
-SET FEEDBACK OFF
+column 1 new_value &&param1 noprint
+column 2 new_value &&param2 noprint
+column 3 new_value &&param3 noprint
 
-SELECT NULL AS "1", 
-       NULL AS "2" , 
-       NULL AS "3" 
-  FROM dual 
- WHERE rownum = 0;
+set feedback off
 
-COLUMN username   NEW_VALUE username   NOPRINT
-COLUMN password   NEW_VALUE password   NOPRINT
-COLUMN tablespace NEW_VALUE tablespace NOPRINT
+select null as "1",
+       null as "2",
+       null as "3"
+  from dual
+ where rownum = 0;
 
-SELECT coalesce('&&1', 'plscope') AS username,
-       coalesce('&&2', 'plscope') AS password,
-       coalesce('&&3', 'users')   AS tablespace
-  FROM dual;
+column username   new_value username   noprint
+column password   new_value password   noprint
+column tablespace new_value tablespace noprint
 
-SET FEEDBACK ON
+select coalesce('&&1', 'plscope') as username,
+       coalesce('&&2', 'plscope') as password,
+       coalesce('&&3', 'users') as tablespace
+  from dual;
 
-PROMPT ====================================================================
-PROMPT This script creates the user &&username with all required privileges.
-PROMPT Run this script as SYS or as ADMIN in the Oracle Cloud.
-PROMPT ====================================================================
+set feedback on
 
-PROMPT ====================================================================
-PROMPT User
-PROMPT ====================================================================
+prompt ====================================================================
+prompt This script creates the user &&username with all required privileges.
+prompt Run this script as SYS or as ADMIN in the Oracle Cloud.
+prompt ====================================================================
 
-CREATE USER &&username IDENTIFIED BY &&password
-  DEFAULT TABLESPACE &&tablespace
-  TEMPORARY TABLESPACE TEMP;
+prompt ====================================================================
+prompt User
+prompt ====================================================================
 
-PROMPT ====================================================================
-PROMPT Grants
-PROMPT ====================================================================
+create user &&username identified by &&password
+  default tablespace &&tablespace
+  temporary tablespace temp;
 
-GRANT CONNECT                        TO &&username;
-GRANT RESOURCE                       TO &&username;
-GRANT CREATE VIEW                    TO &&username;
-GRANT CREATE SYNONYM                 TO &&username;
-GRANT CREATE PUBLIC SYNONYM          TO &&username;
-GRANT DROP PUBLIC SYNONYM            TO &&username;
-GRANT UNLIMITED TABLESPACE           TO &&username;
-GRANT CREATE ANY CONTEXT             TO &&username;
-GRANT DROP ANY CONTEXT               TO &&username;
+prompt ====================================================================
+prompt Grants
+prompt ====================================================================
+
+grant connect                        to &&username;
+grant resource                       to &&username;
+grant create view to &&username;
+grant create synonym                 to &&username;
+grant create public synonym          to &&username;
+grant drop public synonym            to &&username;
+grant unlimited tablespace           to &&username;
+grant create any context             to &&username;
+grant drop any context               to &&username;
 
 -- to get access to DBA-views
-GRANT SELECT_CATALOG_ROLE            TO &&username;
+grant select_catalog_role            to &&username;
 
 -- to create views using DBA-views
-GRANT SELECT ANY DICTIONARY          TO &&username;
+grant select any dictionary          to &&username;
 
 -- direct grants required for grant option
-GRANT SELECT ON sys.dba_identifiers  TO &&username WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_statements   TO &&username WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_tables       TO &&username WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_views        TO &&username WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_dependencies TO &&username WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_synonyms     TO &&username WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_objects      TO &&username WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_tab_columns  TO &&username WITH GRANT OPTION;
-GRANT SELECT ON sys.dba_source       TO &&username WITH GRANT OPTION;
+grant select on sys.dba_identifiers  to &&username with grant option;
+grant select on sys.dba_statements   to &&username with grant option;
+grant select on sys.dba_tables       to &&username with grant option;
+grant select on sys.dba_views        to &&username with grant option;
+grant select on sys.dba_dependencies to &&username with grant option;
+grant select on sys.dba_synonyms     to &&username with grant option;
+grant select on sys.dba_objects      to &&username with grant option;
+grant select on sys.dba_tab_columns  to &&username with grant option;
+grant select on sys.dba_source       to &&username with grant option;
 
 -- direct grant for ETL demo package
-GRANT SELECT ON v$mystat             TO &&username;
+grant select on v_$mystat            to &&username;
 
 -- for debugging
-GRANT DEBUG CONNECT SESSION          TO &&username;
-GRANT DEBUG ANY PROCEDURE            TO &&username;
-GRANT EXECUTE ON dbms_debug_jdwp     TO &&username;
+grant debug connect session          to &&username;
+grant debug any procedure to &&username;
+grant execute on dbms_debug_jdwp     to &&username;
 
-PROMPT ====================================================================
-PROMPT Optional grants based on privileges
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Optional grants based on privileges
+prompt ====================================================================
 
-DECLARE
-   PROCEDURE exec_sql (in_sql IN VARCHAR2) IS
-   BEGIN
-      EXECUTE IMMEDIATE in_sql;
-   END exec_sql; 
+declare
+   procedure exec_sql(in_sql in varchar2) is
+   begin
+      execute immediate in_sql;
+   end exec_sql; 
    --
-   PROCEDURE options IS
-      l_count INTEGER;
-   BEGIN
-      SELECT count(*)
-        INTO l_count
-        FROM all_objects
-       WHERE object_name IN ('UTL_XML', 'UTL_XML_LIB');
-      IF l_count > 0 THEN
+   procedure options is
+      l_count integer;
+   begin
+      select count(*)
+        into l_count
+        from all_objects
+       where object_name in ('UTL_XML', 'UTL_XML_LIB');
+      if l_count > 0 then
          -- to parse queries in PL/SQL packages
-         exec_sql('GRANT EXECUTE ON sys.utl_xml     TO &&username'); -- for 12.2 only
-         exec_sql('GRANT EXECUTE ON sys.utl_xml_lib TO &&username'); -- for >= 18.0 only
+         exec_sql('grant execute on sys.utl_xml     to &&username'); -- for 12.2 only
+         exec_sql('grant execute on sys.utl_xml_lib to &&username'); -- for >= 18.0 only
          -- for remote debugging
          exec_sql(q'[
-            BEGIN
+            begin
               dbms_network_acl_admin.append_host_ace (
                 host =>'*',
                 ace  => sys.xs$ace_type(
@@ -129,11 +134,11 @@ DECLARE
                             principal_type => sys.xs_acl.ptype_db
                         )
               );
-            END;
+            end;
          ]');
-      END IF;
-   END options;
-BEGIN
+      end if;
+   end options;
+begin
    options;
-END;
+end;
 /

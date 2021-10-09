@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 
-CREATE OR REPLACE TYPE obj_type FORCE AS 
-OBJECT (
-   owner       VARCHAR2(128 CHAR),
-   object_type VARCHAR2(128 CHAR),
-   object_name VARCHAR2(128 CHAR)
+create or replace type obj_type force as
+object (
+   owner       varchar2(128 char),
+   object_type varchar2(128 char),
+   object_name varchar2(128 char)
 );
 /

@@ -1,114 +1,116 @@
-CREATE OR REPLACE PACKAGE BODY etl AS
-   g_unused_column v$mystat.sid%TYPE;
+create or replace package body etl as
+   g_unused_column v$mystat.sid%type;
 
-   PROCEDURE clear_deptsal IS
-   BEGIN
-      DELETE FROM deptsal;
-      DELETE FROM deptsal_err;
+   procedure clear_deptsal is
+   begin
+      delete from deptsal;
+      delete from deptsal_err;
       sys.dbms_output.put_line('deptsal an deptsal_err deleted.'); -- use synonym
-   END clear_deptsal;
-   
-   PROCEDURE load_from_tab IS
-   BEGIN
+   end clear_deptsal;
+
+   procedure load_from_tab is
+   begin
       clear_deptsal;
-      INSERT INTO deptsal (dept_no, dept_name, salary)
-      SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
-        FROM dept d
-        LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
-          ON e.deptno = d.deptno
-       GROUP BY d.deptno, d.dname;
-      COMMIT;
+      insert into deptsal (dept_no, dept_name, salary)
+      select /*+ordered */ d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+        from dept d
+        left join (select * from emp where hiredate > date '1980-01-01') e
+          on e.deptno = d.deptno
+       group by d.deptno, d.dname;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited (from table).');
-   END load_from_tab;
+   end load_from_tab;
 
-   PROCEDURE load_from_view IS
-   BEGIN
+   procedure load_from_view is
+   begin
       clear_deptsal;
-      INSERT INTO deptsal (dept_no, dept_name, salary)
-      SELECT dept_no, dept_name, salary
-        FROM source_view;
-      COMMIT;
+      insert into deptsal (dept_no, dept_name, salary)
+      select dept_no, dept_name, salary
+        from source_view;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited (from view).');
-   END load_from_view;
+   end load_from_view;
 
-   PROCEDURE load_from_syn IS
-   BEGIN
+   procedure load_from_syn is
+   begin
       clear_deptsal;
-      INSERT INTO deptsal (dept_no, dept_name, salary)
-      SELECT dept_no, dept_name, salary
-        FROM source_syn;
-      COMMIT;
+      insert into deptsal (dept_no, dept_name, salary)
+      select dept_no, dept_name, salary
+        from source_syn;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited (from view via synonym).');
-   END load_from_syn;
+   end load_from_syn;
 
-   PROCEDURE load_from_syn_wild IS
-   BEGIN
+   procedure load_from_syn_wild is
+   begin
       clear_deptsal;
-      INSERT INTO deptsal  -- no column list NOSONAR G-3110
-      SELECT t.*           -- all-column wildcard
-        FROM source_syn t;
-      COMMIT;
+      insert into deptsal  -- no column list NOSONAR G-3110
+      select t.*           -- all-column wildcard
+        from source_syn t;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited' ||
          ' (from view via synonym without explicit column references).');
-   END load_from_syn_wild;
-   
-   PROCEDURE load_from_syn_log IS
-   BEGIN
+   end load_from_syn_wild;
+
+   procedure load_from_syn_log is
+   begin
       clear_deptsal;
-      INSERT INTO deptsal (dept_no, dept_name, salary)
-      SELECT dept_no, dept_name, salary
-        FROM source_syn s
-      LOG ERRORS INTO deptsal_err REJECT LIMIT 10;
-      COMMIT;
+      insert into deptsal (dept_no, dept_name, salary)
+      select dept_no, dept_name, salary
+        from source_syn s
+         log errors into deptsal_err reject limit 10;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited (with log errors).');
-   END load_from_syn_log;
+   end load_from_syn_log;
 
-   PROCEDURE load_multi_table IS
-   BEGIN
+   procedure load_multi_table is
+   begin
       clear_deptsal;
-      INSERT ALL
-         WHEN dept_no <= 100 THEN
-            INTO deptsal  -- no column list NOSONAR G-3110
-         ELSE
-            INTO deptsal_err (dept_no, dept_name, salary) 
-      SELECT dept_no, dept_name, salary
-        FROM source_syn;
-      COMMIT;
+      insert all
+         when dept_no <= 100 then
+            into deptsal  -- no column list NOSONAR G-3110
+         else
+            into deptsal_err (dept_no, dept_name, salary)
+      select dept_no, dept_name, salary
+        from source_syn;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited (from via multi-table-insert).');
-   END load_multi_table;
+   end load_multi_table;
 
-   PROCEDURE load_from_implicit_cursor IS
-   BEGIN
+   procedure load_from_implicit_cursor is
+   begin
       clear_deptsal;
       <<deptsal>>
-      FOR r_src IN (
-         SELECT dept_no, dept_name, salary
-           FROM source_syn
-      ) LOOP
-         INSERT INTO deptsal (dept_no, dept_name, salary)
-         VALUES (r_src.dept_no, r_src.dept_name, r_src.salary);
-      END LOOP deptsal;
-      COMMIT;
+      for r_src in (
+         select dept_no, dept_name, salary
+           from source_syn
+      )
+      loop
+         insert into deptsal (dept_no, dept_name, salary)
+         values (r_src.dept_no, r_src.dept_name, r_src.salary);
+      end loop deptsal;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited (from implicit cursor).');
-   END load_from_implicit_cursor;
+   end load_from_implicit_cursor;
 
-   PROCEDURE load_from_explicit_cursor IS
-      CURSOR c_src IS
-         SELECT dept_no, dept_name, salary
-           FROM source_syn;      
-   BEGIN
+   procedure load_from_explicit_cursor is
+      cursor c_src is
+         select dept_no, dept_name, salary
+           from source_syn;
+   begin
       clear_deptsal;
       <<deptsal>>
-      FOR r_src IN c_src LOOP
-         INSERT INTO deptsal (dept_no, dept_name, salary)
-         VALUES (r_src.dept_no, r_src.dept_name, r_src.salary);
-      END LOOP deptsal;
-      COMMIT;
+      for r_src in c_src
+      loop
+         insert into deptsal (dept_no, dept_name, salary)
+         values (r_src.dept_no, r_src.dept_name, r_src.salary);
+      end loop deptsal;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited (from explicit cursor).');
-   END load_from_explicit_cursor; 
-   
-   PROCEDURE load_from_dyn_sql IS
-      l_sql CLOB := q'[
+   end load_from_explicit_cursor;
+
+   procedure load_from_dyn_sql is
+      l_sql clob := q'[
             INSERT INTO deptsal (dept_no, dept_name, salary)
             SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
               FROM dept d
@@ -116,33 +118,33 @@ CREATE OR REPLACE PACKAGE BODY etl AS
                 ON e.deptno = d.deptno
              GROUP BY d.deptno, d.dname
          ]';
-   BEGIN
+   begin
       clear_deptsal;
-      EXECUTE IMMEDIATE l_sql;
-      COMMIT;
+      execute immediate l_sql;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited (from dynamic SQL).');
-   END load_from_dyn_sql;
-   
-   FUNCTION sal_of_dept (in_deptno IN dept.deptno%TYPE) RETURN deptsal.salary%TYPE IS 
-      l_salary deptsal.salary%TYPE;
-   BEGIN
-      SELECT SUM(sal + NVL(comm, 0))
-        INTO l_salary
-        FROM emp 
-       WHERE deptno = in_deptno
-         AND hiredate > DATE '1980-01-01';
-      RETURN l_salary;
-   END sal_of_dept;
+   end load_from_dyn_sql;
 
-   PROCEDURE load_from_app_join IS
-   BEGIN
+   function sal_of_dept(in_deptno in dept.deptno%type) return deptsal.salary%type is
+      l_salary deptsal.salary%type;
+   begin
+      select sum(sal + nvl(comm, 0))
+        into l_salary
+        from emp
+       where deptno = in_deptno
+         and hiredate > date '1980-01-01';
+      return l_salary;
+   end sal_of_dept;
+
+   procedure load_from_app_join is
+   begin
       clear_deptsal;
-      INSERT INTO deptsal (dept_no, dept_name, salary)
-      SELECT deptno, dname, etl.sal_of_dept(in_deptno => deptno)
-        FROM dept;
-      COMMIT;
+      insert into deptsal (dept_no, dept_name, salary)
+      select deptno, dname, etl.sal_of_dept(in_deptno => deptno)
+        from dept;
+      commit;
       sys.dbms_output.put_line('deptsal loaded and commited (from application join).');
-   END load_from_app_join;
+   end load_from_app_join;
 
-END etl;
+end etl;
 /

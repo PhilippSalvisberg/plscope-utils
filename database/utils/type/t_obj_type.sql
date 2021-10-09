@@ -14,5 +14,5 @@
 * limitations under the License.
 */
 
-CREATE OR REPLACE TYPE t_obj_type FORCE IS TABLE OF obj_type;
+create or replace type t_obj_type force is table of obj_type;
 /
