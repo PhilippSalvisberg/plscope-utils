@@ -14,30 +14,40 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 
 2. Open a terminal window and change to the directory containing this README.md file
 
-		cd (...)
+    ```
+    cd (...)
+    ```
 
 3. Create an oracle user for the plscope-utils database objects. The default username and password is ```plscope```.
    * optionally change username, password and tablespace in the installation script [database/utils/user/plscope.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/user/plscope.sql)
 
    * connect as sys to the target database
 
-			sqlplus / as sysdba
+        ```
+        sqlplus / as sysdba
+        ```
 
    * execute the script [database/utils/user/plscope.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/user/plscope.sql)
 
-			@database/utils/user/plscope.sql
-			EXIT
+        ```sql
+        @database/utils/user/plscope.sql
+        exit
+        ```
 
 4. Install plscope-utils
 
    * connect to the plscope-utils user created in the previous step
 
-			sqlplus plscope/plscope
+        ```
+        sqlplus plscope/plscope
+        ```
 
    * execute the script [database/install.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/install.sql)
 
-			@database/install.sql
-			EXIT
+        ```sql
+        @database/install.sql
+        exit
+        ```
 
 ## Usage
 
@@ -45,27 +55,32 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 
 #### Enable PL/Scope in the current session
 
-	ALTER SESSION SET plscope_settings='identifiers:all, statements:all';
+```sql
+alter session set plscope_settings='identifiers:all, statements:all';
+```
 
 #### Create/compile a procedure
 
 The following example is based on demo [tables](https://github.com/PhilippSalvisberg/plscope-utils/tree/main/database/demo/table) installed by plscope-utils.
 
-	CREATE OR REPLACE PROCEDURE load_from_tab IS
-	BEGIN
-	   INSERT INTO deptsal (dept_no, dept_name, salary)
-	   SELECT /*+ordered */
-	          d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
-	     FROM dept d
-	     LEFT JOIN (SELECT *
-	                  FROM emp
-	                 WHERE hiredate > DATE '1980-01-01') e
-	       ON e.deptno = d.deptno
-	    GROUP BY d.deptno, d.dname;
-	   COMMIT;
-	END load_from_tab;
-	/
-
+```sql
+create or replace procedure load_from_tab is
+begin
+   insert into deptsal (dept_no, dept_name, salary)
+   select /*+ordered */
+          d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+     from dept d
+     left join (
+             select *
+               from emp
+              where hiredate > date '1980-01-01'
+          ) e
+       on e.deptno = d.deptno
+    group by d.deptno, d.dname;
+   commit;
+end load_from_tab;
+/
+```
 ### Set Session Context (optional)
 
 All views are filtered by the following session context attributes:
@@ -80,10 +95,11 @@ The filter is applied in the views as early as possible to improve runtime perfo
 
 Here's an example to set the context to a chosen PL/SQL package of the [Alexandria PL/SQL Utility Library](https://github.com/mortenbra/alexandria-plsql-utils):
 
-	EXEC plscope_context.set_attr('OWNER', 'AX');
-	EXEC plscope_context.set_attr('OBJECT_TYPE', 'PACKAGE%');
-	EXEC plscope_context.set_attr('OBJECT_NAME', 'APEX_UTIL_PKG');
- 
+```sql
+exec plscope_context.set_attr('OWNER', 'AX');
+exec plscope_context.set_attr('OBJECT_TYPE', 'PACKAGE%');
+exec plscope_context.set_attr('OBJECT_NAME', 'APEX_UTIL_PKG');
+```
 
 ### [View PLSCOPE\_IDENTIFIERS](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_identifiers.sql)
 
@@ -106,39 +122,53 @@ Column Name           | Description
 
 #### Query
 
-	SELECT procedure_name, line, col, name, name_path, path_len, type, usage,
-	       ref_owner, ref_object_type, ref_object_name,
-	       text, parent_statement_type, parent_statement_signature, signature
-	  FROM plscope_identifiers
-	 WHERE object_name = 'LOAD_FROM_TAB'
-	 ORDER BY line, col;
-
+```sql
+select procedure_name,
+       line,
+       col,
+       name,
+       name_path,
+       path_len,
+       type,
+       usage,
+       ref_owner,
+       ref_object_type,
+       ref_object_name,
+       text,
+       parent_statement_type,
+       parent_statement_signature,
+       signature
+  from plscope_identifiers
+ where object_name = 'LOAD_FROM_TAB'
+ order by line, col;
+```
 #### Result
 
-	PROCEDURE_NAME LINE  COL NAME          NAME_PATH                                            PATH_LEN TYPE      USAGE        REF_OWNER REF_OBJECT_TYPE REF_OBJECT_NAME TEXT                                                            PARENT_STATEMENT_TYPE PARENT_STATEMENT_SIGNATURE       SIGNATURE                       
-	-------------- ---- ---- ------------- ---------------------------------------------------- -------- --------- ------------ --------- --------------- --------------- --------------------------------------------------------------- --------------------- -------------------------------- --------------------------------
-	                  1   11 LOAD_FROM_TAB /LOAD_FROM_TAB                                              1 PROCEDURE DECLARATION  PLSCOPE   PROCEDURE       LOAD_FROM_TAB   PROCEDURE load_from_tab IS                                                                                             95BB10518161E6977D1AAAE904795B9B
-	LOAD_FROM_TAB     1   11 LOAD_FROM_TAB /LOAD_FROM_TAB/LOAD_FROM_TAB                                2 PROCEDURE DEFINITION   PLSCOPE   PROCEDURE       LOAD_FROM_TAB   PROCEDURE load_from_tab IS                                                                                             95BB10518161E6977D1AAAE904795B9B
-	LOAD_FROM_TAB     3    4 3nyyhcpmwxcgz /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz                  3 INSERT    EXECUTE                                                   INSERT INTO deptsal (dept_no, dept_name, salary)                                                                    0F66407F96683E82288B47C4A3692141
-	LOAD_FROM_TAB     3   16 DEPTSAL       /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTSAL          4 TABLE     REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 842CE56AC592888B175F02BB44BD5B94
-	LOAD_FROM_TAB     3   25 DEPT_NO       /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT_NO          4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 0E36BB98CA1380341FCA76D468AC332C
-	LOAD_FROM_TAB     3   34 DEPT_NAME     /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT_NAME        4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 4C400D0DF6CC5BD98ADBFEF88EEBC69D
-	LOAD_FROM_TAB     3   45 SALARY        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/SALARY           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 8F86A093162D45F0949E56BA145A1FE3
-	LOAD_FROM_TAB     5   13 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                      d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
-	LOAD_FROM_TAB     5   23 DNAME         /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DNAME            4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                      d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 FECE4914A162E52126C5E631734692DA
-	LOAD_FROM_TAB     5   36 SAL           /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/SAL              4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                       d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 60535C7D73128F4E1E99B404D740FE16
-	LOAD_FROM_TAB     5   48 COMM          /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/COMM             4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                       d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 0DD90A25A7835C18B4B81A9F4C6FB6BA
-	LOAD_FROM_TAB     6   11 DEPT          /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT             4 TABLE     REFERENCE    PLSCOPE   TABLE           DEPT                 FROM dept d                                                INSERT                0F66407F96683E82288B47C4A3692141 26739DBA3E26CBADF8B2E1FBB35428F5
-	LOAD_FROM_TAB     8   24 EMP           /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/EMP              4 TABLE     REFERENCE    PLSCOPE   TABLE           EMP                               FROM emp                                      INSERT                0F66407F96683E82288B47C4A3692141 68FD9773CC24CA5C61FCE1CE2F27D0F8
-	LOAD_FROM_TAB     9   24 HIREDATE      /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/HIREDATE         4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                              WHERE hiredate > DATE '1980-01-01') e          INSERT                0F66407F96683E82288B47C4A3692141 7FDA2E553A30FF9773C84EBED43A686E
-	LOAD_FROM_TAB    10   13 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                    ON e.deptno = d.deptno                                   INSERT                0F66407F96683E82288B47C4A3692141 B99231DD1C6931BB3728106289DDBE98
-	LOAD_FROM_TAB    10   24 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                   ON e.deptno = d.deptno                                   INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
-	LOAD_FROM_TAB    11   16 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                GROUP BY d.deptno, d.dname;                                 INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
-	LOAD_FROM_TAB    11   26 DNAME         /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DNAME            4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                GROUP BY d.deptno, d.dname;                                 INSERT                0F66407F96683E82288B47C4A3692141 FECE4914A162E52126C5E631734692DA
-	LOAD_FROM_TAB    12    4 COMMIT        /LOAD_FROM_TAB/LOAD_FROM_TAB/COMMIT                         3 COMMIT    EXECUTE                                                   COMMIT;                                                                                                             CCF976813EB05E9A94A09443EF466860
+```
+PROCEDURE_NAME LINE  COL NAME          NAME_PATH                                            PATH_LEN TYPE      USAGE        REF_OWNER REF_OBJECT_TYPE REF_OBJECT_NAME TEXT                                                            PARENT_STATEMENT_TYPE PARENT_STATEMENT_SIGNATURE       SIGNATURE                       
+-------------- ---- ---- ------------- ---------------------------------------------------- -------- --------- ------------ --------- --------------- --------------- --------------------------------------------------------------- --------------------- -------------------------------- --------------------------------
+                  1   11 LOAD_FROM_TAB /LOAD_FROM_TAB                                              1 PROCEDURE DECLARATION  PLSCOPE   PROCEDURE       LOAD_FROM_TAB   PROCEDURE load_from_tab IS                                                                                             95BB10518161E6977D1AAAE904795B9B
+LOAD_FROM_TAB     1   11 LOAD_FROM_TAB /LOAD_FROM_TAB/LOAD_FROM_TAB                                2 PROCEDURE DEFINITION   PLSCOPE   PROCEDURE       LOAD_FROM_TAB   PROCEDURE load_from_tab IS                                                                                             95BB10518161E6977D1AAAE904795B9B
+LOAD_FROM_TAB     3    4 3nyyhcpmwxcgz /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz                  3 INSERT    EXECUTE                                                   INSERT INTO deptsal (dept_no, dept_name, salary)                                                                    0F66407F96683E82288B47C4A3692141
+LOAD_FROM_TAB     3   16 DEPTSAL       /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTSAL          4 TABLE     REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 842CE56AC592888B175F02BB44BD5B94
+LOAD_FROM_TAB     3   25 DEPT_NO       /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT_NO          4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 0E36BB98CA1380341FCA76D468AC332C
+LOAD_FROM_TAB     3   34 DEPT_NAME     /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT_NAME        4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 4C400D0DF6CC5BD98ADBFEF88EEBC69D
+LOAD_FROM_TAB     3   45 SALARY        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/SALARY           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPTSAL            INSERT INTO deptsal (dept_no, dept_name, salary)             INSERT                0F66407F96683E82288B47C4A3692141 8F86A093162D45F0949E56BA145A1FE3
+LOAD_FROM_TAB     5   13 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                      d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
+LOAD_FROM_TAB     5   23 DNAME         /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DNAME            4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                      d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 FECE4914A162E52126C5E631734692DA
+LOAD_FROM_TAB     5   36 SAL           /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/SAL              4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                       d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 60535C7D73128F4E1E99B404D740FE16
+LOAD_FROM_TAB     5   48 COMM          /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/COMM             4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                       d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal INSERT                0F66407F96683E82288B47C4A3692141 0DD90A25A7835C18B4B81A9F4C6FB6BA
+LOAD_FROM_TAB     6   11 DEPT          /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPT             4 TABLE     REFERENCE    PLSCOPE   TABLE           DEPT                 FROM dept d                                                INSERT                0F66407F96683E82288B47C4A3692141 26739DBA3E26CBADF8B2E1FBB35428F5
+LOAD_FROM_TAB     8   24 EMP           /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/EMP              4 TABLE     REFERENCE    PLSCOPE   TABLE           EMP                               FROM emp                                      INSERT                0F66407F96683E82288B47C4A3692141 68FD9773CC24CA5C61FCE1CE2F27D0F8
+LOAD_FROM_TAB     9   24 HIREDATE      /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/HIREDATE         4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                              WHERE hiredate > DATE '1980-01-01') e          INSERT                0F66407F96683E82288B47C4A3692141 7FDA2E553A30FF9773C84EBED43A686E
+LOAD_FROM_TAB    10   13 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           EMP                    ON e.deptno = d.deptno                                   INSERT                0F66407F96683E82288B47C4A3692141 B99231DD1C6931BB3728106289DDBE98
+LOAD_FROM_TAB    10   24 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                   ON e.deptno = d.deptno                                   INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
+LOAD_FROM_TAB    11   16 DEPTNO        /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DEPTNO           4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                GROUP BY d.deptno, d.dname;                                 INSERT                0F66407F96683E82288B47C4A3692141 884839C0945B76EF500949A1737CDBEC
+LOAD_FROM_TAB    11   26 DNAME         /LOAD_FROM_TAB/LOAD_FROM_TAB/3nyyhcpmwxcgz/DNAME            4 COLUMN    REFERENCE    PLSCOPE   TABLE           DEPT                GROUP BY d.deptno, d.dname;                                 INSERT                0F66407F96683E82288B47C4A3692141 FECE4914A162E52126C5E631734692DA
+LOAD_FROM_TAB    12    4 COMMIT        /LOAD_FROM_TAB/LOAD_FROM_TAB/COMMIT                         3 COMMIT    EXECUTE                                                   COMMIT;                                                                                                             CCF976813EB05E9A94A09443EF466860
 
-	19 rows selected.
-
+19 rows selected.
+```
 
 ### [View PLSCOPE\_STATEMENTS](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_statements.sql)
 
@@ -148,23 +178,26 @@ The [etl](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/
 
 #### Query
 
-	SELECT line, col, type, sql_id, is_duplicate, full_text
-	  FROM plscope_statements S
-	 WHERE object_name = 'LOAD_FROM_TAB'
-	 ORDER BY owner, object_type, object_name, line, col;
-
+```sql
+select line, col, type, sql_id, is_duplicate, full_text
+  from plscope_statements s
+ where object_name = 'LOAD_FROM_TAB'
+ order by owner, object_type, object_name, line, col;
+```
 #### Result
 
-	LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT                                       
-	---- ---- --------- ------------- ------------ -------------------------------------------------
-	   3    4 INSERT    3nyyhcpmwxcgz YES          INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY)
-	                                               SELECT /*+ordered */ D.DEPTNO, D.DNAME, SUM(E.SAL
-	                                                + NVL(E.COMM, 0)) AS SAL FROM DEPT D LEFT JOIN (
-	                                               SELECT * FROM EMP WHERE HIREDATE > DATE '1980-01-
-	                                               01') E ON E.DEPTNO = D.DEPTNO GROUP BY D.DEPTNO,
-	                                               D.DNAME
+```
+LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT                                       
+---- ---- --------- ------------- ------------ -------------------------------------------------
+   3    4 INSERT    3nyyhcpmwxcgz YES          INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY)
+                                               SELECT /*+ordered */ D.DEPTNO, D.DNAME, SUM(E.SAL
+                                               + NVL(E.COMM, 0)) AS SAL FROM DEPT D LEFT JOIN (
+                                               SELECT * FROM EMP WHERE HIREDATE > DATE '1980-01-
+                                               01') E ON E.DEPTNO = D.DEPTNO GROUP BY D.DEPTNO,
+                                               D.DNAME
 
-	  12    4 COMMIT                  NO           
+    12    4 COMMIT                  NO           
+```
 
 ### [View PLSCOPE\_TAB\_USAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_tab_usage.sql)
 
@@ -172,29 +205,32 @@ This view reports table usages. It is based on the views ```dba_tables```, ```db
 
 #### Query
 
-	SELECT *
-	  FROM plscope_tab_usage
-	 WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
-	 ORDER BY owner, object_type, object_name, line, col, direct_dependency;
+```sql
+select *
+  from plscope_tab_usage
+ where procedure_name in ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ order by owner, object_type, object_name, line, col, direct_dependency;
+```
 
 #### Result
 
-	OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     OPERATION REF_OWNER REF_OBJECT_TYPE REF_OBJECT_NAME DIRECT_DEPENDENCY TEXT                                                                             
-	------- ------------ ------------- ---- ---- ------------------ --------- --------- --------------- --------------- ----------------- ---------------------------------------------------------------------------------
-	PLSCOPE PACKAGE BODY ETL             14   19 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         YES                     INSERT INTO deptsal (dept_no, dept_name, salary)                           
-	PLSCOPE PACKAGE BODY ETL             16   14 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            YES                       FROM dept d                                                              
-	PLSCOPE PACKAGE BODY ETL             17   34 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             YES                       LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e       
-	PLSCOPE PACKAGE BODY ETL             47   19 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPTSAL         YES                     INSERT INTO deptsal  -- no column list NOSONAR G-3110                      
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   VIEW            SOURCE_VIEW     NO                        FROM source_syn t;                                                       
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPT            NO                        FROM source_syn t;                                                       
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           EMP             NO                        FROM source_syn t;                                                       
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   SYNONYM         SOURCE_SYN      YES                       FROM source_syn t;                                                       
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3   16 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         YES                  INSERT INTO deptsal (dept_no, dept_name, salary)                              
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    6   10 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            YES                   FROM dept d                                                                  
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    8   23 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             YES                                FROM emp                                                        
-	
-	11 rows selected. 
+```
+OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     OPERATION REF_OWNER REF_OBJECT_TYPE REF_OBJECT_NAME DIRECT_DEPENDENCY TEXT                                                                             
+------- ------------ ------------- ---- ---- ------------------ --------- --------- --------------- --------------- ----------------- ---------------------------------------------------------------------------------
+PLSCOPE PACKAGE BODY ETL             14   19 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         YES                     INSERT INTO deptsal (dept_no, dept_name, salary)                           
+PLSCOPE PACKAGE BODY ETL             16   14 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            YES                       FROM dept d                                                              
+PLSCOPE PACKAGE BODY ETL             17   34 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             YES                       LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e       
+PLSCOPE PACKAGE BODY ETL             47   19 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPTSAL         YES                     INSERT INTO deptsal  -- no column list NOSONAR G-3110                      
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   VIEW            SOURCE_VIEW     NO                        FROM source_syn t;                                                       
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPT            NO                        FROM source_syn t;                                                       
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           EMP             NO                        FROM source_syn t;                                                       
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   SYNONYM         SOURCE_SYN      YES                       FROM source_syn t;                                                       
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3   16 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         YES                  INSERT INTO deptsal (dept_no, dept_name, salary)                              
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    6   10 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            YES                   FROM dept d                                                                  
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    8   23 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             YES                                FROM emp                                                        
 
+11 rows selected. 
+```
 
 ### [View PLSCOPE\_COL\_USAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_col_usage.sql)
 
@@ -202,52 +238,55 @@ This view reports column usages. It is based on the views ```plscope_identifiers
 
 #### Query
 
-	SELECT *
-	  FROM plscope_col_usage
-	 WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
-	 ORDER BY owner, object_type, object_name, line, col, direct_dependency;
-
+```sql
+select *
+  from plscope_col_usage
+ where procedure_name in ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ order by owner, object_type, object_name, line, col, direct_dependency;
+```
 #### Result
 
-	OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     OPERATION REF_OWNER REF_OBJECT_TYPE REF_OBJECT_NAME COLUMN_NAME DIRECT_DEPENDENCY TEXT                                                                             
-	------- ------------ ------------- ---- ---- ------------------ --------- --------- --------------- --------------- ----------- ----------------- ---------------------------------------------------------------------------------
-	PLSCOPE PACKAGE BODY ETL             14   28 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NO     YES                     INSERT INTO deptsal (dept_no, dept_name, salary)                           
-	PLSCOPE PACKAGE BODY ETL             14   37 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NAME   YES                     INSERT INTO deptsal (dept_no, dept_name, salary)                           
-	PLSCOPE PACKAGE BODY ETL             14   48 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         SALARY      YES                     INSERT INTO deptsal (dept_no, dept_name, salary)                           
-	PLSCOPE PACKAGE BODY ETL             15   30 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                     SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal 
-	PLSCOPE PACKAGE BODY ETL             15   40 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DNAME       YES                     SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal 
-	PLSCOPE PACKAGE BODY ETL             15   53 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             SAL         YES                     SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal 
-	PLSCOPE PACKAGE BODY ETL             15   65 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             COMM        YES                     SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal 
-	PLSCOPE PACKAGE BODY ETL             17   44 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             HIREDATE    YES                       LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e       
-	PLSCOPE PACKAGE BODY ETL             18   16 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             DEPTNO      YES                         ON e.deptno = d.deptno                                                 
-	PLSCOPE PACKAGE BODY ETL             18   27 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                         ON e.deptno = d.deptno                                                 
-	PLSCOPE PACKAGE BODY ETL             19   19 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                      GROUP BY d.deptno, d.dname;                                               
-	PLSCOPE PACKAGE BODY ETL             19   29 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DNAME       YES                      GROUP BY d.deptno, d.dname;                                               
-	PLSCOPE PACKAGE BODY ETL             47   19 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPTSAL         SALARY      NO                      INSERT INTO deptsal  -- no column list NOSONAR G-3110                      
-	PLSCOPE PACKAGE BODY ETL             47   19 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NAME   NO                      INSERT INTO deptsal  -- no column list NOSONAR G-3110                      
-	PLSCOPE PACKAGE BODY ETL             47   19 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NO     NO                      INSERT INTO deptsal  -- no column list NOSONAR G-3110                      
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           EMP             SAL         NO                        FROM source_syn t;                                                       
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           EMP             COMM        NO                        FROM source_syn t;                                                       
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPT            DNAME       NO                        FROM source_syn t;                                                       
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      NO                        FROM source_syn t;                                                       
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   VIEW            SOURCE_VIEW     SALARY      NO                        FROM source_syn t;                                                       
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   VIEW            SOURCE_VIEW     DEPT_NAME   NO                        FROM source_syn t;                                                       
-	PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   VIEW            SOURCE_VIEW     DEPT_NO     NO                        FROM source_syn t;                                                       
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3   25 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NO     YES                  INSERT INTO deptsal (dept_no, dept_name, salary)                              
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3   34 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NAME   YES                  INSERT INTO deptsal (dept_no, dept_name, salary)                              
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3   45 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         SALARY      YES                  INSERT INTO deptsal (dept_no, dept_name, salary)                              
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    5   13 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                         d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal                  
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    5   23 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DNAME       YES                         d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal                  
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    5   36 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             SAL         YES                         d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal                  
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    5   48 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             COMM        YES                         d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal                  
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    9   23 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             HIREDATE    YES                               WHERE hiredate > DATE '1980-01-01') e                            
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB   10   12 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             DEPTNO      YES                     ON e.deptno = d.deptno                                                     
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB   10   23 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                     ON e.deptno = d.deptno                                                     
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB   11   15 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                  GROUP BY d.deptno, d.dname;                                                   
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB   11   25 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DNAME       YES                  GROUP BY d.deptno, d.dname;                                                   
-	
-	34 rows selected.
-	
+```
+OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     OPERATION REF_OWNER REF_OBJECT_TYPE REF_OBJECT_NAME COLUMN_NAME DIRECT_DEPENDENCY TEXT                                                                             
+------- ------------ ------------- ---- ---- ------------------ --------- --------- --------------- --------------- ----------- ----------------- ---------------------------------------------------------------------------------
+PLSCOPE PACKAGE BODY ETL             14   28 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NO     YES                     INSERT INTO deptsal (dept_no, dept_name, salary)                           
+PLSCOPE PACKAGE BODY ETL             14   37 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NAME   YES                     INSERT INTO deptsal (dept_no, dept_name, salary)                           
+PLSCOPE PACKAGE BODY ETL             14   48 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         SALARY      YES                     INSERT INTO deptsal (dept_no, dept_name, salary)                           
+PLSCOPE PACKAGE BODY ETL             15   30 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                     SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal 
+PLSCOPE PACKAGE BODY ETL             15   40 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DNAME       YES                     SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal 
+PLSCOPE PACKAGE BODY ETL             15   53 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             SAL         YES                     SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal 
+PLSCOPE PACKAGE BODY ETL             15   65 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             COMM        YES                     SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal 
+PLSCOPE PACKAGE BODY ETL             17   44 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             HIREDATE    YES                       LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e       
+PLSCOPE PACKAGE BODY ETL             18   16 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             DEPTNO      YES                         ON e.deptno = d.deptno                                                 
+PLSCOPE PACKAGE BODY ETL             18   27 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                         ON e.deptno = d.deptno                                                 
+PLSCOPE PACKAGE BODY ETL             19   19 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                      GROUP BY d.deptno, d.dname;                                               
+PLSCOPE PACKAGE BODY ETL             19   29 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DNAME       YES                      GROUP BY d.deptno, d.dname;                                               
+PLSCOPE PACKAGE BODY ETL             47   19 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPTSAL         SALARY      NO                      INSERT INTO deptsal  -- no column list NOSONAR G-3110                      
+PLSCOPE PACKAGE BODY ETL             47   19 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NAME   NO                      INSERT INTO deptsal  -- no column list NOSONAR G-3110                      
+PLSCOPE PACKAGE BODY ETL             47   19 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NO     NO                      INSERT INTO deptsal  -- no column list NOSONAR G-3110                      
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           EMP             SAL         NO                        FROM source_syn t;                                                       
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           EMP             COMM        NO                        FROM source_syn t;                                                       
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPT            DNAME       NO                        FROM source_syn t;                                                       
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      NO                        FROM source_syn t;                                                       
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   VIEW            SOURCE_VIEW     SALARY      NO                        FROM source_syn t;                                                       
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   VIEW            SOURCE_VIEW     DEPT_NAME   NO                        FROM source_syn t;                                                       
+PLSCOPE PACKAGE BODY ETL             49   14 LOAD_FROM_SYN_WILD INSERT    PLSCOPE   VIEW            SOURCE_VIEW     DEPT_NO     NO                        FROM source_syn t;                                                       
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3   25 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NO     YES                  INSERT INTO deptsal (dept_no, dept_name, salary)                              
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3   34 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         DEPT_NAME   YES                  INSERT INTO deptsal (dept_no, dept_name, salary)                              
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3   45 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPTSAL         SALARY      YES                  INSERT INTO deptsal (dept_no, dept_name, salary)                              
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    5   13 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                         d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal                  
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    5   23 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DNAME       YES                         d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal                  
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    5   36 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             SAL         YES                         d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal                  
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    5   48 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             COMM        YES                         d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal                  
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    9   23 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             HIREDATE    YES                               WHERE hiredate > DATE '1980-01-01') e                            
+PLSCOPE PROCEDURE    LOAD_FROM_TAB   10   12 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           EMP             DEPTNO      YES                     ON e.deptno = d.deptno                                                     
+PLSCOPE PROCEDURE    LOAD_FROM_TAB   10   23 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                     ON e.deptno = d.deptno                                                     
+PLSCOPE PROCEDURE    LOAD_FROM_TAB   11   15 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DEPTNO      YES                  GROUP BY d.deptno, d.dname;                                                   
+PLSCOPE PROCEDURE    LOAD_FROM_TAB   11   25 LOAD_FROM_TAB      INSERT    PLSCOPE   TABLE           DEPT            DNAME       YES                  GROUP BY d.deptno, d.dname;                                                   
+
+34 rows selected.
+```
+    
 ### [View PLSCOPE\_NAMING](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_naming.sql)
 
 This view checks if PL/SQL identifier names comply to the [Trivadis PL/SQL & SQL Coding Guidelines Version 3.2](https://www.salvis.com/download/guidelines/PLSQL_and_SQL_Coding_Guidelines_3_2.pdf). This view provides chosen columns from ```dba_identifiers``` plus the following:
@@ -282,90 +321,104 @@ Subtype | S: type | ```big_string_type``` | ```SUBTYPE_REGEX``` | ```.*_type$```
 
 The identfiers in tis PL/SQL package are used to demonstrate the functionality of the view.
 
-	CREATE OR REPLACE PACKAGE pkg IS
-	   g_global_variable INTEGER := 0;
-	   g_global_constant CONSTANT VARCHAR2(10) := 'PUBLIC';
-	
-	   PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);
-	END pkg;
-	/
-	
-	CREATE OR REPLACE PACKAGE BODY pkg IS
-	   m_global_variable  INTEGER := 1;
-	   co_global_constant CONSTANT VARCHAR2(10) := 'PRIVATE';
-	
-	   FUNCTION f(in_1 IN INTEGER) RETURN INTEGER IS
-	      l_result INTEGER;
-	   BEGIN
-	    l_result := in_1 * in_1;
-	      RETURN l_result;
-	   END f;
-	
-	   PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS
-	   BEGIN
-	      p_2 := f(in_1 => p_1);
-	   END p;
-	END pkg;
-	/
+```sql
+create or replace package pkg is
+   g_global_variable integer := 0;
+   g_global_constant constant varchar2(10) := 'PUBLIC';
+
+   procedure p(p_1 in  integer,
+               p_2 out integer);
+end pkg;
+/
+
+create or replace package body pkg is
+   m_global_variable  integer               := 1;
+   co_global_constant constant varchar2(10) := 'PRIVATE';
+
+   function f(in_1 in integer) return integer is
+      l_result integer;
+   begin
+      l_result := in_1 * in_1;
+      return l_result;
+   end f;
+
+   procedure p(p_1 in  integer,
+               p_2 out integer) is
+   begin
+      p_2 := f(in_1 => p_1);
+   end p;
+end pkg;
+/
+```
 
 #### Query
 
 Use the following query to check results of package created above.
 
-	SELECT object_type, procedure_name, type, name, message, line, col, text
-	  FROM plscope_naming
-	 WHERE object_name = 'PKG'
-	 ORDER BY object_type, line, col;
+```sql
+select object_type, procedure_name, type, name, message, line, col, text
+  from plscope_naming
+ where object_name = 'PKG'
+ order by object_type, line, col;
+```
 
 If you are interested in naming convention violations only extend the where clause by ```AND message != 'OK'```.
 
 #### Result Using Default Naming Conventions
 
-	OBJECT_TYPE  PRO TYPE       NAME               MESSAGE                                       LINE  COL TEXT                                                     
-	------------ --- ---------- ------------------ --------------------------------------------- ---- ---- ---------------------------------------------------------
-	PACKAGE          VARIABLE   G_GLOBAL_VARIABLE  OK                                               2    4    g_global_variable INTEGER := 0;                       
-	PACKAGE          CONSTANT   G_GLOBAL_CONSTANT  Constant does not match regex "^co_.*".          3    4    g_global_constant CONSTANT VARCHAR2(10) := 'PUBLIC';  
-	PACKAGE      P   FORMAL IN  P_1                IN parameter does not match regex "^in_.*".      5   16    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);         
-	PACKAGE      P   FORMAL OUT P_2                OUT parameter does not match regex "^out_.*".    5   32    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);         
-	PACKAGE BODY     VARIABLE   M_GLOBAL_VARIABLE  Global variable does not match regex "^g_.*".    2    4    m_global_variable  INTEGER := 1;                      
-	PACKAGE BODY     CONSTANT   CO_GLOBAL_CONSTANT OK                                               3    4    co_global_constant CONSTANT VARCHAR2(10) := 'PRIVATE';
-	PACKAGE BODY F   FORMAL IN  IN_1               OK                                               5   15    FUNCTION f(in_1 IN INTEGER) RETURN INTEGER IS         
-	PACKAGE BODY F   VARIABLE   L_RESULT           OK                                               6    7       l_result INTEGER;                                  
-	PACKAGE BODY P   FORMAL IN  P_1                IN parameter does not match regex "^in_.*".     12   16    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS       
-	PACKAGE BODY P   FORMAL OUT P_2                OUT parameter does not match regex "^out_.*".   12   32    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS       
-	
-	10 rows selected. 
+```
+OBJECT_TYPE  PRO TYPE       NAME               MESSAGE                                       LINE  COL TEXT                                                     
+------------ --- ---------- ------------------ --------------------------------------------- ---- ---- ---------------------------------------------------------
+PACKAGE          VARIABLE   G_GLOBAL_VARIABLE  OK                                               2    4    g_global_variable INTEGER := 0;                       
+PACKAGE          CONSTANT   G_GLOBAL_CONSTANT  Constant does not match regex "^co_.*".          3    4    g_global_constant CONSTANT VARCHAR2(10) := 'PUBLIC';  
+PACKAGE      P   FORMAL IN  P_1                IN parameter does not match regex "^in_.*".      5   16    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);         
+PACKAGE      P   FORMAL OUT P_2                OUT parameter does not match regex "^out_.*".    5   32    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);         
+PACKAGE BODY     VARIABLE   M_GLOBAL_VARIABLE  Global variable does not match regex "^g_.*".    2    4    m_global_variable  INTEGER := 1;                      
+PACKAGE BODY     CONSTANT   CO_GLOBAL_CONSTANT OK                                               3    4    co_global_constant CONSTANT VARCHAR2(10) := 'PRIVATE';
+PACKAGE BODY F   FORMAL IN  IN_1               OK                                               5   15    FUNCTION f(in_1 IN INTEGER) RETURN INTEGER IS         
+PACKAGE BODY F   VARIABLE   L_RESULT           OK                                               6    7       l_result INTEGER;                                  
+PACKAGE BODY P   FORMAL IN  P_1                IN parameter does not match regex "^in_.*".     12   16    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS       
+PACKAGE BODY P   FORMAL OUT P_2                OUT parameter does not match regex "^out_.*".   12   32    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS       
+
+10 rows selected. 
+```
 
 #### Changing Naming Conventions
 
-	BEGIN
-	   plscope_context.set_attr('GLOBAL_VARIABLE_REGEX', '^(g|m)_.*');
-	   plscope_context.set_attr('CONSTANT_REGEX',        '^(co|g)_.*');
-	   plscope_context.set_attr('IN_PARAMETER_REGEX',    '^(in|p)_.*');
-	   plscope_context.set_attr('OUT_PARAMETER_REGEX',   '^(out|p)_.*');
-	END;
-	/
+```sql
+begin
+   plscope_context.set_attr('GLOBAL_VARIABLE_REGEX', '^(g|m)_.*');
+   plscope_context.set_attr('CONSTANT_REGEX', '^(co|g)_.*');
+   plscope_context.set_attr('IN_PARAMETER_REGEX', '^(in|p)_.*');
+   plscope_context.set_attr('OUT_PARAMETER_REGEX', '^(out|p)_.*');
+end;
+/
+```
 
 #### Result after Changing Naming Conventions
 
-	OBJECT_TYPE  PRO TYPE       NAME               MESSAGE                                       LINE  COL TEXT                                                     
-	------------ --- ---------- ------------------ --------------------------------------------- ---- ---- ---------------------------------------------------------
-	PACKAGE          VARIABLE   G_GLOBAL_VARIABLE  OK                                               2    4    g_global_variable INTEGER := 0;                       
-	PACKAGE          CONSTANT   G_GLOBAL_CONSTANT  OK                                               3    4    g_global_constant CONSTANT VARCHAR2(10) := 'PUBLIC';  
-	PACKAGE      P   FORMAL IN  P_1                OK                                               5   16    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);         
-	PACKAGE      P   FORMAL OUT P_2                OK                                               5   32    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);         
-	PACKAGE BODY     VARIABLE   M_GLOBAL_VARIABLE  OK                                               2    4    m_global_variable  INTEGER := 1;                      
-	PACKAGE BODY     CONSTANT   CO_GLOBAL_CONSTANT OK                                               3    4    co_global_constant CONSTANT VARCHAR2(10) := 'PRIVATE';
-	PACKAGE BODY F   FORMAL IN  IN_1               OK                                               5   15    FUNCTION f(in_1 IN INTEGER) RETURN INTEGER IS         
-	PACKAGE BODY F   VARIABLE   L_RESULT           OK                                               6    7       l_result INTEGER;                                  
-	PACKAGE BODY P   FORMAL IN  P_1                OK                                              12   16    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS       
-	PACKAGE BODY P   FORMAL OUT P_2                OK                                              12   32    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS       
-	
-	10 rows selected. 	
+```
+OBJECT_TYPE  PRO TYPE       NAME               MESSAGE                                       LINE  COL TEXT                                                     
+------------ --- ---------- ------------------ --------------------------------------------- ---- ---- ---------------------------------------------------------
+PACKAGE          VARIABLE   G_GLOBAL_VARIABLE  OK                                               2    4    g_global_variable INTEGER := 0;                       
+PACKAGE          CONSTANT   G_GLOBAL_CONSTANT  OK                                               3    4    g_global_constant CONSTANT VARCHAR2(10) := 'PUBLIC';  
+PACKAGE      P   FORMAL IN  P_1                OK                                               5   16    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);         
+PACKAGE      P   FORMAL OUT P_2                OK                                               5   32    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);         
+PACKAGE BODY     VARIABLE   M_GLOBAL_VARIABLE  OK                                               2    4    m_global_variable  INTEGER := 1;                      
+PACKAGE BODY     CONSTANT   CO_GLOBAL_CONSTANT OK                                               3    4    co_global_constant CONSTANT VARCHAR2(10) := 'PRIVATE';
+PACKAGE BODY F   FORMAL IN  IN_1               OK                                               5   15    FUNCTION f(in_1 IN INTEGER) RETURN INTEGER IS         
+PACKAGE BODY F   VARIABLE   L_RESULT           OK                                               6    7       l_result INTEGER;                                  
+PACKAGE BODY P   FORMAL IN  P_1                OK                                              12   16    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS       
+PACKAGE BODY P   FORMAL OUT P_2                OK                                              12   32    PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS       
+
+10 rows selected.     
+```
 
 #### Resetting Naming Conventions to Default Behaviour
 
-	EXEC plscope_context.remove_all;
+```sql
+exec plscope_context.remove_all;
+```
 
 ### [View PLSCOPE\_INS\_LINEAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_ins_lineage.sql)
 
@@ -381,53 +434,67 @@ The example below shows that the ```salary``` column in the table ```deptsal``` 
 
 #### Query
 
-	SELECT *
-	  FROM plscope_ins_lineage
-	 WHERE object_name IN ('ETL', 'LOAD_FROM_TAB')
-	   AND procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
-	 ORDER BY owner, object_type, object_name, line, col, 
-	       to_object_name, to_column_name, 
-	       from_owner, from_object_type, from_object_name, from_column_name;
+```sql
+select *
+  from plscope_ins_lineage
+ where object_name in ('ETL', 'LOAD_FROM_TAB')
+   and procedure_name in ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ order by owner,
+       object_type,
+       object_name,
+       line,
+       col,
+       to_object_name,
+       to_column_name,
+       from_owner,
+       from_object_type,
+       from_object_name,
+       from_column_name;
+```
 
 #### Result (default)
 
-	OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     FROM_OWNER FROM_OBJECT_TYPE FROM_OBJECT_NAME FROM_COLUMN_NAME TO_OWNER TO_OBJECT_TYPE TO_OBJECT_NAME TO_COLUMN_NAME
-	------- ------------ ------------- ---- ---- ------------------ ---------- ---------------- ---------------- ---------------- -------- -------------- -------------- --------------
-	PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
-	PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
-	PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      DEPT_NAME        PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      DEPT_NO          PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      SALARY           PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
-	
-	15 rows selected. 
+```
+OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     FROM_OWNER FROM_OBJECT_TYPE FROM_OBJECT_NAME FROM_COLUMN_NAME TO_OWNER TO_OBJECT_TYPE TO_OBJECT_NAME TO_COLUMN_NAME
+------- ------------ ------------- ---- ---- ------------------ ---------- ---------------- ---------------- ---------------- -------- -------------- -------------- --------------
+PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
+PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
+PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      DEPT_NAME        PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      DEPT_NO          PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      SALARY           PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
+
+15 rows selected. 
+```
 
 #### Result (after calling ```EXEC lineage_util.set_recursive(0);```)
 
-	OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     FROM_OWNER FROM_OBJECT_TYPE FROM_OBJECT_NAME FROM_COLUMN_NAME TO_OWNER TO_OBJECT_TYPE TO_OBJECT_NAME TO_COLUMN_NAME
-	------- ------------ ------------- ---- ---- ------------------ ---------- ---------------- ---------------- ---------------- -------- -------------- -------------- --------------
-	PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
-	PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
-	PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      DEPT_NAME        PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      DEPT_NO          PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
-	PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      SALARY           PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
-	PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
-	
-	11 rows selected. 
+```
+OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     FROM_OWNER FROM_OBJECT_TYPE FROM_OBJECT_NAME FROM_COLUMN_NAME TO_OWNER TO_OBJECT_TYPE TO_OBJECT_NAME TO_COLUMN_NAME
+------- ------------ ------------- ---- ---- ------------------ ---------- ---------------- ---------------- ---------------- -------- -------------- -------------- --------------
+PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
+PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
+PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PACKAGE BODY ETL             14    7 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      DEPT_NAME        PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      DEPT_NO          PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
+PLSCOPE PACKAGE BODY ETL             47    7 LOAD_FROM_SYN_WILD PLSCOPE    VIEW             SOURCE_VIEW      SALARY           PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DNAME            PLSCOPE  TABLE          DEPTSAL        DEPT_NAME     
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            DEPT             DEPTNO           PLSCOPE  TABLE          DEPTSAL        DEPT_NO       
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              COMM             PLSCOPE  TABLE          DEPTSAL        SALARY        
+PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE            EMP              SAL              PLSCOPE  TABLE          DEPTSAL        SALARY        
+
+11 rows selected. 
+```
 
 ## License
 
