@@ -18,20 +18,20 @@
 		<queries>
 			<query minversion="12.2">
 				<sql><![CDATA[
-WITH
-   src AS (
-      SELECT /*+ materialize */
+with
+   src as (
+      select /*+ materialize */
              owner,
              type,
              name,
              line,
              text
-        FROM sys.all_source
-       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND name = :OBJECT_NAME 
+        from sys.all_source
+       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
+         and name = :object_name
    ),
-   prep_ids AS (
-      SELECT owner,
+   prep_ids as (
+      select owner,
              name,
              signature,
              type,
@@ -42,23 +42,23 @@ WITH
              line,
              col,
              usage_context_id
-        FROM sys.all_identifiers
-      UNION ALL
-      SELECT owner,
-             ':' || NVL(sql_id, type) AS name,  -- intermediate statement marker colon
+        from sys.all_identifiers
+      union all
+      select owner,
+             ':' || nvl(sql_id, type) as name,  -- intermediate statement marker colon
              signature,
              type,
              object_name,
              object_type,
-             'EXECUTE' AS usage, -- new, artificial usage
+             'EXECUTE' as usage, -- new, artificial usage
              usage_id,
              line,
              col,
              usage_context_id
-       FROM sys.all_statements
+        from sys.all_statements
    ),
-   fids AS (
-      SELECT owner,
+   fids as (
+      select owner,
              name,
              signature,
              type,
@@ -69,13 +69,14 @@ WITH
              line,
              col,
              usage_context_id
-        FROM prep_ids
-       WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
-         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND object_name = :OBJECT_NAME
+        from prep_ids
+       where (owner = :object_owner or upper(replace(:object_type, 'plscope-utils-')) = 'SYNONYM')
+         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+         ' BODY')
+         and object_name = :object_name
    ),
-   base_ids AS (
-      SELECT fids.owner,
+   base_ids as (
+      select fids.owner,
              fids.name,
              fids.signature,
              fids.type,
@@ -83,24 +84,26 @@ WITH
              fids.object_type,
              fids.usage,
              fids.usage_id,
-             CASE
-                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+             case
+                when fk.usage_id is not null
+                   or fids.usage_context_id = 0
+                then
                    'YES'
-                ELSE
+                else
                    'NO'
-             END AS sane_fk,
+             end as sane_fk,
              fids.line,
              fids.col,
              fids.usage_context_id
-        FROM fids
-        LEFT JOIN fids fk
-          ON fk.owner = fids.owner
-             AND fk.object_type = fids.object_type
-             AND fk.object_name = fids.object_name
-             AND fk.usage_id = fids.usage_context_id
+        from fids
+        left join fids fk
+          on fk.owner = fids.owner
+         and fk.object_type = fids.object_type
+         and fk.object_name = fids.object_name
+         and fk.usage_id = fids.usage_context_id
    ),
-   ids AS (
-      SELECT owner,
+   ids as (
+      select owner,
              name,
              signature,
              type,
@@ -110,102 +113,115 @@ WITH
              usage_id,
              line,
              col,
-             CASE
-                WHEN sane_fk = 'YES' THEN
+             case
+                when sane_fk = 'YES' then
                    usage_context_id
-                ELSE
-                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
-                      PARTITION BY owner, object_name, object_type
-                      ORDER BY line, col
-                      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                else
+                   last_value(case
+                         when sane_fk = 'YES' then
+                            usage_id
+                      end) ignore nulls over (
+                      partition by owner, object_name, object_type
+                      order by line, col
+                      rows between unbounded preceding and 1 preceding
                    )
-             END AS usage_context_id -- fix broken hierarchies
-        FROM base_ids
+             end as usage_context_id -- fix broken hierarchies
+        from base_ids
    ),
-   tree AS (
-       SELECT ids.owner,
-              ids.object_type,
-              ids.object_name,
-              ids.line,
-              ids.col,
-              ids.name,
-              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
-              level as path_len,
-              ids.type,
-              ids.usage,
-              ids.signature,
-              ids.usage_id,
-              ids.usage_context_id
-         FROM ids
-        START WITH ids.usage_context_id = 0
-      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
-              AND PRIOR ids.owner       = ids.owner
-              AND PRIOR ids.object_type = ids.object_type
-              AND PRIOR ids.object_name = ids.object_name
+   tree as (
+      select ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.name,
+             replace(sys_connect_by_path(ids.name, '|'), '|', '/') as name_path,
+             level as path_len,
+             ids.type,
+             ids.usage,
+             ids.signature,
+             ids.usage_id,
+             ids.usage_context_id
+        from ids
+       start with ids.usage_context_id = 0
+     connect by prior ids.usage_id = ids.usage_context_id
+         and prior ids.owner = ids.owner
+         and prior ids.object_type = ids.object_type
+         and prior ids.object_name = ids.object_name
    )
- SELECT CASE
-           WHEN tree.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-              'SQLDEV:LINK:' || tree.owner || ':' || tree.object_type || ':' || tree.object_name || ':' ||
-                 to_char(tree.line,'FM0000009') || ':' || to_char(tree.col,'FM0000009') || ':' || 'Source' ||
-                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-           ELSE
-              NULL
-        END AS "Link",
-        lpad(' ', 3 * (tree.path_len - 1)) || tree.usage AS "Usage",
-        tree.type AS "Type",
-        replace(tree.name, ':', NULL) AS "Name", -- remove intermediate statement marker
-        CASE 
-           WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
-              AND tree.usage = 'DECLARATION'
-              AND tree.type NOT IN ('LABEL')
-           THEN
-              CASE
-                 WHEN 
-                    count(
-                       CASE 
-                          WHEN tree.usage NOT IN ('DECLARATION', 'ASSIGNMENT') 
-                             OR (tree.type IN ('FORMAL OUT', 'FORMAL IN OUT')
-                                 AND tree.usage = 'ASSIGNMENT')
-                          THEN 
-                             1 
-                       END
-                    ) OVER (
-                       PARTITION BY tree.owner, tree.object_name, tree.object_type, tree.signature
-                    ) = 0
-                 THEN
-                    'NO'
-                 ELSE
-                    'YES'
-              END
-        END AS "Used?",
-        tree.line AS "Line",
-        tree.col AS "Col",
-        regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
-   FROM tree
-   LEFT JOIN src
-     ON src.owner = tree.owner
-        AND src.type = tree.object_type
-        AND src.name = tree.object_name
-        AND src.line = tree.line
-  ORDER BY length(tree.object_type), tree.line, tree.col, tree.path_len
-				]]></sql>
+select case
+          when tree.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
+             'SQLDEV:LINK:'
+             || tree.owner
+             || ':'
+             || tree.object_type
+             || ':'
+             || tree.object_name
+             || ':'
+             || to_char(tree.line, 'FM0000009')
+             || ':'
+             || to_char(tree.col, 'FM0000009')
+             || ':'
+             || 'Source'
+             || ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          else
+             null
+       end as "Link",
+       lpad(' ', 3 * (tree.path_len - 1)) || tree.usage as "Usage",
+       tree.type as "Type",
+       replace(tree.name, ':', null) as "Name", -- remove intermediate statement marker
+       case
+          when tree.object_type in ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
+             and tree.usage = 'DECLARATION'
+             and tree.type not in ('LABEL')
+          then
+             case
+                when count(
+                      case
+                         when tree.usage not in ('DECLARATION', 'ASSIGNMENT')
+                            or (tree.type in ('FORMAL OUT', 'FORMAL IN OUT')
+                               and tree.usage = 'ASSIGNMENT')
+                         then
+                            1
+                      end
+                   ) over (
+                      partition by tree.owner, tree.object_name, tree.object_type, tree.signature
+                   ) = 0
+                then
+                   'NO'
+                else
+                   'YES'
+             end
+       end as "Used?",
+       tree.line as "Line",
+       tree.col as "Col",
+       regexp_replace(src.text, chr(10) || '+$', null) as "Text" -- remove trailing new line character
+  from tree
+  left join src
+    on src.owner = tree.owner
+   and src.type = tree.object_type
+   and src.name = tree.object_name
+   and src.line = tree.line
+ order by length(tree.object_type), tree.line, tree.col, tree.path_len
+]]>
+            </sql>
 			</query>
 			<query minversion="11.1">
 				<sql><![CDATA[
-WITH
-   src AS (
-      SELECT /*+ materialize */
+with
+   src as (
+      select /*+ materialize */
              owner,
              type,
              name,
              line,
              text
-        FROM sys.all_source
-       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND name = :OBJECT_NAME 
+        from sys.all_source
+       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
+         and name = :object_name
    ),
-   fids AS (
-      SELECT owner,
+   fids as (
+      select owner,
              name,
              signature,
              type,
@@ -216,13 +232,14 @@ WITH
              line,
              col,
              usage_context_id
-        FROM sys.all_identifiers
-       WHERE (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
-         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND object_name = :OBJECT_NAME
+        from sys.all_identifiers
+       where (owner = :object_owner or upper(replace(:object_type, 'plscope-utils-')) = 'SYNONYM')
+         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+         ' BODY')
+         and object_name = :object_name
    ),
-   base_ids AS (
-      SELECT fids.owner,
+   base_ids as (
+      select fids.owner,
              fids.name,
              fids.signature,
              fids.type,
@@ -230,24 +247,26 @@ WITH
              fids.object_type,
              fids.usage,
              fids.usage_id,
-             CASE
-                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+             case
+                when fk.usage_id is not null
+                   or fids.usage_context_id = 0
+                then
                    'YES'
-                ELSE
+                else
                    'NO'
-             END AS sane_fk,
+             end as sane_fk,
              fids.line,
              fids.col,
              fids.usage_context_id
-        FROM fids
-        LEFT JOIN fids fk
-          ON fk.owner = fids.owner
-             AND fk.object_type = fids.object_type
-             AND fk.object_name = fids.object_name
-             AND fk.usage_id = fids.usage_context_id
+        from fids
+        left join fids fk
+          on fk.owner = fids.owner
+         and fk.object_type = fids.object_type
+         and fk.object_name = fids.object_name
+         and fk.usage_id = fids.usage_context_id
    ),
-   ids AS (
-      SELECT owner,
+   ids as (
+      select owner,
              name,
              signature,
              type,
@@ -257,85 +276,98 @@ WITH
              usage_id,
              line,
              col,
-             CASE
-                WHEN sane_fk = 'YES' THEN
+             case
+                when sane_fk = 'YES' then
                    usage_context_id
-                ELSE
-                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
-                      PARTITION BY owner, object_name, object_type
-                      ORDER BY line, col
-                      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                else
+                   last_value(case
+                         when sane_fk = 'YES' then
+                            usage_id
+                      end) ignore nulls over (
+                      partition by owner, object_name, object_type
+                      order by line, col
+                      rows between unbounded preceding and 1 preceding
                    )
-             END AS usage_context_id -- fix broken hierarchies
-        FROM base_ids
+             end as usage_context_id -- fix broken hierarchies
+        from base_ids
    ),
-   tree AS (
-       SELECT ids.owner,
-              ids.object_type,
-              ids.object_name,
-              ids.line,
-              ids.col,
-              ids.name,
-              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
-              level as path_len,
-              ids.type,
-              ids.usage,
-              ids.signature,
-              ids.usage_id,
-              ids.usage_context_id
-         FROM ids
-        START WITH ids.usage_context_id = 0
-      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
-              AND PRIOR ids.owner       = ids.owner
-              AND PRIOR ids.object_type = ids.object_type
-              AND PRIOR ids.object_name = ids.object_name
+   tree as (
+      select ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.name,
+             replace(sys_connect_by_path(ids.name, '|'), '|', '/') as name_path,
+             level as path_len,
+             ids.type,
+             ids.usage,
+             ids.signature,
+             ids.usage_id,
+             ids.usage_context_id
+        from ids
+       start with ids.usage_context_id = 0
+     connect by prior ids.usage_id = ids.usage_context_id
+         and prior ids.owner = ids.owner
+         and prior ids.object_type = ids.object_type
+         and prior ids.object_name = ids.object_name
    )
- SELECT CASE
-           WHEN tree.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-              'SQLDEV:LINK:' || tree.owner || ':' || tree.object_type || ':' || tree.object_name || ':' ||
-                 to_char(tree.line,'FM0000009') || ':' || to_char(tree.col,'FM0000009') || ':' || 'Source' || 
-                 ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-           ELSE
-              NULL
-        END AS "Link",
-        lpad(' ', 3 * (tree.path_len - 1)) || tree.usage AS "Usage",
-        tree.type AS "Type",
-        replace(tree.name, ':', NULL) AS "Name", -- remove intermediate statement marker
-        CASE 
-           WHEN tree.object_type IN ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
-              AND tree.usage = 'DECLARATION'
-              AND tree.type NOT IN ('LABEL')
-           THEN
-              CASE
-                 WHEN 
-                    count(
-                       CASE 
-                          WHEN tree.usage NOT IN ('DECLARATION', 'ASSIGNMENT') 
-                             OR (tree.type IN ('FORMAL OUT', 'FORMAL IN OUT')
-                                 AND tree.usage = 'ASSIGNMENT')
-                          THEN 
-                             1 
-                       END
-                    ) OVER (
-                       PARTITION BY tree.owner, tree.object_name, tree.object_type, tree.signature
-                    ) = 0
-                 THEN
-                    'NO'
-                 ELSE
-                    'YES'
-              END
-        END AS "Used?",
-        tree.line AS "Line",
-        tree.col AS "Col",
-        regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
-   FROM tree
-   LEFT JOIN src
-     ON src.owner = tree.owner
-        AND src.type = tree.object_type
-        AND src.name = tree.object_name
-        AND src.line = tree.line
-  ORDER BY length(tree.object_type), tree.line, tree.col, tree.path_len
-				]]></sql>
+select case
+          when tree.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
+             'SQLDEV:LINK:'
+             || tree.owner
+             || ':'
+             || tree.object_type
+             || ':'
+             || tree.object_name
+             || ':'
+             || to_char(tree.line, 'FM0000009')
+             || ':'
+             || to_char(tree.col, 'FM0000009')
+             || ':'
+             || 'Source'
+             || ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          else
+             null
+       end as "Link",
+       lpad(' ', 3 * (tree.path_len - 1)) || tree.usage as "Usage",
+       tree.type as "Type",
+       replace(tree.name, ':', null) as "Name", -- remove intermediate statement marker
+       case
+          when tree.object_type in ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
+             and tree.usage = 'DECLARATION'
+             and tree.type not in ('LABEL')
+          then
+             case
+                when count(
+                      case
+                         when tree.usage not in ('DECLARATION', 'ASSIGNMENT')
+                            or (tree.type in ('FORMAL OUT', 'FORMAL IN OUT')
+                               and tree.usage = 'ASSIGNMENT')
+                         then
+                            1
+                      end
+                   ) over (
+                      partition by tree.owner, tree.object_name, tree.object_type, tree.signature
+                   ) = 0
+                then
+                   'NO'
+                else
+                   'YES'
+             end
+       end as "Used?",
+       tree.line as "Line",
+       tree.col as "Col",
+       regexp_replace(src.text, chr(10) || '+$', null) as "Text" -- remove trailing new line character
+  from tree
+  left join src
+    on src.owner = tree.owner
+   and src.type = tree.object_type
+   and src.name = tree.object_name
+   and src.line = tree.line
+ order by length(tree.object_type), tree.line, tree.col, tree.path_len
+]]>
+            </sql>
 			</query>
 		</queries>
 	</display>
@@ -350,38 +382,49 @@ WITH
 		<queries>
 			<query minversion="12.2">
 				<sql><![CDATA[
-SELECT CASE
-          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
-                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' || 'Source' ||
-                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-          ELSE
-             NULL
-       END AS "Link",
-       type AS "Type",
-       line AS "Line", 
-       col AS "Col", 
-       sql_id AS "SQL_ID",
-       CASE 
-          WHEN (count(sql_id) OVER (PARTITION BY sql_id)) > 1 THEN 
+select case
+          when object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
+             'SQLDEV:LINK:'
+             || owner
+             || ':'
+             || object_type
+             || ':'
+             || object_name
+             || ':'
+             || to_char(line, 'FM0000009')
+             || ':'
+             || to_char(col, 'FM0000009')
+             || ':'
+             || 'Source'
+             || ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          else
+             null
+       end as "Link",
+       type as "Type",
+       line as "Line",
+       col as "Col",
+       sql_id as "SQL_ID",
+       case
+          when (count(sql_id) over (partition by sql_id)) > 1 then
              'YES'
-          ELSE 
-             'NO' 
-       END AS "Duplicate?",
-       has_hint AS "Has hint?", 
-       has_into_bulk AS "Has bulk into?", 
-       has_into_returning AS "Has returning into?", 
-       has_into_record AS "Has into record?", 
-       has_current_of AS "Has current of?", 
-       has_for_update AS "Has for update?",
-       has_in_binds AS "Has binds?", 
-       full_text AS "Text"
-  FROM sys.all_statements
- WHERE owner       = :OBJECT_OWNER
-  AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-  AND object_name = :OBJECT_NAME
- ORDER BY length(object_type), line, col
-				]]></sql>
+          else
+             'NO'
+       end as "Duplicate?",
+       has_hint as "Has hint?",
+       has_into_bulk as "Has bulk into?",
+       has_into_returning as "Has returning into?",
+       has_into_record as "Has into record?",
+       has_current_of as "Has current of?",
+       has_for_update as "Has for update?",
+       has_in_binds as "Has binds?",
+       full_text as "Text"
+  from sys.all_statements
+ where owner = :object_owner
+   and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
+   and object_name = :object_name
+ order by length(object_type), line, col
+]]>
+            </sql>
 			</query>
 		</queries>
 	</display>
@@ -396,20 +439,20 @@ SELECT CASE
 		<queries>
 			<query minversion="11.1">
 				<sql><![CDATA[
-WITH
-   src AS (
-      SELECT /*+ materialize */
+with
+   src as (
+      select /*+ materialize */
              owner,
              type,
              name,
              line,
              text
-        FROM sys.all_source
-       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND name = :OBJECT_NAME 
+        from sys.all_source
+       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
+         and name = :object_name
    ),
-   ids AS (
-      SELECT /*+ materialize */
+   ids as (
+      select /*+ materialize */
              owner,
              object_type,
              object_name,
@@ -419,71 +462,84 @@ WITH
              name,
              line,
              col
-        FROM sys.all_identifiers
-       WHERE usage IN ('CALL','REFERENCE')
-         AND (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
-         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')
-         AND object_name = :OBJECT_NAME
+        from sys.all_identifiers
+       where usage in ('CALL', 'REFERENCE')
+         and (owner = :object_owner or upper(replace(:object_type, 'plscope-utils-')) = 'SYNONYM')
+         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+         ' BODY')
+         and object_name = :object_name
    )
-SELECT CASE
-          WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-             'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
-                to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' || 'Source' ||
-                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-          ELSE
-             NULL
-       END AS "Link",
-       CASE
-          WHEN refs.object_type = 'SYNONYM' THEN
+select case
+          when ids.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
+             'SQLDEV:LINK:'
+             || ids.owner
+             || ':'
+             || ids.object_type
+             || ':'
+             || ids.object_name
+             || ':'
+             || to_char(ids.line, 'FM0000009')
+             || ':'
+             || to_char(ids.col, 'FM0000009')
+             || ':'
+             || 'Source'
+             || ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          else
+             null
+       end as "Link",
+       case
+          when refs.object_type = 'SYNONYM' then
              s.table_owner
-          ELSE
+          else
              refs.owner
-       END AS "Owner",
-       CASE
-          WHEN refs.object_type = 'SYNONYM' THEN
+       end as "Owner",
+       case
+          when refs.object_type = 'SYNONYM' then
              o.object_type
-          ELSE
+          else
              refs.object_type
-       END AS "Object type",
-       CASE
-          WHEN refs.object_type = 'SYNONYM' THEN
+       end as "Object type",
+       case
+          when refs.object_type = 'SYNONYM' then
              s.table_name
-          ELSE
+          else
              refs.object_name
-       END AS "Object name",
-       ids.usage AS "Usage",
-       ids.type AS "Type",
-       ids.name AS "Name",
-       ids.line AS "Line",
-       ids.col aS "Col",
-       regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
+       end as "Object name",
+       ids.usage as "Usage",
+       ids.type as "Type",
+       ids.name as "Name",
+       ids.line as "Line",
+       ids.col as "Col",
+       regexp_replace(src.text, chr(10) || '+$', null) as "Text" -- remove trailing new line character
   from ids
-  JOIN sys.all_identifiers refs
-    ON ids.signature = refs.signature
-  LEFT JOIN src
-     ON src.owner = ids.owner
-        AND src.type = ids.object_type
-        AND src.name = ids.object_name
-        AND src.line = ids.line
-  LEFT JOIN sys.all_synonyms s
-    ON s.owner = refs.owner
-       AND s.synonym_name = refs.object_name
-  LEFT JOIN sys.all_objects o
-    ON o.owner = s.table_owner
-       AND o.object_name = s.table_name
- WHERE refs.usage = 'DECLARATION'
-   AND NOT (
-              refs.owner       = :OBJECT_OWNER
-          AND refs.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-          AND refs.object_name = :OBJECT_NAME
+  join sys.all_identifiers refs
+    on ids.signature = refs.signature
+  left join src
+    on src.owner = ids.owner
+   and src.type = ids.object_type
+   and src.name = ids.object_name
+   and src.line = ids.line
+  left join sys.all_synonyms s
+    on s.owner = refs.owner
+   and s.synonym_name = refs.object_name
+  left join sys.all_objects o
+    on o.owner = s.table_owner
+   and o.object_name = s.table_name
+ where refs.usage = 'DECLARATION'
+   and not (
+          refs.owner = :object_owner
+          and refs.object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+          ' BODY')
+          and refs.object_name = :object_name
        )
-   AND NOT (
-              refs.owner = 'SYS'
-          AND refs.object_type = 'PACKAGE'
-          AND refs.object_name = 'STANDARD'
+   and not (
+          refs.owner = 'SYS'
+          and refs.object_type = 'PACKAGE'
+          and refs.object_name = 'STANDARD'
        )
- ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
-				]]></sql>
+ order by ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
+]]>
+            </sql>
 			</query>
 		</queries>
 	</display>
@@ -498,59 +554,71 @@ SELECT CASE
 		<queries>
 			<query minversion="11.1">
 				<sql><![CDATA[
-WITH
-   src AS (
-      SELECT /*+ materialize */
+with
+   src as (
+      select /*+ materialize */
              owner,
              type,
              name,
              line,
              text
-        FROM sys.all_source
-       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND name = :OBJECT_NAME 
+        from sys.all_source
+       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
+         and name = :object_name
    ),
-   refs AS (
-      SELECT /*+materialize */ 
+   refs as (
+      select /*+materialize */
              signature
-        FROM sys.all_identifiers refs
-       WHERE usage = 'DECLARATION'
-         AND (owner = :OBJECT_OWNER OR upper(replace(:OBJECT_TYPE,'plscope-utils-')) = 'SYNONYM')
-         AND object_type = upper(replace(:OBJECT_TYPE,'plscope-utils-')) 
-         AND object_name = :OBJECT_NAME
+        from sys.all_identifiers refs
+       where usage = 'DECLARATION'
+         and (owner = :object_owner or upper(replace(:object_type, 'plscope-utils-')) = 'SYNONYM')
+         and object_type = upper(replace(:object_type, 'plscope-utils-'))
+         and object_name = :object_name
    )
-SELECT CASE
-          WHEN ids.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-             'SQLDEV:LINK:' || ids.owner || ':' || ids.object_type || ':' || ids.object_name || ':' ||
-                to_char(ids.line,'FM0000009') || ':' || to_char(ids.col,'FM0000009') || ':' || 'Source' ||
-                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-          ELSE
-             NULL
-       END AS "Link",
-       ids.owner AS "Owner",
-       ids.object_type AS "Object type",
-       ids.object_name AS "Object name",
-       ids.usage AS "Usage",
-       ids.type AS "Type",
-       ids.name AS "Name",
-       ids.line AS "Line",
-       ids.col aS "Col",
-       regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
-  FROM refs
-  JOIN sys.all_identifiers ids
-    ON ids.signature = refs.signature
-  LEFT JOIN src
-     ON src.owner = ids.owner
-        AND src.type = ids.object_type
-        AND src.name = ids.object_name
-        AND src.line = ids.line
- WHERE NOT (
-              ids.owner       = :OBJECT_OWNER
-          AND ids.object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-          AND ids.object_name = :OBJECT_NAME
-       )   
- ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
-				]]></sql>
+select case
+          when ids.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
+             'SQLDEV:LINK:'
+             || ids.owner
+             || ':'
+             || ids.object_type
+             || ':'
+             || ids.object_name
+             || ':'
+             || to_char(ids.line, 'FM0000009')
+             || ':'
+             || to_char(ids.col, 'FM0000009')
+             || ':'
+             || 'Source'
+             || ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          else
+             null
+       end as "Link",
+       ids.owner as "Owner",
+       ids.object_type as "Object type",
+       ids.object_name as "Object name",
+       ids.usage as "Usage",
+       ids.type as "Type",
+       ids.name as "Name",
+       ids.line as "Line",
+       ids.col as "Col",
+       regexp_replace(src.text, chr(10) || '+$', null) as "Text" -- remove trailing new line character
+  from refs
+  join sys.all_identifiers ids
+    on ids.signature = refs.signature
+  left join src
+    on src.owner = ids.owner
+   and src.type = ids.object_type
+   and src.name = ids.object_name
+   and src.line = ids.line
+ where not (
+          ids.owner = :object_owner
+          and ids.object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+          ' BODY')
+          and ids.object_name = :object_name
+       )
+ order by ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
+]]>
+            </sql>
 			</query>
 		</queries>
 	</display>
@@ -565,20 +633,20 @@ SELECT CASE
 		<queries>
 			<query minversion="12.2">
 				<sql><![CDATA[
-WITH
-   src AS (
-      SELECT /*+ materialize */
+with
+   src as (
+      select /*+ materialize */
              owner,
              type,
              name,
              line,
              text
-        FROM sys.all_source
-       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND name = :OBJECT_NAME 
+        from sys.all_source
+       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
+         and name = :object_name
    ),
-   prep_ids AS (
-      SELECT owner,
+   prep_ids as (
+      select owner,
              name,
              signature,
              type,
@@ -589,23 +657,23 @@ WITH
              line,
              col,
              usage_context_id
-        FROM sys.all_identifiers
-      UNION ALL
-      SELECT owner,
-             ':' || NVL(sql_id, type) AS name,  -- intermediate statement marker colon
+        from sys.all_identifiers
+      union all
+      select owner,
+             ':' || nvl(sql_id, type) as name,  -- intermediate statement marker colon
              signature,
              type,
              object_name,
              object_type,
-             'EXECUTE' AS usage, -- new, artificial usage
+             'EXECUTE' as usage, -- new, artificial usage
              usage_id,
              line,
              col,
              usage_context_id
-       FROM sys.all_statements
+        from sys.all_statements
    ),
-   fids AS (
-      SELECT owner,
+   fids as (
+      select owner,
              name,
              signature,
              type,
@@ -616,13 +684,14 @@ WITH
              line,
              col,
              usage_context_id
-        FROM prep_ids
-       WHERE owner       = :OBJECT_OWNER
-         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND object_name = :OBJECT_NAME
+        from prep_ids
+       where owner = :object_owner
+         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+         ' BODY')
+         and object_name = :object_name
    ),
-   base_ids AS (
-      SELECT fids.owner,
+   base_ids as (
+      select fids.owner,
              fids.name,
              fids.signature,
              fids.type,
@@ -630,24 +699,26 @@ WITH
              fids.object_type,
              fids.usage,
              fids.usage_id,
-             CASE
-                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+             case
+                when fk.usage_id is not null
+                   or fids.usage_context_id = 0
+                then
                    'YES'
-                ELSE
+                else
                    'NO'
-             END AS sane_fk,
+             end as sane_fk,
              fids.line,
              fids.col,
              fids.usage_context_id
-        FROM fids
-        LEFT JOIN fids fk
-          ON fk.owner = fids.owner
-             AND fk.object_type = fids.object_type
-             AND fk.object_name = fids.object_name
-             AND fk.usage_id = fids.usage_context_id
+        from fids
+        left join fids fk
+          on fk.owner = fids.owner
+         and fk.object_type = fids.object_type
+         and fk.object_name = fids.object_name
+         and fk.usage_id = fids.usage_context_id
    ),
-   ids AS (
-      SELECT owner,
+   ids as (
+      select owner,
              name,
              signature,
              type,
@@ -657,183 +728,201 @@ WITH
              usage_id,
              line,
              col,
-             CASE
-                WHEN sane_fk = 'YES' THEN
+             case
+                when sane_fk = 'YES' then
                    usage_context_id
-                ELSE
-                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
-                      PARTITION BY owner, object_name, object_type
-                      ORDER BY line, col
-                      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                else
+                   last_value(case
+                         when sane_fk = 'YES' then
+                            usage_id
+                      end) ignore nulls over (
+                      partition by owner, object_name, object_type
+                      order by line, col
+                      rows between unbounded preceding and 1 preceding
                    )
-             END AS usage_context_id -- fix broken hierarchies
-        FROM base_ids
+             end as usage_context_id -- fix broken hierarchies
+        from base_ids
    ),
-   tree AS (
-       SELECT ids.owner,
-              ids.object_type,
-              ids.object_name,
-              ids.line,
-              ids.col,
-              ids.name,
-              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
-              level as path_len,
-              ids.type,
-              ids.usage,
-              ids.signature,
-              ids.usage_id,
-              ids.usage_context_id
-         FROM ids
-        START WITH ids.usage_context_id = 0
-      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
-              AND PRIOR ids.owner       = ids.owner
-              AND PRIOR ids.object_type = ids.object_type
-              AND PRIOR ids.object_name = ids.object_name
-   ), 
-   plscope_identifiers AS (
-      SELECT /*+use_hash(tree) use_hash(refs) */
+   tree as (
+      select ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.name,
+             replace(sys_connect_by_path(ids.name, '|'), '|', '/') as name_path,
+             level as path_len,
+             ids.type,
+             ids.usage,
+             ids.signature,
+             ids.usage_id,
+             ids.usage_context_id
+        from ids
+       start with ids.usage_context_id = 0
+     connect by prior ids.usage_id = ids.usage_context_id
+         and prior ids.owner = ids.owner
+         and prior ids.object_type = ids.object_type
+         and prior ids.object_name = ids.object_name
+   ),
+   plscope_identifiers as (
+      select /*+use_hash(tree) use_hash(refs) */
              tree.owner,
              tree.object_type,
              tree.object_name,
              last_value (
-                CASE
-                   WHEN tree.type in ('PROCEDURE', 'FUNCTION') AND tree.path_len = 2  THEN
+                case
+                   when tree.type in ('PROCEDURE', 'FUNCTION')
+                      and tree.path_len = 2
+                   then
                       tree.name
-                END
-             ) IGNORE NULLS OVER (
-                PARTITION BY tree.owner, tree.object_name, tree.object_type
-                ORDER BY tree.line, tree.col, tree.path_len
-             ) AS procedure_name,
+                end
+             ) ignore nulls over (
+                partition by tree.owner, tree.object_name, tree.object_type
+                order by tree.line, tree.col, tree.path_len
+             ) as procedure_name,
              tree.line,
              tree.col,
-             REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
+             replace(tree.name, ':', null) as name, -- remove intermediate statement marker
              tree.path_len,
              tree.type,
              tree.usage,
-             refs.owner AS ref_owner,
-             refs.object_type AS ref_object_type,
-             refs.object_name AS ref_object_name,
-             regexp_replace(src.text, chr(10)||'+$', null) AS text, -- remove trailing new line character
-             CASE
-                WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
+             refs.owner as ref_owner,
+             refs.object_type as ref_object_type,
+             refs.object_name as ref_object_name,
+             regexp_replace(src.text, chr(10) || '+$', null) as text, -- remove trailing new line character
+             case
+                when tree.name_path like '%:%'
+                   and tree.usage != 'EXECUTE'
+                then
                    -- ensure that this is really a child of a statement
                    last_value (
-                      CASE
-                         WHEN tree.usage = 'EXECUTE' THEN
+                      case
+                         when tree.usage = 'EXECUTE' then
                             tree.signature
-                      END
-                   ) IGNORE NULLS OVER (
-                      PARTITION BY tree.owner, tree.object_name, tree.object_type
-                      ORDER BY tree.line, tree.col, tree.path_len
+                      end
+                   ) ignore nulls over (
+                      partition by tree.owner, tree.object_name, tree.object_type
+                      order by tree.line, tree.col, tree.path_len
                    )
-             END AS parent_statement_signature,
+             end as parent_statement_signature,
              tree.signature,
              tree.usage_id,
              tree.usage_context_id
-        FROM tree
-        LEFT JOIN sys.all_identifiers refs
-          ON refs.signature = tree.signature
-             AND refs.usage = 'DECLARATION'
-        LEFT JOIN src
-          ON src.owner = tree.owner
-              AND src.type = tree.object_type
-              AND src.name = tree.object_name
-              AND src.line = tree.line
+        from tree
+        left join sys.all_identifiers refs
+          on refs.signature = tree.signature
+         and refs.usage = 'DECLARATION'
+        left join src
+          on src.owner = tree.owner
+         and src.type = tree.object_type
+         and src.name = tree.object_name
+         and src.line = tree.line
    ),
-   dep AS (
-      SELECT owner      AS owner,
-             'TABLE'    AS type,
-             table_name AS name,
-             NULL AS referenced_owner,
-             NULL AS referenced_type,
-             NULL AS referenced_name
-        FROM sys.all_tables
-      UNION ALL
-      SELECT owner,
+   dep as (
+      select owner as owner,
+             'TABLE' as type,
+             table_name as name,
+             null as referenced_owner,
+             null as referenced_type,
+             null as referenced_name
+        from sys.all_tables
+      union all
+      select owner,
              type,
              name,
              referenced_owner,
              referenced_type,
              referenced_name
-        FROM sys.all_dependencies
-       WHERE type IN ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
+        from sys.all_dependencies
+       where type in ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
    ),
-   dep_graph AS (
-      SELECT DISTINCT
+   dep_graph as (
+      select distinct
              owner,
-             type                          AS object_type,
-             name                          AS object_name,
-             connect_by_root(owner)        AS ref_owner,
-             connect_by_root(type)         AS ref_object_type,
-             connect_by_root(name)         AS ref_object_name,
-             sys_connect_by_path(type,'/') AS ref_object_type_path,
-             level                         AS path_len
-        FROM dep
-      CONNECT BY  PRIOR dep.owner = dep.referenced_owner
-              AND PRIOR dep.type  = dep.referenced_type
-              AND PRIOR dep.name  = dep.referenced_name
+             type as object_type,
+             name as object_name,
+             connect_by_root(owner) as ref_owner,
+             connect_by_root(type) as ref_object_type,
+             connect_by_root(name) as ref_object_name,
+             sys_connect_by_path(type, '/') as ref_object_type_path,
+             level as path_len
+        from dep
+     connect by prior dep.owner = dep.referenced_owner
+         and prior dep.type = dep.referenced_type
+         and prior dep.name = dep.referenced_name
    ),
-   plscope_tab_usage AS (
-      SELECT /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
+   plscope_tab_usage as (
+      select /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
              ids.owner,
              ids.object_type,
              ids.object_name,
              ids.line,
              ids.col,
              ids.procedure_name,
-             CASE
-                WHEN refs.type IS NOT NULL THEN
+             case
+                when refs.type is not null then
                    refs.type
-                ELSE
+                else
                    ids.usage
-             END AS operation,
+             end as operation,
              dep_graph.ref_owner,
              dep_graph.ref_object_type,
              dep_graph.ref_object_name,
-             CASE
-                WHEN dep_graph.path_len = 1 THEN
+             case
+                when dep_graph.path_len = 1 then
                    'YES'
-                ELSE
+                else
                    'NO'
-             END AS direct_dependency,
+             end as direct_dependency,
              dep_graph.ref_object_type_path,
-             LEAD(dep_graph.ref_object_type_path) OVER (
-                ORDER BY ids.owner, ids.object_type, ids.object_name, ids.line, ids.col, dep_graph.path_len
-             ) AS next_ref_object_type_path,
+             lead(dep_graph.ref_object_type_path) over (
+                order by ids.owner, ids.object_type, ids.object_name, ids.line, ids.col, dep_graph.path_len
+             ) as next_ref_object_type_path,
              ids.text,
              dep_graph.path_len
-        FROM plscope_identifiers ids
-        JOIN dep_graph
-          ON dep_graph.owner           = ids.ref_owner
-             AND dep_graph.object_type = ids.ref_object_type
-             AND dep_graph.object_name = ids.ref_object_name
-        LEFT JOIN sys.all_statements refs
-          ON refs.signature = parent_statement_signature
-       WHERE ids.type IN ('VIEW', 'TABLE', 'SYNONYM')
+        from plscope_identifiers ids
+        join dep_graph
+          on dep_graph.owner = ids.ref_owner
+         and dep_graph.object_type = ids.ref_object_type
+         and dep_graph.object_name = ids.ref_object_name
+        left join sys.all_statements refs
+          on refs.signature = parent_statement_signature
+       where ids.type in ('VIEW', 'TABLE', 'SYNONYM')
    )
-SELECT CASE
-          WHEN object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-             'SQLDEV:LINK:' || owner || ':' || object_type || ':' || object_name || ':' ||
-                to_char(line,'FM0000009') || ':' || to_char(col,'FM0000009') || ':' ||  'Source' ||
-                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-          ELSE
-             NULL
-       END AS "Link",
-       procedure_name AS "Procedure name",
-       operation AS "Operation",
-       direct_dependency AS "Direct dep?",
-       ref_owner AS "Owner",
-       ref_object_type AS "Object type",
-       ref_object_name AS "Object name",
-       line AS "Line",
-       col AS "Col",
-       text AS "Text"
-  FROM plscope_tab_usage
- WHERE (ref_object_type != 'SYNONYM' OR next_ref_object_type_path IN ('/VIEW/SYNONYM','/TABLE/SYNONYM'))
-       -- resolve synonyms as indirect dependencies only (do not resolve table usages in views)
-   AND (path_len = 1 OR path_len = 2 AND ref_object_type_path LIKE '%SYNONYM')
- ORDER BY length(object_type), line, col, path_len
-				]]></sql>
+select case
+          when object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
+             'SQLDEV:LINK:'
+             || owner
+             || ':'
+             || object_type
+             || ':'
+             || object_name
+             || ':'
+             || to_char(line, 'FM0000009')
+             || ':'
+             || to_char(col, 'FM0000009')
+             || ':'
+             || 'Source'
+             || ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          else
+             null
+       end as "Link",
+       procedure_name as "Procedure name",
+       operation as "Operation",
+       direct_dependency as "Direct dep?",
+       ref_owner as "Owner",
+       ref_object_type as "Object type",
+       ref_object_name as "Object name",
+       line as "Line",
+       col as "Col",
+       text as "Text"
+  from plscope_tab_usage
+ where (ref_object_type != 'SYNONYM' or next_ref_object_type_path in ('/VIEW/SYNONYM', '/TABLE/SYNONYM'))
+   -- resolve synonyms as indirect dependencies only (do not resolve table usages in views)
+   and (path_len = 1 or path_len = 2 and ref_object_type_path like '%SYNONYM')
+ order by length(object_type), line, col, path_len
+]]>
+            </sql>
 			</query>
 		</queries>
 	</display>
@@ -848,20 +937,20 @@ SELECT CASE
 		<queries>
 			<query minversion="12.2">
 				<sql><![CDATA[
-WITH
-   src AS (
-      SELECT /*+ materialize */
+with
+   src as (
+      select /*+ materialize */
              owner,
              type,
              name,
              line,
              text
-        FROM sys.all_source
-       WHERE type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND name = :OBJECT_NAME 
+        from sys.all_source
+       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
+         and name = :object_name
    ),
-   prep_ids AS (
-      SELECT owner,
+   prep_ids as (
+      select owner,
              name,
              signature,
              type,
@@ -872,23 +961,23 @@ WITH
              line,
              col,
              usage_context_id
-        FROM sys.all_identifiers
-      UNION ALL
-      SELECT owner,
-             ':' || NVL(sql_id, type) AS name,  -- intermediate statement marker colon
+        from sys.all_identifiers
+      union all
+      select owner,
+             ':' || nvl(sql_id, type) as name,  -- intermediate statement marker colon
              signature,
              type,
              object_name,
              object_type,
-             'EXECUTE' AS usage, -- new, artificial usage
+             'EXECUTE' as usage, -- new, artificial usage
              usage_id,
              line,
              col,
              usage_context_id
-       FROM sys.all_statements
+        from sys.all_statements
    ),
-   fids AS (
-      SELECT owner,
+   fids as (
+      select owner,
              name,
              signature,
              type,
@@ -899,13 +988,14 @@ WITH
              line,
              col,
              usage_context_id
-        FROM prep_ids
-       WHERE owner       = :OBJECT_OWNER
-         AND object_type IN (upper(replace(:OBJECT_TYPE,'plscope-utils-')), upper(replace(:OBJECT_TYPE,'plscope-utils-')) || ' BODY')  
-         AND object_name = :OBJECT_NAME
+        from prep_ids
+       where owner = :object_owner
+         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+         ' BODY')
+         and object_name = :object_name
    ),
-   base_ids AS (
-      SELECT fids.owner,
+   base_ids as (
+      select fids.owner,
              fids.name,
              fids.signature,
              fids.type,
@@ -913,24 +1003,26 @@ WITH
              fids.object_type,
              fids.usage,
              fids.usage_id,
-             CASE
-                WHEN fk.usage_id IS NOT NULL OR fids.usage_context_id = 0 THEN
+             case
+                when fk.usage_id is not null
+                   or fids.usage_context_id = 0
+                then
                    'YES'
-                ELSE
+                else
                    'NO'
-             END AS sane_fk,
+             end as sane_fk,
              fids.line,
              fids.col,
              fids.usage_context_id
-        FROM fids
-        LEFT JOIN fids fk
-          ON fk.owner = fids.owner
-             AND fk.object_type = fids.object_type
-             AND fk.object_name = fids.object_name
-             AND fk.usage_id = fids.usage_context_id
+        from fids
+        left join fids fk
+          on fk.owner = fids.owner
+         and fk.object_type = fids.object_type
+         and fk.object_name = fids.object_name
+         and fk.usage_id = fids.usage_context_id
    ),
-   ids AS (
-      SELECT owner,
+   ids as (
+      select owner,
              name,
              signature,
              type,
@@ -940,176 +1032,183 @@ WITH
              usage_id,
              line,
              col,
-             CASE
-                WHEN sane_fk = 'YES' THEN
+             case
+                when sane_fk = 'YES' then
                    usage_context_id
-                ELSE
-                   last_value(CASE WHEN sane_fk = 'YES' THEN usage_id END) IGNORE NULLS OVER (
-                      PARTITION BY owner, object_name, object_type
-                      ORDER BY line, col
-                      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                else
+                   last_value(case
+                         when sane_fk = 'YES' then
+                            usage_id
+                      end) ignore nulls over (
+                      partition by owner, object_name, object_type
+                      order by line, col
+                      rows between unbounded preceding and 1 preceding
                    )
-             END AS usage_context_id -- fix broken hierarchies
-        FROM base_ids
+             end as usage_context_id -- fix broken hierarchies
+        from base_ids
    ),
-   tree AS (
-       SELECT ids.owner,
-              ids.object_type,
-              ids.object_name,
-              ids.line,
-              ids.col,
-              ids.name,
-              replace(sys_connect_by_path(ids.name, '|'),'|','/') AS name_path,
-              level as path_len,
-              ids.type,
-              ids.usage,
-              ids.signature,
-              ids.usage_id,
-              ids.usage_context_id
-         FROM ids
-        START WITH ids.usage_context_id = 0
-      CONNECT BY  PRIOR ids.usage_id    = ids.usage_context_id
-              AND PRIOR ids.owner       = ids.owner
-              AND PRIOR ids.object_type = ids.object_type
-              AND PRIOR ids.object_name = ids.object_name
-   ), 
-   plscope_identifiers AS (
-      SELECT /*+use_hash(tree) use_hash(refs) */
+   tree as (
+      select ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.name,
+             replace(sys_connect_by_path(ids.name, '|'), '|', '/') as name_path,
+             level as path_len,
+             ids.type,
+             ids.usage,
+             ids.signature,
+             ids.usage_id,
+             ids.usage_context_id
+        from ids
+       start with ids.usage_context_id = 0
+     connect by prior ids.usage_id = ids.usage_context_id
+         and prior ids.owner = ids.owner
+         and prior ids.object_type = ids.object_type
+         and prior ids.object_name = ids.object_name
+   ),
+   plscope_identifiers as (
+      select /*+use_hash(tree) use_hash(refs) */
              tree.owner,
              tree.object_type,
              tree.object_name,
              last_value (
-                CASE
-                   WHEN tree.type in ('PROCEDURE', 'FUNCTION') AND tree.path_len = 2  THEN
+                case
+                   when tree.type in ('PROCEDURE', 'FUNCTION')
+                      and tree.path_len = 2
+                   then
                       tree.name
-                END
-             ) IGNORE NULLS OVER (
-                PARTITION BY tree.owner, tree.object_name, tree.object_type
-                ORDER BY tree.line, tree.col, tree.path_len
-             ) AS procedure_name,
+                end
+             ) ignore nulls over (
+                partition by tree.owner, tree.object_name, tree.object_type
+                order by tree.line, tree.col, tree.path_len
+             ) as procedure_name,
              tree.line,
              tree.col,
-             REPLACE(tree.name, ':', NULL) AS name, -- remove intermediate statement marker
+             replace(tree.name, ':', null) as name, -- remove intermediate statement marker
              tree.path_len,
              tree.type,
              tree.usage,
-             refs.owner AS ref_owner,
-             refs.object_type AS ref_object_type,
-             refs.object_name AS ref_object_name,
-             CASE
-                WHEN tree.name_path LIKE '%:%' AND tree.usage != 'EXECUTE' THEN
+             refs.owner as ref_owner,
+             refs.object_type as ref_object_type,
+             refs.object_name as ref_object_name,
+             case
+                when tree.name_path like '%:%'
+                   and tree.usage != 'EXECUTE'
+                then
                    -- ensure that this is really a child of a statement
                    last_value (
-                      CASE
-                         WHEN tree.usage = 'EXECUTE' THEN
+                      case
+                         when tree.usage = 'EXECUTE' then
                             tree.signature
-                      END
-                   ) IGNORE NULLS OVER (
-                      PARTITION BY tree.owner, tree.object_name, tree.object_type
-                      ORDER BY tree.line, tree.col, tree.path_len
+                      end
+                   ) ignore nulls over (
+                      partition by tree.owner, tree.object_name, tree.object_type
+                      order by tree.line, tree.col, tree.path_len
                    )
-             END AS parent_statement_signature,
+             end as parent_statement_signature,
              tree.signature,
              tree.usage_id,
              tree.usage_context_id
-        FROM tree
-        LEFT JOIN sys.all_identifiers refs
-          ON refs.signature = tree.signature
-             AND refs.usage = 'DECLARATION'
+        from tree
+        left join sys.all_identifiers refs
+          on refs.signature = tree.signature
+         and refs.usage = 'DECLARATION'
    ),
-   dep AS (
-      SELECT owner      AS owner,
-             'TABLE'    AS type,
-             table_name AS name,
-             NULL AS referenced_owner,
-             NULL AS referenced_type,
-             NULL AS referenced_name
-        FROM sys.all_tables
-      UNION ALL
-      SELECT owner,
+   dep as (
+      select owner as owner,
+             'TABLE' as type,
+             table_name as name,
+             null as referenced_owner,
+             null as referenced_type,
+             null as referenced_name
+        from sys.all_tables
+      union all
+      select owner,
              type,
              name,
              referenced_owner,
              referenced_type,
              referenced_name
-        FROM sys.all_dependencies
-       WHERE type IN ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
+        from sys.all_dependencies
+       where type in ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
    ),
-   dep_graph AS (
-      SELECT DISTINCT
+   dep_graph as (
+      select distinct
              owner,
-             type                   AS object_type,
-             name                   AS object_name,
-             connect_by_root(owner) AS ref_owner,
-             connect_by_root(type)  AS ref_object_type,
-             connect_by_root(name)  AS ref_object_name,
-             level                  AS path_len
-        FROM dep
-      CONNECT BY  PRIOR dep.owner = dep.referenced_owner
-              AND PRIOR dep.type  = dep.referenced_type
-              AND PRIOR dep.name  = dep.referenced_name
+             type as object_type,
+             name as object_name,
+             connect_by_root(owner) as ref_owner,
+             connect_by_root(type) as ref_object_type,
+             connect_by_root(name) as ref_object_name,
+             level as path_len
+        from dep
+     connect by prior dep.owner = dep.referenced_owner
+         and prior dep.type = dep.referenced_type
+         and prior dep.name = dep.referenced_name
    ),
-   plscope_tab_usage AS (
-      SELECT /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
+   plscope_tab_usage as (
+      select /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
              ids.owner,
              ids.object_type,
              ids.object_name,
              ids.line,
              ids.col,
              ids.procedure_name,
-             CASE
-                WHEN refs.type IS NOT NULL THEN
+             case
+                when refs.type is not null then
                    refs.type
-                ELSE
+                else
                    ids.usage
-             END AS operation,
+             end as operation,
              ids.path_len,
              dep_graph.ref_owner,
              dep_graph.ref_object_type,
              dep_graph.ref_object_name,
-             CASE
-                WHEN dep_graph.path_len = 1 THEN
+             case
+                when dep_graph.path_len = 1 then
                    'YES'
-                ELSE
+                else
                    'NO'
-             END AS direct_dependency
-        FROM plscope_identifiers ids
-        LEFT JOIN sys.all_statements refs
-          ON refs.signature = parent_statement_signature
-        JOIN dep_graph
-          ON dep_graph.owner           = ids.ref_owner
-             AND dep_graph.object_type = ids.ref_object_type
-             AND dep_graph.object_name = ids.ref_object_name
-       WHERE ids.type IN ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
-         AND NOT (ids.type = 'SYNONYM' AND refs.type IN ('PROCEDURE', 'FUNCTION'))
+             end as direct_dependency
+        from plscope_identifiers ids
+        left join sys.all_statements refs
+          on refs.signature = parent_statement_signature
+        join dep_graph
+          on dep_graph.owner = ids.ref_owner
+         and dep_graph.object_type = ids.ref_object_type
+         and dep_graph.object_name = ids.ref_object_name
+       where ids.type in ('VIEW', 'TABLE', 'MATERIALIZED VIEW', 'SYNONYM')
+         and not (ids.type = 'SYNONYM' and refs.type in ('PROCEDURE', 'FUNCTION'))
    ),
-   scope_cols AS (
-      SELECT /*+use_hash(ids) use_hash(refs) */
+   scope_cols as (
+      select /*+use_hash(ids) use_hash(refs) */
              ids.owner,
              ids.object_type,
              ids.object_name,
              ids.line,
              ids.col,
              ids.procedure_name,
-             CASE 
-                WHEN refs.type IS NOT NULL THEN
-                   refs.type 
-                ELSE
+             case
+                when refs.type is not null then
+                   refs.type
+                else
                    ids.usage
-             END AS operation,
+             end as operation,
              ids.ref_owner,
              ids.ref_object_type,
              ids.ref_object_name,
              ids.name as column_name,
              ids.path_len
-        FROM plscope_identifiers ids
-        LEFT JOIN sys.all_statements refs
-          ON refs.signature = parent_statement_signature
-       WHERE ids.type = 'COLUMN'
-         AND ids.usage != 'DECLARATION'
+        from plscope_identifiers ids
+        left join sys.all_statements refs
+          on refs.signature = parent_statement_signature
+       where ids.type = 'COLUMN'
+         and ids.usage != 'DECLARATION'
    ),
-   missing_cols AS (
-      SELECT /*+use_hash(t) use_hash(s) use_hash(o) use_hash(c) use_hash(tc) */
+   missing_cols as (
+      select /*+use_hash(t) use_hash(s) use_hash(o) use_hash(c) use_hash(tc) */
              t.owner,
              t.object_type,
              t.object_name,
@@ -1117,35 +1216,35 @@ WITH
              t.col,
              t.procedure_name,
              t.operation,
-             coalesce(o.owner, t.ref_owner) AS ref_owner,
-             coalesce(o.object_type, t.ref_object_type) AS ref_object_type,
-             coalesce(o.object_name, t.ref_object_name) AS ref_object_name,
+             coalesce(o.owner, t.ref_owner) as ref_owner,
+             coalesce(o.object_type, t.ref_object_type) as ref_object_type,
+             coalesce(o.object_name, t.ref_object_name) as ref_object_name,
              tc.column_name,
              t.path_len
-        FROM plscope_tab_usage t
-        LEFT JOIN sys.all_synonyms s
-          ON s.owner            = t.ref_owner
-             AND s.synonym_name = t.ref_object_name
-        LEFT JOIN sys.all_objects o
-          ON o.owner            = s.table_owner
-            AND o.object_name   = s.table_name
-        LEFT JOIN scope_cols c
-          ON t.owner                                        = c.owner
-             AND t.object_type                              = c.object_type
-             AND t.object_name                              = c.object_name
-             AND t.procedure_name                           = c.procedure_name
-             AND coalesce(o.owner, t.ref_owner)             = c.ref_owner
-             AND coalesce(o.object_type, t.ref_object_type) = c.ref_object_type
-             AND coalesce(o.object_name, t.ref_object_name) = c.ref_object_name
-        JOIN sys.all_tab_columns tc
-          ON tc.owner = t.owner
-             AND tc.table_name = coalesce(o.object_name,t.ref_object_name)
-       WHERE direct_dependency = 'YES'
-         AND c.owner IS NULL
-         AND t.operation IN ('INSERT', 'SELECT')
+        from plscope_tab_usage t
+        left join sys.all_synonyms s
+          on s.owner = t.ref_owner
+         and s.synonym_name = t.ref_object_name
+        left join sys.all_objects o
+          on o.owner = s.table_owner
+         and o.object_name = s.table_name
+        left join scope_cols c
+          on t.owner = c.owner
+         and t.object_type = c.object_type
+         and t.object_name = c.object_name
+         and t.procedure_name = c.procedure_name
+         and coalesce(o.owner, t.ref_owner) = c.ref_owner
+         and coalesce(o.object_type, t.ref_object_type) = c.ref_object_type
+         and coalesce(o.object_name, t.ref_object_name) = c.ref_object_name
+        join sys.all_tab_columns tc
+          on tc.owner = t.owner
+         and tc.table_name = coalesce(o.object_name, t.ref_object_name)
+       where direct_dependency = 'YES'
+         and c.owner is null
+         and t.operation in ('INSERT', 'SELECT')
    ),
-   base_cols AS (
-      SELECT owner,
+   base_cols as (
+      select owner,
              object_type,
              object_name,
              line,
@@ -1157,10 +1256,10 @@ WITH
              ref_object_name,
              column_name,
              path_len,
-             'YES' AS direct_dependency
-        FROM scope_cols
-      UNION ALL
-      SELECT owner,
+             'YES' as direct_dependency
+        from scope_cols
+      union all
+      select owner,
              object_type,
              object_name,
              line,
@@ -1172,35 +1271,47 @@ WITH
              ref_object_name,
              column_name,
              path_len,
-             'NO' AS direct_dependency
-        FROM missing_cols
+             'NO' as direct_dependency
+        from missing_cols
    )
-SELECT CASE
-          WHEN base_cols.object_type IN ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') THEN
-             'SQLDEV:LINK:' || base_cols.owner || ':' || base_cols.object_type || ':' || base_cols.object_name || ':' ||
-                to_char(base_cols.line,'FM0000009') || ':' || to_char(base_cols.col,'FM0000009') || ':' || 'Source' ||
-                ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
-          ELSE
-             NULL
-       END AS "Link",
-       base_cols.procedure_name AS "Procedure name",
-       base_cols.operation AS "Operation",
-       base_cols.direct_dependency AS "Direct dep?",
+select case
+          when base_cols.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY')
+          then
+             'SQLDEV:LINK:'
+             || base_cols.owner
+             || ':'
+             || base_cols.object_type
+             || ':'
+             || base_cols.object_name
+             || ':'
+             || to_char(base_cols.line, 'FM0000009')
+             || ':'
+             || to_char(base_cols.col, 'FM0000009')
+             || ':'
+             || 'Source'
+             || ':oracle.dbtools.raptor.controls.grid.DefaultDrillLink'
+          else
+             null
+       end as "Link",
+       base_cols.procedure_name as "Procedure name",
+       base_cols.operation as "Operation",
+       base_cols.direct_dependency as "Direct dep?",
        base_cols.ref_owner "Owner",
-       base_cols.ref_object_type AS "Object type",
-       base_cols.ref_object_name AS "Object name",
-       base_cols.column_name AS "Column name",
-       base_cols.line AS "Line",
-       base_cols.col AS "Col",
-       regexp_replace(src.text, chr(10)||'+$', null) AS "Text" -- remove trailing new line character
-  FROM base_cols
-  LEFT JOIN src
-         ON src.owner = base_cols.owner
-            AND src.type = base_cols.object_type
-            AND src.name = base_cols.object_name
-            AND src.line = base_cols.line
- ORDER BY length(base_cols.object_type), base_cols.line, base_cols.col, base_cols.path_len
-				]]></sql>
+       base_cols.ref_object_type as "Object type",
+       base_cols.ref_object_name as "Object name",
+       base_cols.column_name as "Column name",
+       base_cols.line as "Line",
+       base_cols.col as "Col",
+       regexp_replace(src.text, chr(10) || '+$', null) as "Text" -- remove trailing new line character
+  from base_cols
+  left join src
+    on src.owner = base_cols.owner
+   and src.type = base_cols.object_type
+   and src.name = base_cols.object_name
+   and src.line = base_cols.line
+ order by length(base_cols.object_type), base_cols.line, base_cols.col, base_cols.path_len
+]]>
+               </sql>
 			</query>
 		</queries>
 	</display>

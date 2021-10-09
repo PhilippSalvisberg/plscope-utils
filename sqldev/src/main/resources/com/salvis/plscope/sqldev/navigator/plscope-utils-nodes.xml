@@ -13,9 +13,11 @@
 			<queries>
 				<query minversion="11.1">
 					<sql constrained="true"><![CDATA[
-SELECT 'Primary' AS name, 'PRIMARY' AS value FROM dual
-UNION ALL
-SELECT 'Secondary' AS name, 'SECONDARY' AS value FROM dual
+select 'Primary' as name, 'PRIMARY' as value
+  from dual
+union all
+select 'Secondary' as name, 'SECONDARY' as value
+  from dual
 ]]>
 					</sql>
 				</query>
@@ -26,7 +28,7 @@ SELECT 'Secondary' AS name, 'SECONDARY' AS value FROM dual
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-SELECT 'Packages' AS name, 'PACKAGE' AS value FROM dual WHERE :VALUE = 'PRIMARY'
+select 'Packages' as name, 'PACKAGE' as value from dual where :value = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -36,7 +38,7 @@ SELECT 'Packages' AS name, 'PACKAGE' AS value FROM dual WHERE :VALUE = 'PRIMARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-SELECT 'Procedures' AS name, 'PROCEDURE' AS value FROM dual WHERE :VALUE = 'PRIMARY'
+select 'Procedures' as name, 'PROCEDURE' as value from dual where :value = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -46,7 +48,7 @@ SELECT 'Procedures' AS name, 'PROCEDURE' AS value FROM dual WHERE :VALUE = 'PRIM
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-SELECT 'Functions' AS name, 'FUNCTION' AS value FROM dual WHERE :VALUE = 'PRIMARY'
+select 'Functions' as name, 'FUNCTION' as value from dual where :value = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -56,7 +58,7 @@ SELECT 'Functions' AS name, 'FUNCTION' AS value FROM dual WHERE :VALUE = 'PRIMAR
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-SELECT 'Triggers' AS name, 'TRIGGER' AS value FROM dual WHERE :VALUE = 'PRIMARY'
+select 'Triggers' as name, 'TRIGGER' as value from dual where :value = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -66,7 +68,7 @@ SELECT 'Triggers' AS name, 'TRIGGER' AS value FROM dual WHERE :VALUE = 'PRIMARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-SELECT 'Types' AS name, 'TYPE' AS value FROM dual WHERE :VALUE = 'PRIMARY'
+select 'Types' as name, 'TYPE' as value from dual where :value = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -76,7 +78,7 @@ SELECT 'Types' AS name, 'TYPE' AS value FROM dual WHERE :VALUE = 'PRIMARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-SELECT 'Synonyms' AS name, 'SYNONYM' AS value FROM dual WHERE :VALUE = 'PRIMARY'
+select 'Synonyms' as name, 'SYNONYM' as value from dual where :value = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -86,7 +88,7 @@ SELECT 'Synonyms' AS name, 'SYNONYM' AS value FROM dual WHERE :VALUE = 'PRIMARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-SELECT 'Tables' AS name, 'TABLE' AS value FROM dual WHERE :VALUE = 'SECONDARY'
+select 'Tables' as name, 'TABLE' as value from dual where :value = 'SECONDARY'
 ]]>
 						</sql>
 					</query>
@@ -96,7 +98,7 @@ SELECT 'Tables' AS name, 'TABLE' AS value FROM dual WHERE :VALUE = 'SECONDARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-SELECT 'Views' AS name, 'VIEW' AS value FROM dual WHERE :VALUE = 'SECONDARY'
+select 'Views' as name, 'VIEW' as value from dual where :value = 'SECONDARY'
 ]]>
 						</sql>
 					</query>
@@ -112,14 +114,14 @@ SELECT 'Views' AS name, 'VIEW' AS value FROM dual WHERE :VALUE = 'SECONDARY'
 				<queries>
 					<query minversion="11.1" id="plscope-declarations">
 						<sql><![CDATA[
-SELECT object_name AS name,
-       object_name AS value 
-  FROM sys.all_identifiers
- WHERE usage = 'DECLARATION'
-   AND usage_context_id = 0
-   AND owner = :SCHEMA
-   AND object_type = :VALUE
- ORDER BY object_name
+select object_name as name,
+       object_name as value
+  from sys.all_identifiers
+ where usage = 'DECLARATION'
+   and usage_context_id = 0
+   and owner = :schema
+   and object_type = :value
+ order by object_name
 ]]>
 						</sql>
 					</query>
@@ -179,17 +181,17 @@ SELECT object_name AS name,
 				<queries>
 					<query>
 						<sql><![CDATA[
-SELECT i.object_name AS name,
-       i.object_name AS value 
-  FROM sys.all_identifiers i
-  JOIN sys.all_synonyms s
-    ON i.owner = s.owner
-       AND i.object_name = s.synonym_name
- WHERE i.usage = 'DECLARATION'
-   AND i.usage_context_id = 0
-   AND (i.owner = :SCHEMA OR s.table_owner = :SCHEMA)
-   AND i.object_type = :VALUE
- ORDER BY object_name
+select i.object_name as name,
+       i.object_name as value
+  from sys.all_identifiers i
+  join sys.all_synonyms s
+    on i.owner = s.owner
+   and i.object_name = s.synonym_name
+ where i.usage = 'DECLARATION'
+   and i.usage_context_id = 0
+   and (i.owner = :schema or s.table_owner = :schema)
+   and i.object_type = :value
+ order by object_name
 ]]>
 						</sql>
 					</query>
