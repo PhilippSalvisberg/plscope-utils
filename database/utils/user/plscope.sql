@@ -90,7 +90,7 @@ grant select on sys.dba_tab_columns  to &&username with grant option;
 grant select on sys.dba_source       to &&username with grant option;
 
 -- direct grant for ETL demo package
-grant select on v$mystat             to &&username;
+grant select on v_$mystat            to &&username;
 
 -- for debugging
 grant debug connect session          to &&username;
