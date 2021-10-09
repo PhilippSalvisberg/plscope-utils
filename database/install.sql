@@ -14,32 +14,32 @@
 * limitations under the License.
 */
 
-SET DEFINE OFF
-SET SCAN OFF
-SET ECHO OFF
-SET SERVEROUTPUT ON SIZE 100000
+set define off
+set scan off
+set echo off
+set serveroutput on size 100000
 
-PROMPT ====================================================================
-PROMPT This script installs plscope-utils.
-PROMPT
-PROMPT Connect to the target user (schema) of your choice.
-PROMPT See utils/user/plscope.sql for required privileges.
-PROMPT ====================================================================
+prompt ====================================================================
+prompt This script installs plscope-utils.
+prompt
+prompt Connect to the target user (schema) of your choice.
+prompt See utils/user/plscope.sql for required privileges.
+prompt ====================================================================
 
-PROMPT ====================================================================
-PROMPT Disable PL/Scope for this session
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Disable PL/Scope for this session
+prompt ====================================================================
 
-ALTER SESSION SET plscope_settings='identifiers:none, statements:none';
+alter session set plscope_settings = 'identifiers:none, statements:none';
 
-PROMPT ====================================================================
-PROMPT Context
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Context
+prompt ====================================================================
 @./utils/context/plscope.ctx
 
-PROMPT ====================================================================
-PROMPT Types
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Types
+prompt ====================================================================
 
 @./utils/type/obj_type.sql
 @./utils/type/col_type.sql
@@ -48,103 +48,103 @@ PROMPT ====================================================================
 @./utils/type/t_col_type.sql
 @./utils/type/t_col_lineage_type.sql
 
-PROMPT ====================================================================
-PROMPT Packages
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Packages
+prompt ====================================================================
 
 @./utils/package/dd_util.pks
-SHOW ERRORS
+show errors
 @./utils/package/type_util.pks
-SHOW ERRORS
+show errors
 @./utils/package/plscope_context.pks
-SHOW ERRORS
+show errors
 @./utils/package/dd_util.pkb
-SHOW ERRORS
+show errors
 @./utils/package/type_util.pkb
-SHOW ERRORS
+show errors
 @./utils/package/plscope_context.pkb
-SHOW ERRORS
+show errors
 
-PROMPT ====================================================================
-PROMPT Views
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Views
+prompt ====================================================================
 
 @./utils/view/plscope_identifiers.sql
-SHOW ERRORS
+show errors
 @./utils/view/plscope_statements.sql
-SHOW ERRORS
+show errors
 @./utils/view/plscope_tab_usage.sql
-SHOW ERRORS
+show errors
 @./utils/view/plscope_naming.sql
-SHOW ERRORS
+show errors
 
-PROMPT ====================================================================
-PROMPT Grants
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Grants
+prompt ====================================================================
 
-GRANT SELECT ON plscope_identifiers TO PUBLIC;
-GRANT SELECT ON plscope_statements TO PUBLIC;
-GRANT SELECT ON plscope_tab_usage TO PUBLIC;
-GRANT SELECT ON plscope_naming TO PUBLIC;
-GRANT EXECUTE ON dd_util TO PUBLIC;
-GRANT EXECUTE ON type_util TO PUBLIC;
-GRANT EXECUTE ON plscope_context TO PUBLIC;
+grant select on plscope_identifiers to public;
+grant select on plscope_statements to public;
+grant select on plscope_tab_usage to public;
+grant select on plscope_naming to public;
+grant execute on dd_util to public;
+grant execute on type_util to public;
+grant execute on plscope_context to public;
 
-PROMPT ====================================================================
-PROMPT Synonyms and options based on privileges
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Synonyms and options based on privileges
+prompt ====================================================================
 
-SET FEEDBACK OFF
-SET TERM OFF
-SPOOL install_options.tmp
-DECLARE
-   l_count INTEGER;
+set feedback off
+set term off
+spool install_options.tmp
+declare
+   l_count integer;
    --
-   PROCEDURE cre_syn (in_name IN VARCHAR2) IS
-      l_templ VARCHAR2(4000) :=
-         'CREATE OR REPLACE PUBLIC SYNONYM ${name} FOR ${user}.${name}';
-      l_sql VARCHAR2(4000);
-   BEGIN
+   procedure cre_syn(in_name in varchar2) is
+      l_templ varchar2(4000) :=
+         'create or replace public synonym ${name} for ${user}.${name}';
+      l_sql   varchar2(4000);
+   begin
       l_sql := replace(l_templ, '${name}', in_name);
-      l_sql := replace(l_sql, '${user}', USER);
-      EXECUTE IMMEDIATE l_sql;
-   END cre_syn;
+      l_sql := replace(l_sql, '${user}', user);
+      execute immediate l_sql;
+   end cre_syn;
    --
-   PROCEDURE print (in_line IN VARCHAR2) IS
-   BEGIN
+   procedure print(in_line in varchar2) is
+   begin
       dbms_output.put_line(in_line);
-   END print; 
+   end print; 
    --
-   PROCEDURE options IS
-   BEGIN
-      SELECT count(*)
-        INTO l_count
-        FROM all_objects
-       WHERE object_name IN ('UTL_XML', 'UTL_XML_LIB');
-      IF l_count > 0 THEN
+   procedure options is
+   begin
+      select count(*)
+        into l_count
+        from all_objects
+       where object_name in ('UTL_XML', 'UTL_XML_LIB');
+      if l_count > 0 then
          print('@./utils/package/parse_util.pks');
-         print('SHOW ERRORS');
+         print('show errors');
          print('@./utils/package/lineage_util.pks');
-         print('SHOW ERRORS');
+         print('show errors');
          print('@./utils/package/parse_util.pkb');
-         print('SHOW ERRORS');
+         print('show errors');
          print('@./utils/package/lineage_util.pkb');
-         print('SHOW ERRORS');
+         print('show errors');
          print('@./utils/view/plscope_col_usage.sql');
-         print('SHOW ERRORS');
+         print('show errors');
          print('@./utils/view/plscope_ins_lineage.sql');
-         print('SHOW ERRORS');
-         print('GRANT EXECUTE ON lineage_util TO PUBLIC;');
-         print('GRANT EXECUTE ON parse_util TO PUBLIC;');
-         print('GRANT SELECT ON plscope_col_usage TO PUBLIC;');
-         print('GRANT SELECT ON plscope_ins_lineage TO PUBLIC;');
+         print('show errors');
+         print('grant execute on lineage_util to public;');
+         print('grant execute on parse_util to public;');
+         print('grant select on plscope_col_usage to public;');
+         print('grant select on plscope_ins_lineage to public;');
          cre_syn('plscope_col_usage');
          cre_syn('plscope_ins_lineage');
          cre_syn('lineage_util');
          cre_syn('parse_util');
-      END IF;
-   END options;
-BEGIN
+      end if;
+   end options;
+begin
    cre_syn('plscope_identifiers');
    cre_syn('plscope_statements');
    cre_syn('plscope_tab_usage');
@@ -153,16 +153,16 @@ BEGIN
    cre_syn('type_util');
    cre_syn('plscope_context');
    options;
-END;
+end;
 /
-SPOOL OFF
-SET FEEDBACK ON
-SET TERM ON
+spool off
+set feedback on
+set term on
 @install_options.tmp
 
-PROMPT ====================================================================
-PROMPT Create and populate demo tables
-PROMPT ====================================================================
+prompt ====================================================================
+prompt Create and populate demo tables
+prompt ====================================================================
 
 @./demo/table/drop_demo_tables.sql
 @./demo/table/dept.sql
@@ -170,12 +170,12 @@ PROMPT ====================================================================
 @./demo/table/deptsal.sql
 @./demo/table/deptsal_err.sql
 @./demo/view/source_view.sql
-SHOW ERRORS
+show errors
 
-ALTER SESSION SET plscope_settings='identifiers:all, statements:all';
+alter session set plscope_settings = 'identifiers:all, statements:all';
 @./demo/synonym/source_syn.sql
 @./demo/package/etl.pks
-SHOW ERRORS
+show errors
 @./demo/package/etl.pkb
-SHOW ERRORS
-ALTER SESSION SET plscope_settings='identifiers:none, statements:none';
+show errors
+alter session set plscope_settings = 'identifiers:none, statements:none';
