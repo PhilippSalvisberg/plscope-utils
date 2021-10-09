@@ -22,9 +22,14 @@ prompt ====================================================================
 prompt Parameter defaults for username (1), password (2) and tablespace (3)
 prompt ====================================================================
 
-column 1 new_value 1 noprint;
-column 2 new_value 2 noprint;
-column 3 new_value 3 noprint;
+-- use these intermediate substitution variables to avoid parse errors in SQLDev
+define param1 = 1
+define param2 = 2
+define param3 = 3
+
+column 1 new_value &&param1 noprint
+column 2 new_value &&param2 noprint
+column 3 new_value &&param3 noprint
 
 set feedback off
 
