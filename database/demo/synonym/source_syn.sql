@@ -1,1 +1,1 @@
-CREATE OR REPLACE SYNONYM source_syn FOR source_view;
+create or replace synonym source_syn for source_view;

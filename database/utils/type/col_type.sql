@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 
-CREATE OR REPLACE TYPE col_type FORCE AS 
-OBJECT (
-   owner       VARCHAR2(128 CHAR),
-   object_type VARCHAR2(128 CHAR),
-   object_name VARCHAR2(128 CHAR),
-   column_name VARCHAR2(128 CHAR)
+create or replace type col_type force as
+object (
+   owner       varchar2(128 char),
+   object_type varchar2(128 char),
+   object_name varchar2(128 char),
+   column_name varchar2(128 char)
 );
 /

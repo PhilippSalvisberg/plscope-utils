@@ -1,6 +1,10 @@
-CREATE OR REPLACE VIEW source_view (dept_no, dept_name, salary) AS
-SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
-  FROM dept d
-  LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
-    ON e.deptno = d.deptno
- GROUP BY d.deptno, d.dname;
+create or replace view source_view (
+   dept_no,
+   dept_name,
+   salary
+) as
+   select /*+ordered */ d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+     from dept d
+     left join (select * from emp where hiredate > date '1980-01-01') e
+       on e.deptno = d.deptno
+    group by d.deptno, d.dname;

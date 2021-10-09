@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY parse_util IS
+create or replace package body parse_util is
    /*
    * Copyright 2011-2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -20,40 +20,40 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
    --
    $IF DBMS_DB_VERSION.VERSION >= 18 $THEN
       -- workaround for utl_xml.parsequery which is protected by an accessible_by_clause
-      PROCEDURE utl_xml_parse_query (
-         in_current_userid IN NUMBER,
-         in_schema_name    IN VARCHAR2,
-         in_query          IN CLOB,
-         in_result         IN OUT NOCOPY CLOB
-      ) IS
-         LANGUAGE C 
-         LIBRARY sys.utl_xml_lib 
-         NAME "kuxParseQuery"
-         WITH CONTEXT PARAMETERS (
-            CONTEXT,
-            in_current_userid OCINUMBER,
-            in_current_userid INDICATOR,
-            in_schema_name    OCISTRING,
-            in_schema_name    INDICATOR,
-            in_query          OCILOBLOCATOR,
-            in_query          INDICATOR,
-            in_result         OCILOBLOCATOR,
-            in_result         INDICATOR
+      procedure utl_xml_parse_query (
+         in_current_userid in number,
+         in_schema_name    in varchar2,
+         in_query          in clob,
+         in_result         in out nocopy clob
+      ) is
+         language c 
+         library sys.utl_xml_lib 
+         name "kuxParseQuery"
+         with context parameters (
+            context,
+            in_current_userid ocinumber,
+            in_current_userid indicator,
+            in_schema_name    ocistring,
+            in_schema_name    indicator,
+            in_query          ociloblocator,
+            in_query          indicator,
+            in_result         ociloblocator,
+            in_result         indicator
          );
    $END
 
    --
    -- parse_query
    --
-   FUNCTION parse_query(
-      in_parse_user IN VARCHAR2, 
-      in_query      IN CLOB
-   ) RETURN xmltype IS
-      l_clob    CLOB;
-      l_xml     xmltype;
-   BEGIN
-      IF in_query IS NOT NULL AND sys.dbms_lob.getlength(in_query) > 0 THEN
-         sys.dbms_lob.createtemporary(l_clob, TRUE);
+   function parse_query(
+      in_parse_user in varchar2,
+      in_query      in clob
+   ) return xmltype is
+      l_clob clob;
+      l_xml  xmltype;
+   begin
+      if in_query is not null and sys.dbms_lob.getlength(in_query) > 0 then
+         sys.dbms_lob.createtemporary(l_clob, true);
          
          -- parse query and get XML as CLOB
          -- parsing user must have access to objects in query
@@ -64,33 +64,33 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
          $END
 
          -- create XMLTYPE from CLOB
-         IF sys.dbms_lob.getlength(l_clob) > 0 THEN
+         if sys.dbms_lob.getlength(l_clob) > 0 then
             -- parse successful, calling user has rights to access underlying objects
             l_xml := sys.xmltype.createxml(l_clob);
-         END IF;
+         end if;
          sys.dbms_lob.freetemporary(l_clob);
-      END IF;
-      RETURN l_xml;
-   END parse_query;
+      end if;
+      return l_xml;
+   end parse_query;
    
    --
    -- get_insert_targets
    --
-   FUNCTION get_insert_targets(
-      in_parse_user IN VARCHAR2, 
-      in_sql        IN CLOB
-   ) RETURN t_obj_type
-   IS
+   function get_insert_targets(
+      in_parse_user in varchar2,
+      in_sql        in clob
+   ) return t_obj_type
+   is
       t_obj t_obj_type := t_obj_type();
       l_xml xmltype;
-   BEGIN
-      IF regexp_like(in_sql, '^(\s*)(INSERT)(.+)$', 'in') THEN
+   begin
+      if regexp_like(in_sql, '^(\s*)(INSERT)(.+)$', 'in') then
          l_xml := parse_query(in_parse_user => in_parse_user, in_query => in_sql);
          <<targets>>
-         FOR r_tar IN (
-            SELECT schema_name,
+         for r_tar in (
+            select schema_name,
                    table_name
-              FROM xmltable(q'{
+              from xmltable(q'{
                                  for $tar in /QUERY/FROM/FROM_ITEM
                                  return
                                     <target>
@@ -98,51 +98,48 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
                                        <tableName>{$tar/TABLE/text()}</tableName>
                                     </target>
                               }'
-                      PASSING l_xml
-                      COLUMNS schema_name VARCHAR2(128 CHAR) PATH '/target/schemaName',
-                              table_name  VARCHAR2(128 CHAR) PATH '/target/tableName'
+                      passing l_xml
+                      columns schema_name varchar2(128 char) path '/target/schemaName',
+                              table_name  varchar2(128 char) path '/target/tableName'
                    )
-         ) LOOP
+         )
+         loop
             t_obj.extend;
-            t_obj(t_obj.count) := obj_type(
-                                     r_tar.schema_name,
-                                     NULL,
-                                     r_tar.table_name
-                                  );
-         END LOOP targets;
-      END IF;
-      RETURN t_obj;
-   END get_insert_targets;
+            t_obj(t_obj.count) := obj_type(r_tar.schema_name, null, r_tar.table_name);
+         end loop targets;
+      end if;
+      return t_obj;
+   end get_insert_targets;
    
    --
    -- get_insert_subquery
    --
-   FUNCTION get_insert_subquery(in_sql IN CLOB) RETURN CLOB IS
-      l_sql CLOB;
-   BEGIN
+   function get_insert_subquery(in_sql in clob) return clob is
+      l_sql clob;
+   begin
       -- look for " WITH..."
       l_sql := regexp_substr(in_sql, '\s+WITH\s+(.+)', 1, 1, 'in');
-      IF l_sql IS NULL OR sys.dbms_lob.getlength(l_sql) = 0 THEN
+      if l_sql is null or sys.dbms_lob.getlength(l_sql) = 0 then
          -- look for "(SELECT..." or "SELECT..."
          l_sql := regexp_substr(in_sql, '(\s|\()+SELECT\s+(.+)', 1, 1, 'in');
-      END IF;
+      end if;
       -- remove error_logging_clause
       l_sql := regexp_replace(l_sql, '(.+)(LOG\s+ERRORS.+)', '\1', 1, 1, 'in');
-      RETURN l_sql;
-   END get_insert_subquery;
+      return l_sql;
+   end get_insert_subquery;
    
    --
    -- get_dep_cols
    --
-   FUNCTION get_dep_cols(
-      in_parse_tree IN XMLTYPE,
-      in_column_pos IN INTEGER
-   ) RETURN XMLTYPE IS
-      l_result XMLTYPE;
-   BEGIN
+   function get_dep_cols(
+      in_parse_tree in xmltype,
+      in_column_pos in integer
+   ) return xmltype is
+      l_result xmltype;
+   begin
       -- TODO: handle <LITERAL>*</LITERAL> in SELECT_LIST_ITEM
       -- Note: "select t.* from emp t" leads to a parse tree without literals!
-      SELECT XMLQUERY(
+      select xmlquery(
                 q'{
                   declare function local:analyze-col($col as element()) as element()* {
                      let $tableAlias := $col/ancestor::QUERY[1]/FROM/FROM_ITEM//TABLE_ALIAS[local-name(..) != 'COLUMN_REF' 
@@ -205,13 +202,13 @@ CREATE OR REPLACE PACKAGE BODY parse_util IS
                   let $res := local:analyze-col($col)
                   return $res
                 }'
-                PASSING in_parse_tree, in_column_pos AS "columnPos" 
-                RETURNING CONTENT
-             ) 
-        INTO l_result 
-        FROM dual;
-        RETURN l_result;
-   END get_dep_cols;
+                passing in_parse_tree, in_column_pos as "columnPos"
+                returning content
+             )
+        into l_result
+        from dual;
+      return l_result;
+   end get_dep_cols;
 
-END parse_util;
+end parse_util;
 /

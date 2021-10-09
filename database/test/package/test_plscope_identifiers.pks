@@ -1,14 +1,13 @@
-CREATE OR REPLACE PACKAGE test_plscope_identifiers IS
+create or replace package test_plscope_identifiers is
 
    --%suite
    --%suitepath(plscope.test)
 
    --%test
-   PROCEDURE user_identifiers;
+   procedure user_identifiers;
       
    --%test
-   PROCEDURE user_statements;
+   procedure user_statements;
 
-
-END test_plscope_identifiers;
+end test_plscope_identifiers;
 /

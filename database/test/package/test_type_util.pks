@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE test_type_util AUTHID CURRENT_USER IS
+create or replace package test_type_util authid current_user is
    /*
    * Copyright 2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -19,13 +19,13 @@ CREATE OR REPLACE PACKAGE test_type_util AUTHID CURRENT_USER IS
    -- %suitepath(plscope.test)
    
    -- %test
-   PROCEDURE test_dedup_t_obj;
+   procedure test_dedup_t_obj;
    
    -- %test
-   PROCEDURE test_dedup_t_col;
+   procedure test_dedup_t_col;
 
    -- %test
-   PROCEDURE test_dedup_t_col_lineage;
+   procedure test_dedup_t_col_lineage;
 
-END test_type_util;
+end test_type_util;
 /

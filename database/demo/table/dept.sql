@@ -1,11 +1,11 @@
-CREATE TABLE dept (
-   deptno   NUMBER(2)     CONSTRAINT pk_dept PRIMARY KEY,
-   dname    VARCHAR2(14),
-   loc      VARCHAR2(13) 
+create table dept (
+   deptno   number(2)     constraint pk_dept primary key,
+   dname    varchar2(14),
+   loc      varchar2(13)
 );
 
-INSERT INTO dept VALUES (10, 'ACCOUNTING', 'NEW YORK');
-INSERT INTO dept VALUES (20, 'RESEARCH', 'DALLAS');
-INSERT INTO dept VALUES (30, 'SALES', 'CHICAGO');
-INSERT INTO dept VALUES (40, 'OPERATIONS', 'BOSTON');
-COMMIT;
+insert into dept values (10, 'ACCOUNTING', 'NEW YORK');
+insert into dept values (20, 'RESEARCH', 'DALLAS');
+insert into dept values (30, 'SALES', 'CHICAGO');
+insert into dept values (40, 'OPERATIONS', 'BOSTON');
+commit;

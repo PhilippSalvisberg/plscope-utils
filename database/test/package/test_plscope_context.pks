@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE test_plscope_context AUTHID CURRENT_USER IS
+create or replace package test_plscope_context authid current_user is
    /*
    * Copyright 2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -19,13 +19,13 @@ CREATE OR REPLACE PACKAGE test_plscope_context AUTHID CURRENT_USER IS
    -- %suitepath(plscope.test)
    
    -- %test
-   PROCEDURE test_set_attr;
+   procedure test_set_attr;
    
    -- %test
-   PROCEDURE test_remove_attr;
+   procedure test_remove_attr;
 
    -- %test
-   PROCEDURE test_remove_all;
+   procedure test_remove_all;
 
-END test_plscope_context;
+end test_plscope_context;
 /

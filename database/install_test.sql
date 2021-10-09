@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 
-SET DEFINE OFF
-SET SCAN OFF
-SET ECHO OFF
-SET LINESIZE 200
-SET PAGESIZE 100
-SET SERVEROUTPUT ON SIZE 1000000
+set define off
+set scan off
+set echo off
+set linesize 200
+set pagesize 100
+set serveroutput on size 1000000
 
 PROMPT ====================================================================
 PROMPT This script installs test packages for plscope-utils.
@@ -32,71 +32,71 @@ PROMPT ====================================================================
 PROMPT Disable PL/Scope for this session
 PROMPT ====================================================================
 
-ALTER SESSION SET plscope_settings='identifiers:none, statements:none';
+alter session set plscope_settings = 'identifiers:none, statements:none';
 
 PROMPT ====================================================================
 PROMPT Packages
 PROMPT ====================================================================
 
 @./test/package/test_dd_util.pks
-SHOW ERRORS
+show errors
 @./test/package/test_type_util.pks
-SHOW ERRORS
+show errors
 @./test/package/test_plscope_context.pks
-SHOW ERRORS
+show errors
 @./test/package/test_etl.pks
-SHOW ERRORS
+show errors
 @./test/package/test_plscope_identifiers.pks
-SHOW ERRORS
+show errors
 @./test/package/test_dd_util.pkb
-SHOW ERRORS
+show errors
 @./test/package/test_type_util.pkb
-SHOW ERRORS
+show errors
 @./test/package/test_plscope_context.pkb
-SHOW ERRORS
+show errors
 @./test/package/test_etl.pkb
-SHOW ERRORS
+show errors
 @./test/package/test_plscope_identifiers.pkb
-SHOW ERRORS
+show errors
 
 PROMPT ====================================================================
 PROMPT Options based on privileges
 PROMPT ====================================================================
 
-SET FEEDBACK OFF
-SET TERM OFF
-SPOOL install_options.tmp
+set feedback off
+set term off
+spool install_options.tmp
 DECLARE
-   PROCEDURE print (in_line IN VARCHAR2) IS
-   BEGIN
-      dbms_output.put_line(in_line);
-   END print; 
-   --
-   PROCEDURE options IS
-      l_count INTEGER;
-   BEGIN
-      SELECT count(*)
-        INTO l_count
-        FROM all_objects
-       WHERE object_name IN ('UTL_XML', 'UTL_XML_LIB');
-      IF l_count > 0 THEN
-         print('@./test/package/test_lineage_util.pks');
-         print('SHOW ERRORS');
-         print('@./test/package/test_parse_util.pks');
-         print('SHOW ERRORS');
-         print('@./test/package/test_lineage_util.pkb');
-         print('SHOW ERRORS');
-         print('@./test/package/test_parse_util.pkb');
-         print('SHOW ERRORS');
-      END IF;
-   END options;
-BEGIN
+procedure print(in_line in varchar2) is
+begin
+   dbms_output.put_line(in_line);
+end print; 
+--
+procedure options is
+   l_count integer;
+begin
+   select count(*)
+     into l_count
+     from all_objects
+    where object_name in ('UTL_XML', 'UTL_XML_LIB');
+   if l_count > 0 then
+      print('@./test/package/test_lineage_util.pks');
+      print('SHOW ERRORS');
+      print('@./test/package/test_parse_util.pks');
+      print('SHOW ERRORS');
+      print('@./test/package/test_lineage_util.pkb');
+      print('SHOW ERRORS');
+      print('@./test/package/test_parse_util.pkb');
+      print('SHOW ERRORS');
+   end if;
+end options;
+begin
    options;
-END;
+end;
 /
-SPOOL OFF
-SET FEEDBACK ON
-SET TERM ON
+spool off
+set feedback on
+set term on
 @install_options.tmp
 
 PROMPT ====================================================================
@@ -104,104 +104,110 @@ PROMPT Run tests with 12.2 code coverage
 PROMPT ====================================================================
 
 DECLARE
-   l_testsuite_run NUMBER;
-BEGIN
+   l_testsuite_run
+number;
+begin
    dbms_plsql_code_coverage.create_coverage_tables(true);
    l_testsuite_run := dbms_plsql_code_coverage.start_coverage('plscope-utils');
    ut.run;
    dbms_plsql_code_coverage.stop_coverage;
-END;
+end;
 /
 
 PROMPT ====================================================================
 PROMPT Code coverage - Overview
 PROMPT ====================================================================
 
-COLUMN object_name FORMAT A30
-COLUMN covered_percent FORMAT 990.00
-WITH
-   block_lines AS (
-      SELECT u.name AS object_name,
+column object_name format a30
+column covered_percent format 990.00
+with
+   block_lines as (
+      select u.name as object_name,
              b.line,
              b.col,
-             CASE
-                WHEN b.line = 1 AND b.col = 1 AND b.covered = 0 THEN
+             case
+                when b.line = 1
+                   and b.col = 1
+                   and b.covered = 0
+                then
                    -- fix wrong coverage of unit definition
                    -- it is not possible that this block is not covered
                    -- unless the unit is not executed at all
                    1
-                WHEN upper(substr(s.text, b.col, 3)) = 'FOR' THEN
+                when upper(substr(s.text, b.col, 3)) = 'FOR' then
                    -- fix wrong coverage of FOR-LOOP
                    1
-                WHEN upper(substr(s.text, b.col)) LIKE 'END%LOOP%' THEN
+                when upper(substr(s.text, b.col)) like 'END%LOOP%' then
                    -- fix wrong coverage for END LOOP
                    1
-                ELSE
+                else
                    b.covered
-             END AS covered,
+             end as covered,
              b.not_feasible
-        FROM dbmspcc_runs r
-        JOIN dbmspcc_units u
-          ON u.run_id = r.run_id
-        JOIN dbmspcc_blocks b
-          ON b.object_id = u.object_id
-        JOIN dba_source s
-          ON s.owner = u.owner
-             AND s.type = u.type
-             AND s.name = u.name
-             AND s.line = b.line
-       WHERE r.run_comment = 'plscope-utils'
-         AND u.name NOT LIKE 'TEST%'
+        from dbmspcc_runs r
+        join dbmspcc_units u
+          on u.run_id = r.run_id
+        join dbmspcc_blocks b
+          on b.object_id = u.object_id
+        join dba_source s
+          on s.owner = u.owner
+         and s.type = u.type
+         and s.name = u.name
+         and s.line = b.line
+       where r.run_comment = 'plscope-utils'
+         and u.name not like 'TEST%'
    )
-SELECT object_name,
-       round((sum(least(covered + not_feasible, 1)) * 100) / count(*), 2) AS covered_percent
-  FROM block_lines
- GROUP BY object_name
- ORDER BY covered_percent;
+select object_name,
+       round((sum(least(covered + not_feasible, 1)) * 100) / count(*), 2) as covered_percent
+  from block_lines
+ group by object_name
+ order by covered_percent;
 
 PROMPT ====================================================================
 PROMPT Code coverage - Uncovered and feasible lines
 PROMPT ====================================================================
 
-COLUMN line FORMAT 99990
-COLUMN text FORMAT A120
-WITH
-   block_lines AS (
-      SELECT u.name AS object_name,
+column line format 99990
+column text format a120
+with
+   block_lines as (
+      select u.name as object_name,
              b.line,
              b.col,
-             CASE
-                WHEN b.line = 1 AND b.col = 1 AND b.covered = 0 THEN
+             case
+                when b.line = 1
+                   and b.col = 1
+                   and b.covered = 0
+                then
                    -- fix wrong coverage of unit definition
                    -- it is not possible that this block is not covered
                    -- unless the unit is not executed at all
                    1
-                WHEN upper(substr(s.text, b.col, 3)) = 'FOR' THEN
+                when upper(substr(s.text, b.col, 3)) = 'FOR' then
                    -- fix wrong coverage of FOR-LOOP
                    1
-                WHEN upper(substr(s.text, b.col)) LIKE 'END%LOOP%' THEN
+                when upper(substr(s.text, b.col)) like 'END%LOOP%' then
                    -- fix wrong coverage for END LOOP
                    1
-                ELSE
+                else
                    b.covered
-             END AS covered,
+             end as covered,
              b.not_feasible,
-             regexp_replace(s.text, chr(10)||'+$', null) AS text
-        FROM dbmspcc_runs r
-        JOIN dbmspcc_units u
-          ON u.run_id = r.run_id
-        JOIN dbmspcc_blocks b
-          ON b.object_id = u.object_id
-        JOIN dba_source s
-          ON s.owner = u.owner
-             AND s.type = u.type
-             AND s.name = u.name
-             AND s.line = b.line
-       WHERE r.run_comment = 'plscope-utils'
-         AND u.name NOT LIKE 'TEST%'
+             regexp_replace(s.text, chr(10) || '+$', null) as text
+        from dbmspcc_runs r
+        join dbmspcc_units u
+          on u.run_id = r.run_id
+        join dbmspcc_blocks b
+          on b.object_id = u.object_id
+        join dba_source s
+          on s.owner = u.owner
+         and s.type = u.type
+         and s.name = u.name
+         and s.line = b.line
+       where r.run_comment = 'plscope-utils'
+         and u.name not like 'TEST%'
    )
-SELECT object_name, line, text
-  FROM block_lines
- WHERE covered = 0
-   AND not_feasible = 0;
-
+select object_name, line, text
+  from block_lines
+ where covered = 0
+   and not_feasible = 0;

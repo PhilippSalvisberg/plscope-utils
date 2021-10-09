@@ -2,191 +2,223 @@
 
 -- ### Enable PL/Scope in the current session
 
-ALTER SESSION SET plscope_settings='identifiers:all, statements:all';
+alter session set plscope_settings = 'identifiers:all, statements:all';
 
 -- ### Create/compile a procedure
 
-CREATE OR REPLACE PROCEDURE load_from_tab IS
-BEGIN
-   INSERT INTO deptsal (dept_no, dept_name, salary)
-   SELECT /*+ordered */
-          d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
-    FROM dept d
-    LEFT JOIN (SELECT *
-                 FROM emp
-                WHERE hiredate > DATE '1980-01-01') e
-      ON e.deptno = d.deptno
-   GROUP BY d.deptno, d.dname;
-   COMMIT;
-END load_from_tab;
+create or replace procedure load_from_tab is
+begin
+   insert into deptsal (dept_no, dept_name, salary)
+   select /*+ordered */
+          d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+     from dept d
+     left join (
+             select *
+               from emp
+              where hiredate > date '1980-01-01'
+          ) e
+       on e.deptno = d.deptno
+    group by d.deptno, d.dname;
+   commit;
+end load_from_tab;
 /
 
 -- ## View PLSCOPE_IDENTIFIERS
 
 -- ### Query
 
-SET PAGESIZE 50
-SET LINESIZE 500
-COLUMN OWNER FORMAT A7
-COLUMN PROCEDURE_NAME FORMAT A14
-COLUMN LINE FORMAT 999
-COLUMN COL FORMAT 999
-COLUMN PATH_LEN FORMAT 99
-COLUMN NAME FORMAT A13
-COLUMN NAME_PATH FORMAT A52
-COLUMN TYPE FORMAT A9
-COLUMN USAGE FORMAT A12
-COLUMN REF_OWNER FORMAT A9
-COLUMN REF_OBJECT_TYPE FORMAT A15
-COLUMN REF_OBJECT_NAME FORMAT A15
-COLUMN TEXT FORMAT A63
-COLUMN PARENT_STATEMENT_TYPE FORMAT A21
-COLUMN PARENT_STATEMENT_SIGNATURE FORMAT A32
-COLUMN SIGNATURE FORMAT A32
-SELECT procedure_name, line, col, name, name_path, path_len, type, usage,
-       ref_owner, ref_object_type, ref_object_name,
-       text, parent_statement_type, parent_statement_signature, signature
-  FROM plscope_identifiers
- WHERE object_name = 'LOAD_FROM_TAB'
- ORDER BY line, col;
+set pagesize 50
+set linesize 500
+column owner format a7
+column procedure_name format a14
+column line format 999
+column col format 999
+column path_len format 99
+column name format a13
+column name_path format a52
+column type format a9
+column usage format a12
+column ref_owner format a9
+column ref_object_type format a15
+column ref_object_name format a15
+column text format a63
+column parent_statement_type format a21
+column parent_statement_signature format a32
+column signature format a32
+select procedure_name,
+       line,
+       col,
+       name,
+       name_path,
+       path_len,
+       type,
+       usage,
+       ref_owner,
+       ref_object_type,
+       ref_object_name,
+       text,
+       parent_statement_type,
+       parent_statement_signature,
+       signature
+  from plscope_identifiers
+ where object_name = 'LOAD_FROM_TAB'
+ order by line, col;
 
 -- ## View PLSCOPE_STATEMENTS
 
 -- ### Query
 
-SET LONG 10000
-COLUMN FULL_TEXT FORMAT A49
-COLUMN IS_DUPLICATE FORMAT A12
-SELECT line, col, type, sql_id, is_duplicate, full_text
-  FROM plscope_statements S
- WHERE object_name = 'LOAD_FROM_TAB'
- ORDER BY owner, object_type, object_name, line, col;
+set long 10000
+column full_text format a49
+column is_duplicate format a12
+select line, col, type, sql_id, is_duplicate, full_text
+  from plscope_statements s
+ where object_name = 'LOAD_FROM_TAB'
+ order by owner, object_type, object_name, line, col;
 
 -- ## View PLSCOPE_TAB_USAGE
 
 -- ### Query
 
-COLUMN TEXT FORMAT A81
-COLUMN DIRECT_DEPENDENCY FORMAT A17
-COLUMN PROCEDURE_NAME FORMAT A18
-SELECT *
-  FROM plscope_tab_usage
- WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
- ORDER BY owner, object_type, object_name, line, col, direct_dependency;
+column text format a81
+column direct_dependency format a17
+column procedure_name format a18
+select *
+  from plscope_tab_usage
+ where procedure_name in ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ order by owner, object_type, object_name, line, col, direct_dependency;
 
 -- ## View PLSCOPE_COL_USAGE
 
 -- ### Query
 
-COLUMN TEXT FORMAT A81
-COLUMN COLUMN_NAME FORMAT A11
-COLUMN OBJECT_NAME FORMAT A13
-COLUMN OPERATION FORMAT A9
-SELECT *
-  FROM plscope_col_usage
- WHERE procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
- ORDER BY owner, object_type, object_name, line, col, direct_dependency;
+column text format a81
+column column_name format a11
+column object_name format a13
+column operation format a9
+select *
+  from plscope_col_usage
+ where procedure_name in ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ order by owner, object_type, object_name, line, col, direct_dependency;
 
 -- ## View PLSCOPE_NAMING
 
 -- ### Create/compile a package
-CREATE OR REPLACE PACKAGE pkg IS
-   g_global_variable INTEGER := 0;
-   g_global_constant CONSTANT VARCHAR2(10) := 'PUBLIC';
+create or replace package pkg is
+   g_global_variable integer := 0;
+   g_global_constant constant varchar2(10) := 'PUBLIC';
 
-   PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER);
-END pkg;
+   procedure p(p_1 in  integer,
+               p_2 out integer);
+end pkg;
 /
 
-CREATE OR REPLACE PACKAGE BODY pkg IS
-   m_global_variable  INTEGER := 1;
-   co_global_constant CONSTANT VARCHAR2(10) := 'PRIVATE';
+create or replace package body pkg is
+   m_global_variable  integer               := 1;
+   co_global_constant constant varchar2(10) := 'PRIVATE';
 
-   FUNCTION f(in_1 IN INTEGER) RETURN INTEGER IS
-      l_result INTEGER;
-   BEGIN
-    l_result := in_1 * in_1;
-      RETURN l_result;
-   END f;
+   function f(in_1 in integer) return integer is
+      l_result integer;
+   begin
+      l_result := in_1 * in_1;
+      return l_result;
+   end f;
 
-   PROCEDURE p(p_1 IN INTEGER, p_2 OUT INTEGER) IS
-   BEGIN
+   procedure p(p_1 in  integer,
+               p_2 out integer) is
+   begin
       p_2 := f(in_1 => p_1);
-   END p;
-END pkg;
+   end p;
+end pkg;
 /
 
 -- ### Query (default Naming Conventions)
-SET PAGESIZE 50
-SET LINESIZE 500
-COLUMN OBJECT_TYPE FORMAT A12
-COLUMN PROCEDURE_NAME FORMAT A3
-COLUMN TYPE FORMAT A10
-COLUMN NAME FORMAT A18
-COLUMN MESSAGE FORMAT A45
-COLUMN LINE FORMAT 999
-COLUMN COL FORMAT 999
-COLUMN TEXT FORMAT A57
+set pagesize 50
+set linesize 500
+column object_type format a12
+column procedure_name format a3
+column type format a10
+column name format a18
+column message format a45
+column line format 999
+column col format 999
+column text format a57
 
-BEGIN
+begin
    plscope_context.remove_all;
-END;
+end;
 /
 
-SELECT object_type, procedure_name, type, name, message, line, col, text
-  FROM plscope_naming
- WHERE object_name = 'PKG'
- ORDER BY object_type, line, col;
+select object_type, procedure_name, type, name, message, line, col, text
+  from plscope_naming
+ where object_name = 'PKG'
+ order by object_type, line, col;
 
 -- ### Query (adapted Naming Conventions)
 
-BEGIN
+begin
    plscope_context.set_attr('GLOBAL_VARIABLE_REGEX', '^(g|m)_.*');
-   plscope_context.set_attr('CONSTANT_REGEX',        '^(co|g)_.*');
-   plscope_context.set_attr('IN_PARAMETER_REGEX',    '^(in|p)_.*');
-   plscope_context.set_attr('OUT_PARAMETER_REGEX',   '^(out|p)_.*');
-END;
+   plscope_context.set_attr('CONSTANT_REGEX', '^(co|g)_.*');
+   plscope_context.set_attr('IN_PARAMETER_REGEX', '^(in|p)_.*');
+   plscope_context.set_attr('OUT_PARAMETER_REGEX', '^(out|p)_.*');
+end;
 /
 
-SELECT object_type, procedure_name, type, name, message, line, col, text
-  FROM plscope_naming
- WHERE owner = USER
-   AND object_name = 'PKG'
- ORDER BY object_type, line, col;
+select object_type, procedure_name, type, name, message, line, col, text
+  from plscope_naming
+ where owner = user
+   and object_name = 'PKG'
+ order by object_type, line, col;
 
 -- ## View PLSCOPE_INS_LINEAGE
 
 -- ### Query (default, recursive)
 
-COLUMN OWNER FORMAT A7
-COLUMN FROM_OWNER FORMAT A10
-COLUMN FROM_OBJECT_TYPE FORMAT A16
-COLUMN FROM_OBJECT_NAME FORMAT A16
-COLUMN FROM_COLUMN_NAME FORMAT A16
-COLUMN TO_OWNER FORMAT A8
-COLUMN TO_OBJECT_TYPE FORMAT A14
-COLUMN TO_OBJECT_NAME FORMAT A14
-COLUMN TO_COLUMN_NAME FORMAT A14
-COLUMN PROCEDURE_NAME FORMAT A18
+column owner format a7
+column from_owner format a10
+column from_object_type format a16
+column from_object_name format a16
+column from_column_name format a16
+column to_owner format a8
+column to_object_type format a14
+column to_object_name format a14
+column to_column_name format a14
+column procedure_name format a18
 
-EXEC lineage_util.set_recursive(1);
-SELECT *
-  FROM plscope_ins_lineage
- WHERE object_name IN ('ETL', 'LOAD_FROM_TAB')
-   AND procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
- ORDER BY owner, object_type, object_name, line, col,
-       to_object_name, to_column_name,
-       from_owner, from_object_type, from_object_name, from_column_name;
+exec lineage_util.set_recursive(1);
+select *
+  from plscope_ins_lineage
+ where object_name in ('ETL', 'LOAD_FROM_TAB')
+   and procedure_name in ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ order by owner,
+       object_type,
+       object_name,
+       line,
+       col,
+       to_object_name,
+       to_column_name,
+       from_owner,
+       from_object_type,
+       from_object_name,
+       from_column_name;
 
 -- ### Query (non-recursive)
 
-EXEC lineage_util.set_recursive(0);
-SELECT *
-  FROM plscope_ins_lineage
- WHERE object_name IN ('ETL', 'LOAD_FROM_TAB')
-   AND procedure_name IN ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
- ORDER BY owner, object_type, object_name, line, col,
-       to_object_name, to_column_name,
-       from_owner, from_object_type, from_object_name, from_column_name;
+exec lineage_util.set_recursive(0);
+select *
+  from plscope_ins_lineage
+ where object_name in ('ETL', 'LOAD_FROM_TAB')
+   and procedure_name in ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
+ order by owner,
+       object_type,
+       object_name,
+       line,
+       col,
+       to_object_name,
+       to_column_name,
+       from_owner,
+       from_object_type,
+       from_object_name,
+       from_column_name;
 
-EXEC lineage_util.set_recursive(1);
+exec lineage_util.set_recursive(1);

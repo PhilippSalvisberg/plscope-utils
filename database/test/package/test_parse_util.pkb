@@ -1,12 +1,12 @@
-CREATE OR REPLACE PACKAGE BODY test_parse_util IS
+create or replace package body test_parse_util is
 
    --
    -- test_parse_query
    --
-   PROCEDURE test_parse_query IS
+   procedure test_parse_query is
       l_actual   xmltype;
-      l_expected CLOB;
-   BEGIN
+      l_expected clob;
+   begin
       l_expected := q'[<QUERY>
   <SELECT>
     <SELECT_LIST>
@@ -25,37 +25,34 @@ CREATE OR REPLACE PACKAGE BODY test_parse_util IS
   </FROM>
 </QUERY>
 ]';
-      l_actual := parse_util.parse_query(USER, 'SELECT ename FROM emp');
+      l_actual   := parse_util.parse_query(user, 'SELECT ename FROM emp');
       ut.expect(l_actual.getclobval()).to_equal(l_expected);
-   END;
+   end;
 
    --
    -- test_get_insert_targets
    --
-   PROCEDURE test_get_insert_targets IS
+   procedure test_get_insert_targets is
       l_actual   t_obj_type;
       l_expected t_obj_type;
-   BEGIN
+   begin
       -- single table insert
-      l_expected := t_obj_type(
-                       obj_type(NULL, NULL, 'DEPT')
-                    );
-      l_actual := parse_util.get_insert_targets(
-                     USER,
-                     q'[
+      l_expected := t_obj_type(obj_type(null, null, 'DEPT'));
+      l_actual   := parse_util.get_insert_targets(
+                       user,
+                       q'[
                         INSERT INTO dept VALUES (50, 'TRAINING', 'ZURICH')
                      ]'
-                  );
-      ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected)).unordered;
+                    );
+      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
       -- multitable insert
       l_expected := t_obj_type(
-                       obj_type(NULL, NULL, 'EMP'),
-                       obj_type(NULL, NULL, 'DEPT')
+                       obj_type(null, null, 'EMP'),
+                       obj_type(null, null, 'DEPT')
                     );
-      l_actual := parse_util.get_insert_targets(
-                     USER,
-                     q'[
+      l_actual   := parse_util.get_insert_targets(
+                       user,
+                       q'[
                         INSERT ALL
                            WHEN rec_type = 'EMP' THEN
                               INTO emp (empno, ename, job, mgr, hiredate, sal, deptno)
@@ -82,20 +79,19 @@ CREATE OR REPLACE PACKAGE BODY test_parse_util IS
                                 NULL AS c7
                            FROM dual
                      ]'
-                  );
-      ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected)).unordered;
-   END test_get_insert_targets;
+                    );
+      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+   end test_get_insert_targets;
 
    --
    -- test_get_insert_subquery
    --
-   PROCEDURE test_get_insert_subquery IS
-     l_actual   CLOB;
-     l_expected CLOB;
-   BEGIN
+   procedure test_get_insert_subquery is
+      l_actual   clob;
+      l_expected clob;
+   begin
       -- normal query
-      l_actual := parse_util.get_insert_subquery(q'[
+      l_actual   := parse_util.get_insert_subquery(q'[
                      INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY)
                      SELECT /*+ordered */ 
                             d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) AS sal
@@ -113,7 +109,7 @@ CREATE OR REPLACE PACKAGE BODY test_parse_util IS
                      GROUP BY d.deptno, d.dname
                   ]';
       -- with_clause and error_logging_clause
-      l_actual := parse_util.get_insert_subquery(q'[
+      l_actual   := parse_util.get_insert_subquery(q'[
                      INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY)
                      WITH result AS (
                         SELECT /*+ordered */ 
@@ -140,18 +136,18 @@ CREATE OR REPLACE PACKAGE BODY test_parse_util IS
                        FROM result
                   ]';
       ut.expect(trim(l_actual)).to_equal(trim(l_expected));
-   END test_get_insert_subquery;
+   end test_get_insert_subquery;
    
    --
    -- test_get_dep_cols
    --
-   PROCEDURE test_get_dep_cols IS
-      l_parse_tree XMLTYPE;
-      l_actual     XMLTYPE;
-      l_expected   CLOB;
-   BEGIN
+   procedure test_get_dep_cols is
+      l_parse_tree xmltype;
+      l_actual     xmltype;
+      l_expected   clob;
+   begin
       l_parse_tree := parse_util.parse_query(
-                         USER,
+                         user,
                          q'[
                             SELECT /*+ordered */ 
                                    d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) AS sal
@@ -161,10 +157,10 @@ CREATE OR REPLACE PACKAGE BODY test_parse_util IS
                             GROUP BY d.deptno, d.dname
                          ]'
                       );
-      l_actual := PARSE_UTIL.GET_DEP_COLS(l_parse_tree, 3);
-      l_expected := '<column><schemaName/><tableName>EMP</tableName><columnName>SAL</columnName></column><column><schemaName/><tableName>EMP</tableName><columnName>COMM</columnName></column>';
-      ut.expect(l_actual.getclobval()).to_equal(l_expected); 
-   END test_get_dep_cols;
-   
-END test_parse_util;
+      l_actual     := parse_util.get_dep_cols(l_parse_tree, 3);
+      l_expected   := '<column><schemaName/><tableName>EMP</tableName><columnName>SAL</columnName></column><column><schemaName/><tableName>EMP</tableName><columnName>COMM</columnName></column>';
+      ut.expect(l_actual.getclobval()).to_equal(l_expected);
+   end test_get_dep_cols;
+
+end test_parse_util;
 /
