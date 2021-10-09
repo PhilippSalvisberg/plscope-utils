@@ -26,7 +26,7 @@
 #    1) tvdformat command via SQLcl (command must be registered via $SQLPATH/login.sql)
 #    2) format.js script via SQLcl (the default)
 #    3) tvdformat.jar standalone executable JAR (includes `format.js`, no SQLcl required)
-FORMATTER_VARIANT="2"
+FORMATTER_VARIANT="3"
 
 # Location of the local clone of the plsql-formatter-settings Git repository.
 # Used as root directory of known subdirectories and files in the Git respository.
@@ -36,10 +36,10 @@ FORMATTER_GITHUB_DIR="$HOME/github/trivadis/plsql-formatter-settings"
 FORMATTER_JS="$FORMATTER_GITHUB_DIR/sqlcl/format.js"
 
 # Location of the `tvdformat.jar` JAR. Required only for $FORMATTER_VARIANT 3.
-FORMATTER_JAR="$FORMATTER_GITHUB_DIR/standalone/target/tvdformat.jar"
+FORMATTER_JAR="formatter/tvdformat.jar"
 
 # Location of the SQL Developer's settings
-FORMATTER_SQLDEV_SETTINGS_DIR="$FORMATTER_GITHUB_DIR/settings/sql_developer"
+FORMATTER_SQLDEV_SETTINGS_DIR="formatter"
 
 # Formatter options beside $FORMATTER_SCOPE
 FORMATTER_EXT="sql,prc,fnc,pks,pkb,trg,vw,tps,tpb,tbp,plb,pls,rcv,spc,typ,aqt,aqp,ctx,dbl,tab,dim,snp,con,collt,seq,syn,grt,sp,spb,sps,pck"
