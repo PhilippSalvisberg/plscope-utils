@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE test_lineage_util AUTHID CURRENT_USER IS
+create or replace package test_lineage_util authid current_user is
    /*
    * Copyright 2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -19,19 +19,19 @@ CREATE OR REPLACE PACKAGE test_lineage_util AUTHID CURRENT_USER IS
    -- %suitepath(plscope.test)
    
    -- %test
-   PROCEDURE test_set_get_recursive;
+   procedure test_set_get_recursive;
 
    -- %test
-   PROCEDURE test_get_dep_cols_from_query;
+   procedure test_get_dep_cols_from_query;
 
    -- %test
-   PROCEDURE test_get_dep_cols_from_view;
+   procedure test_get_dep_cols_from_view;
    
    -- %test
-   PROCEDURE test_get_dep_cols_from_insert;
+   procedure test_get_dep_cols_from_insert;
 
    -- %test
-   PROCEDURE test_get_target_cols_from_insert;
-   
-END test_lineage_util;
+   procedure test_get_target_cols_from_insert;
+
+end test_lineage_util;
 /

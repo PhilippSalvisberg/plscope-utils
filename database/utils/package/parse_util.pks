@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE parse_util IS
+create or replace package parse_util is
    /*
    * Copyright 2011-2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -28,10 +28,10 @@ CREATE OR REPLACE PACKAGE parse_util IS
    * @param in_query query to analyze
    * @returns XML parse tree
    */
-   FUNCTION parse_query(
-      in_parse_user IN VARCHAR2, 
-      in_query      IN CLOB
-   ) RETURN xmltype;
+   function parse_query(
+      in_parse_user in varchar2,
+      in_query      in clob
+   ) return xmltype;
    
    /**
    * Gets target objects (tables, views, materialized views, synonyms) of an insert statement.
@@ -41,10 +41,10 @@ CREATE OR REPLACE PACKAGE parse_util IS
    * @param in_sql insert statement to analyze
    * @returns table of target objects
    */
-   FUNCTION get_insert_targets(
-      in_parse_user IN VARCHAR2, 
-      in_sql        IN CLOB
-   ) RETURN t_obj_type;
+   function get_insert_targets(
+      in_parse_user in varchar2,
+      in_sql        in clob
+   ) return t_obj_type;
       
    /**
    * Gets the subquery clause of an insert statement.
@@ -52,7 +52,7 @@ CREATE OR REPLACE PACKAGE parse_util IS
    * @param in_sql insert statement to get subquery from
    * @returns the subquery part of the insert statement
    */
-   FUNCTION get_insert_subquery(in_sql IN CLOB) RETURN CLOB;
+   function get_insert_subquery(in_sql in clob) return clob;
    
    /**
    * Gets the dependend columns of a given column in a parse treee.
@@ -61,10 +61,10 @@ CREATE OR REPLACE PACKAGE parse_util IS
    * @in_column_pos column to be analyzed in the parse tree
    * @returns columns in xml <column><schemaName/><tableName/><columName/></column>
    */
-   FUNCTION get_dep_cols(
-      in_parse_tree IN XMLTYPE,
-      in_column_pos IN INTEGER
-   ) RETURN XMLTYPE;
-   
-END parse_util;
+   function get_dep_cols(
+      in_parse_tree in xmltype,
+      in_column_pos in integer
+   ) return xmltype;
+
+end parse_util;
 /

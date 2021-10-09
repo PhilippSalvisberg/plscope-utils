@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE test_etl AUTHID CURRENT_USER IS
+create or replace package test_etl authid current_user is
    /*
    * Copyright 2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -20,37 +20,37 @@ CREATE OR REPLACE PACKAGE test_etl AUTHID CURRENT_USER IS
    -- %rollback(manual)
 
    -- %test
-   PROCEDURE test_load_from_tab;
+   procedure test_load_from_tab;
    
    -- %test
-   PROCEDURE test_load_from_view;
+   procedure test_load_from_view;
    
    -- %test
-   PROCEDURE test_load_from_syn;
+   procedure test_load_from_syn;
    
    -- %test
-   PROCEDURE test_load_from_syn_wild;
+   procedure test_load_from_syn_wild;
    
    -- %test
-   PROCEDURE test_load_from_syn_log;
+   procedure test_load_from_syn_log;
    
    -- %test
-   PROCEDURE test_load_multi_table;
+   procedure test_load_multi_table;
    
    -- %test
-   PROCEDURE test_load_from_implicit_cursor;
+   procedure test_load_from_implicit_cursor;
    
    -- %test
-   PROCEDURE test_load_from_explicit_cursor;
+   procedure test_load_from_explicit_cursor;
    
    -- %test
-   PROCEDURE test_load_from_dyn_sql;
+   procedure test_load_from_dyn_sql;
    
    -- %test
-   PROCEDURE test_sal_of_dept;
+   procedure test_sal_of_dept;
    
    -- %test
-   PROCEDURE test_load_from_app_join;
-   
-END test_etl;
+   procedure test_load_from_app_join;
+
+end test_etl;
 /

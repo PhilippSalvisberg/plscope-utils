@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE plscope_context IS
+create or replace package plscope_context is
    /*
    * Copyright 2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -27,9 +27,9 @@ CREATE OR REPLACE PACKAGE plscope_context IS
    * @param in_name name of the attribute
    * @param in_value value of the attribute
    */
-   PROCEDURE set_attr (
-      in_name  IN VARCHAR2,
-      in_value IN VARCHAR2
+   procedure set_attr(
+      in_name  in varchar2,
+      in_value in varchar2
    );
 
    /**
@@ -38,15 +38,15 @@ CREATE OR REPLACE PACKAGE plscope_context IS
    *
    * @param in_name name of the attribute
    */
-   PROCEDURE remove_attr (
-      in_name  IN VARCHAR2
+   procedure remove_attr(
+      in_name in varchar2
    );
 
    /**
    * Removes all attributes from the context.
    * Used to restore default behaviour for all attributes.
    */
-   PROCEDURE remove_all;
-      
-END plscope_context;
+   procedure remove_all;
+
+end plscope_context;
 /

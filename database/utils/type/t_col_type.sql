@@ -14,5 +14,5 @@
 * limitations under the License.
 */
 
-CREATE OR REPLACE TYPE t_col_type FORCE IS TABLE OF col_type;
+create or replace type t_col_type force is table of col_type;
 /

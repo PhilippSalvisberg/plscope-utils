@@ -14,15 +14,15 @@
 * limitations under the License.
 */
 
-CREATE OR REPLACE TYPE col_lineage_type FORCE AS 
-OBJECT (
-   from_owner       VARCHAR2(128 CHAR),
-   from_object_type VARCHAR2(128 CHAR),
-   from_object_name VARCHAR2(128 CHAR),
-   from_column_name VARCHAR2(128 CHAR),
-   to_owner         VARCHAR2(128 CHAR),
-   to_object_type   VARCHAR2(128 CHAR),
-   to_object_name   VARCHAR2(128 CHAR),
-   to_column_name   VARCHAR2(128 CHAR)
+create or replace type col_lineage_type force as
+object (
+   from_owner       varchar2(128 char),
+   from_object_type varchar2(128 char),
+   from_object_name varchar2(128 char),
+   from_column_name varchar2(128 char),
+   to_owner         varchar2(128 char),
+   to_object_type   varchar2(128 char),
+   to_object_name   varchar2(128 char),
+   to_column_name   varchar2(128 char)
 );
 /

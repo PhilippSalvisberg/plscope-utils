@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE type_util IS
+create or replace package type_util is
    /*
    * Copyright 2011-2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -27,7 +27,7 @@ CREATE OR REPLACE PACKAGE type_util IS
    * @param in_t_obj objects to deduplicate
    * @returns deduplicated table of objects
    */
-   FUNCTION dedup(in_t_obj IN t_obj_type) RETURN t_obj_type;
+   function dedup(in_t_obj in t_obj_type) return t_obj_type;
 
    /**
    * Removes duplicate columns.
@@ -35,7 +35,7 @@ CREATE OR REPLACE PACKAGE type_util IS
    * @param in_t_col columns to deduplicate
    * @returns deduplicated table of columns
    */
-   FUNCTION dedup(in_t_col IN t_col_type) RETURN t_col_type;
+   function dedup(in_t_col in t_col_type) return t_col_type;
 
    /**
    * Removes duplicate column lineage.
@@ -43,7 +43,7 @@ CREATE OR REPLACE PACKAGE type_util IS
    * @param in_t_col_lineage column lineage to deduplicate
    * @returns deduplicated table of column lineage
    */
-   FUNCTION dedup(in_t_col_lineage IN t_col_lineage_type) RETURN t_col_lineage_type;
-      
-END type_util;
+   function dedup(in_t_col_lineage in t_col_lineage_type) return t_col_lineage_type;
+
+end type_util;
 /

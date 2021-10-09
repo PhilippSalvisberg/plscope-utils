@@ -1,29 +1,29 @@
-CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
+create or replace package body test_lineage_util is
 
    --
    -- test_set_get_recursive
    --
-   PROCEDURE test_set_get_recursive IS
-   BEGIN
+   procedure test_set_get_recursive is
+   begin
       -- true
       lineage_util.set_recursive(1);
       ut.expect(1).to_equal(lineage_util.get_recursive);
       -- false
       lineage_util.set_recursive(0);
-      ut.expect(0).to_equal(lineage_util.get_recursive);      
-   END test_set_get_recursive;
+      ut.expect(0).to_equal(lineage_util.get_recursive);
+   end test_set_get_recursive;
 
    --
    -- test_get_dep_cols_from_query
    --
-   PROCEDURE test_get_dep_cols_from_query IS
+   procedure test_get_dep_cols_from_query is
       l_actual   t_col_type;
       l_expected t_col_type;
-   BEGIN
+   begin
       -- non-recursive
-      l_actual := lineage_util.get_dep_cols_from_query(
-                     USER,
-                     q'[
+      l_actual   := lineage_util.get_dep_cols_from_query(
+                       user,
+                       q'[
                         SELECT /*+ordered */ 
                                d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) AS sal
                           FROM dept d
@@ -31,134 +31,127 @@ CREATE OR REPLACE PACKAGE BODY test_lineage_util IS
                             ON e.deptno = d.deptno
                         GROUP BY d.deptno, d.dname
                      ]',
-                     3,
-                     0
-                  );
+                       3,
+                       0
+                    );
       ut.expect(l_actual.count).to_equal(2);
       l_expected := t_col_type(
-                       col_type(USER, 'TABLE', 'EMP', 'COMM'),
-                       col_type(USER, 'TABLE', 'EMP', 'SAL')
+                       col_type(user, 'TABLE', 'EMP', 'COMM'),
+                       col_type(user, 'TABLE', 'EMP', 'SAL')
                     );
-      ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected)).unordered;
+      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
       -- recursive
-      l_actual := lineage_util.get_dep_cols_from_query(
-                     USER,
-                     q'[
+      l_actual   := lineage_util.get_dep_cols_from_query(
+                       user,
+                       q'[
                         SELECT dept_no, dept_name, salary
                           FROM source_view
                      ]',
-                     3,
-                     1
-                  );
+                       3,
+                       1
+                    );
       ut.expect(l_actual.count).to_equal(3);
       l_expected := t_col_type(
-                       col_type(USER, 'TABLE', 'EMP', 'COMM'),
-                       col_type(USER, 'TABLE', 'EMP', 'SAL'),
-                       col_type(USER, 'VIEW', 'SOURCE_VIEW', 'SALARY')
+                       col_type(user, 'TABLE', 'EMP', 'COMM'),
+                       col_type(user, 'TABLE', 'EMP', 'SAL'),
+                       col_type(user, 'VIEW', 'SOURCE_VIEW', 'SALARY')
                     );
-      ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected)).unordered;      
-   END test_get_dep_cols_from_query;
+      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+   end test_get_dep_cols_from_query;
 
    --
    -- test_get_dep_cols_from_view
    --
-   PROCEDURE test_get_dep_cols_from_view IS
+   procedure test_get_dep_cols_from_view is
       l_actual   t_col_type;
       l_expected t_col_type;
-   BEGIN
-      l_actual := lineage_util.get_dep_cols_from_view(
-                     USER,
-                     'SOURCE_VIEW',
-                     'SALARY',
-                     0
-                  );
+   begin
+      l_actual   := lineage_util.get_dep_cols_from_view(
+                       user,
+                       'SOURCE_VIEW',
+                       'SALARY',
+                       0
+                    );
       ut.expect(l_actual.count).to_equal(2);
       l_expected := t_col_type(
-                       col_type(USER, 'TABLE', 'EMP', 'COMM'),
-                       col_type(USER, 'TABLE', 'EMP', 'SAL')
+                       col_type(user, 'TABLE', 'EMP', 'COMM'),
+                       col_type(user, 'TABLE', 'EMP', 'SAL')
                     );
-      ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected)).unordered;      
-   END test_get_dep_cols_from_view;
+      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+   end test_get_dep_cols_from_view;
 
    --
    -- test_get_dep_cols_from_insert
    --
-   PROCEDURE test_get_dep_cols_from_insert IS
-      l_signature VARCHAR2(32 BYTE);
+   procedure test_get_dep_cols_from_insert is
+      l_signature varchar2(32 byte);
       l_actual    t_col_lineage_type;
       l_expected  t_col_lineage_type;
-   BEGIN
-      SELECT signature
-        INTO l_signature
-        FROM user_statements
-       WHERE text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
+   begin
+      select signature
+        into l_signature
+        from user_statements
+       where text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
       -- non-recursive
-      l_actual := lineage_util.get_dep_cols_from_insert(l_signature, 0);
+      l_actual   := lineage_util.get_dep_cols_from_insert(l_signature, 0);
       ut.expect(l_actual.count).to_equal(3);
       l_expected := t_col_lineage_type(
-                       col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', USER, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', USER, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'SALARY', USER, 'TABLE', 'DEPTSAL', 'SALARY')
+                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'SALARY', user, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected))
-         .join_by('FROM_COLUMN_NAME');
+      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected))
+      .join_by('FROM_COLUMN_NAME');
       -- recursive
-      l_actual := lineage_util.get_dep_cols_from_insert(l_signature, 1);
+      l_actual   := lineage_util.get_dep_cols_from_insert(l_signature, 1);
       ut.expect(l_actual.count).to_equal(7);
       l_expected := t_col_lineage_type(
-                       col_lineage_type(USER, 'TABLE', 'DEPT', 'DEPTNO', USER, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_lineage_type(USER, 'TABLE', 'DEPT', 'DNAME', USER, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_lineage_type(USER, 'TABLE', 'EMP', 'COMM', USER, 'TABLE', 'DEPTSAL', 'SALARY'),
-                       col_lineage_type(USER, 'TABLE', 'EMP', 'SAL', USER, 'TABLE', 'DEPTSAL', 'SALARY'),
-                       col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', USER, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', USER, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_lineage_type(USER, 'VIEW', 'SOURCE_VIEW', 'SALARY', USER, 'TABLE', 'DEPTSAL', 'SALARY')
+                       col_lineage_type(user, 'TABLE', 'DEPT', 'DEPTNO', user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_lineage_type(user, 'TABLE', 'DEPT', 'DNAME', user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_lineage_type(user, 'TABLE', 'EMP', 'COMM', user, 'TABLE', 'DEPTSAL', 'SALARY'),
+                       col_lineage_type(user, 'TABLE', 'EMP', 'SAL', user, 'TABLE', 'DEPTSAL', 'SALARY'),
+                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'SALARY', user, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected)).unordered;
-   END test_get_dep_cols_from_insert;
+      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+   end test_get_dep_cols_from_insert;
    
    --
    -- test_get_target_cols_from_insert
    --
-   PROCEDURE test_get_target_cols_from_insert IS
-      l_signature VARCHAR2(32 BYTE);
-      l_actual   t_col_type;
-      l_expected t_col_type;
-   BEGIN
+   procedure test_get_target_cols_from_insert is
+      l_signature varchar2(32 byte);
+      l_actual    t_col_type;
+      l_expected  t_col_type;
+   begin
       -- explicit target columns
-      SELECT signature
-        INTO l_signature
-        FROM user_statements
-       WHERE text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
-      l_actual := lineage_util.get_target_cols_from_insert(l_signature);
+      select signature
+        into l_signature
+        from user_statements
+       where text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
+      l_actual   := lineage_util.get_target_cols_from_insert(l_signature);
       ut.expect(l_actual.count).to_equal(3);
       l_expected := t_col_type(
-                       col_type(USER, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_type(USER, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_type(USER, 'TABLE', 'DEPTSAL', 'SALARY')
+                       col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_type(user, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected)).unordered;
+      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
       -- implicit target columns
-      SELECT signature
-        INTO l_signature
-        FROM user_statements
-       WHERE text = 'INSERT INTO DEPTSAL SELECT T.* FROM SOURCE_SYN T';
-      l_actual := lineage_util.get_target_cols_from_insert(l_signature);
+      select signature
+        into l_signature
+        from user_statements
+       where text = 'INSERT INTO DEPTSAL SELECT T.* FROM SOURCE_SYN T';
+      l_actual   := lineage_util.get_target_cols_from_insert(l_signature);
       ut.expect(l_actual.count).to_equal(3);
       l_expected := t_col_type(
-                       col_type(USER, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_type(USER, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_type(USER, 'TABLE', 'DEPTSAL', 'SALARY')
+                       col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_type(user, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertCollection(l_actual))
-         .to_equal(anydata.convertCollection(l_expected)).unordered;
-   END test_get_target_cols_from_insert;
+      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+   end test_get_target_cols_from_insert;
 
-END test_lineage_util;
+end test_lineage_util;
 /

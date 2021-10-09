@@ -14,136 +14,135 @@
 * limitations under the License.
 */
 
-CREATE OR REPLACE VIEW plscope_col_usage AS
-WITH
-   scope_cols AS (
-      SELECT /*+use_hash(ids) use_hash(refs) */
-             ids.owner,
-             ids.object_type,
-             ids.object_name,
-             ids.line,
-             ids.col,
-             ids.procedure_name,
-             CASE
-                WHEN refs.type IS NOT NULL THEN
-                   refs.type
-                ELSE
-                   ids.usage
-             END AS operation,
-             ids.ref_owner,
-             ids.ref_object_type,
-             ids.ref_object_name,
-             ids.name as column_name,
-             ids.text
-        FROM plscope_identifiers ids
-        LEFT JOIN dba_statements refs
-          ON refs.signature = parent_statement_signature
-       WHERE ids.type = 'COLUMN'
-         AND ids.usage != 'DECLARATION'
-   ),
-   missing_cols AS (
-      SELECT /*+use_hash(t) use_hash(s) use_hash(o) use_hash(c) use_hash(tc) */
-             t.owner,
-             t.object_type,
-             t.object_name,
-             t.line,
-             t.col,
-             t.procedure_name,
-             t.operation,
-             coalesce(o.owner, t.ref_owner) AS ref_owner,
-             coalesce(o.object_type, t.ref_object_type) AS ref_object_type,
-             coalesce(o.object_name, t.ref_object_name) AS ref_object_name,
-             tc.column_name,
-             t.text
-        FROM plscope_tab_usage t
-        LEFT JOIN dba_synonyms s
-          ON s.owner            = t.ref_owner
-             AND s.synonym_name = t.ref_object_name
-        LEFT JOIN dba_objects o
-          ON o.owner            = s.table_owner
-            AND o.object_name   = s.table_name
-        LEFT JOIN scope_cols c
-          ON t.owner                                        = c.owner
-             AND t.object_type                              = c.object_type
-             AND t.object_name                              = c.object_name
-             AND t.procedure_name                           = c.procedure_name
-             AND coalesce(o.owner, t.ref_owner)             = c.ref_owner
-             AND coalesce(o.object_type, t.ref_object_type) = c.ref_object_type
-             AND coalesce(o.object_name, t.ref_object_name) = c.ref_object_name
-        JOIN dba_tab_columns tc
-          ON tc.owner = t.owner
-             AND tc.table_name = coalesce(o.object_name,t.ref_object_name)
-       WHERE t.direct_dependency = 'YES'
-         AND c.owner IS NULL
-         AND t.operation IN ('INSERT', 'SELECT')
-   ),
-   base_cols AS (
-      SELECT owner,
-             object_type,
-             object_name,
-             line,
-             col,
-             procedure_name,
-             operation,
-             ref_owner,
-             ref_object_type,
-             ref_object_name,
-             column_name,
-             'YES' AS direct_dependency,
-             text
-        FROM scope_cols
-      UNION ALL
-      SELECT owner,
-             object_type,
-             object_name,
-             line,
-             col,
-             procedure_name,
-             operation,
-             ref_owner,
-             ref_object_type,
-             ref_object_name,
-             column_name,
-             'NO' AS direct_dependency,
-             text
-        FROM missing_cols
-   )
-SELECT owner,
-       object_type,
-       object_name,
-       line,
-       col,
-       procedure_name,
-       operation,
-       ref_owner,
-       ref_object_type,
-       ref_object_name,
-       column_name,
-       direct_dependency,
-       text
-  FROM base_cols
-UNION ALL
-SELECT c.owner,
-       c.object_type,
-       c.object_name,
-       c.line,
-       c.col,
-       c.procedure_name,
-       c.operation,
-       d.owner       AS ref_owner,
-       d.object_type AS ref_object_type,
-       d.object_name AS ref_object_name,
-       d.column_name,
-       'NO' AS direct_dependency,
-       c.text
-  FROM base_cols c
- CROSS JOIN
-       TABLE(
-          lineage_util.get_dep_cols_from_view(
-             in_owner       => c.ref_owner,
-             in_object_name => c.ref_object_name,
-             in_column_name => c.column_name,
-             in_recursive   => 1
-          )
-       ) d
- WHERE c.ref_object_type = 'VIEW';
+create or replace view plscope_col_usage as
+   with
+      scope_cols as (
+         select /*+use_hash(ids) use_hash(refs) */
+                ids.owner,
+                ids.object_type,
+                ids.object_name,
+                ids.line,
+                ids.col,
+                ids.procedure_name,
+                case
+                   when refs.type is not null then
+                      refs.type
+                   else
+                      ids.usage
+                end as operation,
+                ids.ref_owner,
+                ids.ref_object_type,
+                ids.ref_object_name,
+                ids.name as column_name,
+                ids.text
+           from plscope_identifiers ids
+           left join dba_statements refs
+             on refs.signature = parent_statement_signature
+          where ids.type = 'COLUMN'
+            and ids.usage != 'DECLARATION'
+      ),
+      missing_cols as (
+         select /*+use_hash(t) use_hash(s) use_hash(o) use_hash(c) use_hash(tc) */
+                t.owner,
+                t.object_type,
+                t.object_name,
+                t.line,
+                t.col,
+                t.procedure_name,
+                t.operation,
+                coalesce(o.owner, t.ref_owner) as ref_owner,
+                coalesce(o.object_type, t.ref_object_type) as ref_object_type,
+                coalesce(o.object_name, t.ref_object_name) as ref_object_name,
+                tc.column_name,
+                t.text
+           from plscope_tab_usage t
+           left join dba_synonyms s
+             on s.owner = t.ref_owner
+            and s.synonym_name = t.ref_object_name
+           left join dba_objects o
+             on o.owner = s.table_owner
+            and o.object_name = s.table_name
+           left join scope_cols c
+             on t.owner = c.owner
+            and t.object_type = c.object_type
+            and t.object_name = c.object_name
+            and t.procedure_name = c.procedure_name
+            and coalesce(o.owner, t.ref_owner) = c.ref_owner
+            and coalesce(o.object_type, t.ref_object_type) = c.ref_object_type
+            and coalesce(o.object_name, t.ref_object_name) = c.ref_object_name
+           join dba_tab_columns tc
+             on tc.owner = t.owner
+            and tc.table_name = coalesce(o.object_name, t.ref_object_name)
+          where t.direct_dependency = 'YES'
+            and c.owner is null
+            and t.operation in ('INSERT', 'SELECT')
+      ),
+      base_cols as (
+         select owner,
+                object_type,
+                object_name,
+                line,
+                col,
+                procedure_name,
+                operation,
+                ref_owner,
+                ref_object_type,
+                ref_object_name,
+                column_name,
+                'YES' as direct_dependency,
+                text
+           from scope_cols
+         union all
+         select owner,
+                object_type,
+                object_name,
+                line,
+                col,
+                procedure_name,
+                operation,
+                ref_owner,
+                ref_object_type,
+                ref_object_name,
+                column_name,
+                'NO' as direct_dependency,
+                text
+           from missing_cols
+      )
+   select owner,
+          object_type,
+          object_name,
+          line,
+          col,
+          procedure_name,
+          operation,
+          ref_owner,
+          ref_object_type,
+          ref_object_name,
+          column_name,
+          direct_dependency,
+          text
+     from base_cols
+   union all
+   select c.owner,
+          c.object_type,
+          c.object_name,
+          c.line,
+          c.col,
+          c.procedure_name,
+          c.operation,
+          d.owner as ref_owner,
+          d.object_type as ref_object_type,
+          d.object_name as ref_object_name,
+          d.column_name,
+          'NO' as direct_dependency,
+          c.text
+     from base_cols c
+    cross join table(
+             lineage_util.get_dep_cols_from_view(
+                in_owner       => c.ref_owner,
+                in_object_name => c.ref_object_name,
+                in_column_name => c.column_name,
+                in_recursive   => 1
+             )
+          ) d
+    where c.ref_object_type = 'VIEW';

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE test_parse_util AUTHID CURRENT_USER IS
+create or replace package test_parse_util authid current_user is
    /*
    * Copyright 2017 Philipp Salvisberg <philipp.salvisberg@trivadis.com>
    *
@@ -19,16 +19,16 @@ CREATE OR REPLACE PACKAGE test_parse_util AUTHID CURRENT_USER IS
    -- %suitepath(plscope.test)
    
    -- %test
-   PROCEDURE test_parse_query;
+   procedure test_parse_query;
 
    -- %test
-   PROCEDURE test_get_insert_targets;
+   procedure test_get_insert_targets;
 
    -- %test
-   PROCEDURE test_get_insert_subquery;
+   procedure test_get_insert_subquery;
    
    -- %test
-   PROCEDURE test_get_dep_cols;
-   
-END test_parse_util;
+   procedure test_get_dep_cols;
+
+end test_parse_util;
 /

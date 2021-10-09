@@ -14,34 +14,33 @@
 * limitations under the License.
 */
 
-CREATE OR REPLACE VIEW plscope_ins_lineage AS
-WITH
-   ids AS (
-      SELECT /*+materialize */ 
-             owner, 
-             object_type, 
-             object_name, 
-             line, 
-             col, 
-             procedure_name,
-             signature
-        FROM plscope_identifiers      
-       WHERE type = 'INSERT'
-   )
-SELECT ids.owner, 
-       ids.object_type, 
-       ids.object_name, 
-       ids.line, 
-       ids.col, 
-       ids.procedure_name,
-       l.from_owner, 
-       l.from_object_type, 
-       l.from_object_name, 
-       l.from_column_name,
-       l.to_owner, 
-       l.to_object_type, 
-       l.to_object_name, 
-       l.to_column_name
-  FROM ids
- CROSS JOIN
-       TABLE(lineage_util.get_dep_cols_from_insert(ids.signature)) l;
+create or replace view plscope_ins_lineage as
+   with
+      ids as (
+         select /*+materialize */
+                owner,
+                object_type,
+                object_name,
+                line,
+                col,
+                procedure_name,
+                signature
+           from plscope_identifiers
+          where type = 'INSERT'
+      )
+   select ids.owner,
+          ids.object_type,
+          ids.object_name,
+          ids.line,
+          ids.col,
+          ids.procedure_name,
+          l.from_owner,
+          l.from_object_type,
+          l.from_object_name,
+          l.from_column_name,
+          l.to_owner,
+          l.to_object_type,
+          l.to_object_name,
+          l.to_column_name
+     from ids
+    cross join table(lineage_util.get_dep_cols_from_insert(ids.signature)) l;

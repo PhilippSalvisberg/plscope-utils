@@ -1,130 +1,130 @@
-CREATE OR REPLACE PACKAGE BODY test_etl IS
+create or replace package body test_etl is
 
    --
    -- check_deptsal_content
    --
-   PROCEDURE check_deptsal_content IS
+   procedure check_deptsal_content is
       l_actual   sys_refcursor;
       l_expected sys_refcursor;
-   BEGIN
-      OPEN l_actual FOR SELECT * FROM deptsal;
-      OPEN l_expected FOR SELECT * FROM source_view;
+   begin
+      open l_actual for select * from deptsal;
+      open l_expected for select * from source_view;
       ut.expect(l_actual).to_equal(l_expected).unordered;
-   END check_deptsal_content;
+   end check_deptsal_content;
    
    --
    -- check_deptsal_err_content
    --
-   PROCEDURE check_deptsal_err_content IS
-      l_error_count INTEGER;
-   BEGIN
-      SELECT COUNT(*)
-        INTO l_error_count
-        FROM deptsal_err;
+   procedure check_deptsal_err_content is
+      l_error_count integer;
+   begin
+      select count(*)
+        into l_error_count
+        from deptsal_err;
       ut.expect(l_error_count).to_equal(0);
-   END check_deptsal_err_content;
+   end check_deptsal_err_content;
    
    --
    -- test_load_from_tab
    --
-   PROCEDURE test_load_from_tab IS
-   BEGIN
+   procedure test_load_from_tab is
+   begin
       etl.load_from_tab;
       check_deptsal_content;
-   END test_load_from_tab;
+   end test_load_from_tab;
    
    --
    -- test_load_from_view
    --
-   PROCEDURE test_load_from_view IS
-   BEGIN
+   procedure test_load_from_view is
+   begin
       etl.load_from_view;
       check_deptsal_content;
-   END test_load_from_view;
+   end test_load_from_view;
    
    --
    -- test_load_from_syn
    --
-   PROCEDURE test_load_from_syn IS
-   BEGIN
+   procedure test_load_from_syn is
+   begin
       etl.load_from_syn;
       check_deptsal_content;
-   END test_load_from_syn;
+   end test_load_from_syn;
    
    --
    -- test_load_from_syn_wild
    --
-   PROCEDURE test_load_from_syn_wild IS
-   BEGIN
+   procedure test_load_from_syn_wild is
+   begin
       etl.load_from_syn_wild;
       check_deptsal_content;
-   END test_load_from_syn_wild;
+   end test_load_from_syn_wild;
    
    --
    -- test_load_from_syn_log
    --
-   PROCEDURE test_load_from_syn_log IS
-   BEGIN
+   procedure test_load_from_syn_log is
+   begin
       etl.load_from_syn_log;
       check_deptsal_content;
       check_deptsal_err_content;
-   END test_load_from_syn_log;
+   end test_load_from_syn_log;
    
    --
    -- test_load_multi_table
    --
-   PROCEDURE test_load_multi_table IS
-   BEGIN
+   procedure test_load_multi_table is
+   begin
       etl.load_multi_table;
       check_deptsal_content;
       check_deptsal_err_content;
-   END test_load_multi_table;
+   end test_load_multi_table;
    
    --
    -- test_load_from_implicit_cursor
    --
-   PROCEDURE test_load_from_implicit_cursor IS
-   BEGIN
+   procedure test_load_from_implicit_cursor is
+   begin
       etl.load_from_implicit_cursor;
       check_deptsal_content;
-   END test_load_from_implicit_cursor;
+   end test_load_from_implicit_cursor;
    
    --
    -- test_load_from_explicit_cursor
    --
-   PROCEDURE test_load_from_explicit_cursor IS
-   BEGIN
+   procedure test_load_from_explicit_cursor is
+   begin
       etl.load_from_explicit_cursor;
       check_deptsal_content;
-   END test_load_from_explicit_cursor;
+   end test_load_from_explicit_cursor;
    
    --
    -- test_load_from_dyn_sql
    --
-   PROCEDURE test_load_from_dyn_sql IS
-   BEGIN
+   procedure test_load_from_dyn_sql is
+   begin
       etl.load_from_dyn_sql;
       check_deptsal_content;
-   END test_load_from_dyn_sql;
+   end test_load_from_dyn_sql;
    
    --
    -- test_sal_of_dept
    --
-   PROCEDURE test_sal_of_dept IS
-      l_actual NUMBER;
-   BEGIN
+   procedure test_sal_of_dept is
+      l_actual number;
+   begin
       l_actual := etl.sal_of_dept(10);
       ut.expect(l_actual).to_equal(8750);
-   END test_sal_of_dept;
+   end test_sal_of_dept;
    
    --
    -- test_load_from_app_join
    --
-   PROCEDURE test_load_from_app_join IS
-   BEGIN
+   procedure test_load_from_app_join is
+   begin
       etl.load_from_app_join;
       check_deptsal_content;
-   END test_load_from_app_join;
-   
-END test_etl;
+   end test_load_from_app_join;
+
+end test_etl;
 /
