@@ -196,7 +196,7 @@ LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT
                                                01') E ON E.DEPTNO = D.DEPTNO GROUP BY D.DEPTNO,
                                                D.DNAME
 
-    12    4 COMMIT                  NO           
+  12    4 COMMIT                  NO           
 ```
 
 ### [View PLSCOPE\_TAB\_USAGE](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/view/plscope_tab_usage.sql)
