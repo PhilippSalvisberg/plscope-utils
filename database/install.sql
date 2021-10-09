@@ -15,7 +15,6 @@
 */
 
 set define off
-set scan off
 set echo off
 set serveroutput on size 100000
 
