@@ -163,13 +163,18 @@ prompt ====================================================================
 prompt Create and populate demo tables
 prompt ====================================================================
 
-@./demo/table/drop_demo_tables.sql
-@./demo/table/dept.sql
-@./demo/table/emp.sql
-@./demo/table/deptsal.sql
-@./demo/table/deptsal_err.sql
+-- use these intermediate substitution variables to avoid parse errors in SQLDev
+define table_folder = 'table'
+set define on
+@./demo/&&table_folder/drop_demo_tables.sql
+@./demo/&&table_folder/dept.sql
+@./demo/&&table_folder/emp.sql
+@./demo/&&table_folder/deptsal.sql
+@./demo/&&table_folder/deptsal_err.sql
 @./demo/view/source_view.sql
 show errors
+set
+define off
 
 alter session set plscope_settings = 'identifiers:all, statements:all';
 @./demo/synonym/source_syn.sql
