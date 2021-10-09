@@ -173,8 +173,9 @@ set define on
 @./demo/&&table_folder/deptsal_err.sql
 @./demo/view/source_view.sql
 show errors
-set
-define off
+-- @formatter:off
+set define off
+-- @formatter:on
 
 alter session set plscope_settings = 'identifiers:all, statements:all';
 @./demo/synonym/source_syn.sql
