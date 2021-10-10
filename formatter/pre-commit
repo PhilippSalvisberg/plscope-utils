@@ -36,7 +36,7 @@ FORMATTER_GITHUB_DIR="$HOME/github/trivadis/plsql-formatter-settings"
 FORMATTER_JS="$FORMATTER_GITHUB_DIR/sqlcl/format.js"
 
 # Location of the `tvdformat.jar` JAR. Required only for $FORMATTER_VARIANT 3.
-FORMATTER_JAR="formatter/tvdformat.jar"
+FORMATTER_JAR="$(dirname $0)/tvdformat.jar"
 
 # Location of the SQL Developer's settings
 FORMATTER_SQLDEV_SETTINGS_DIR="formatter"
