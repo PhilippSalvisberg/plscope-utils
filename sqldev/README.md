@@ -25,7 +25,7 @@ The popup windows provides all relevant options for the Oracle Database version 
 
 ### Viewers PL/Scope Node
 
-The following screenshots show the available viewers for objects within the PL/Scope node. Every viewer has a column named “Link”. Click on this link to open the PL/SQL editor at the corresponding cursor position.
+The following screenshots show the available viewers for objects within the PL/Scope node. Every viewer has a column named `Link`. Click on this link to open the PL/SQL editor at the corresponding cursor position.
 
 #### Identifiers
 
