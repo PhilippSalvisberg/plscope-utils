@@ -66,33 +66,34 @@ PROMPT ====================================================================
 set feedback off
 set term off
 spool install_options.tmp
-DECLARE
-procedure print(in_line in varchar2) is
-begin
-   dbms_output.put_line(in_line);
-end print; 
---
-procedure options is
-   l_count integer;
-begin
-   select count(*)
-     into l_count
-     from all_objects
-    where object_name in ('UTL_XML', 'UTL_XML_LIB');
-   if l_count > 0 then
-      print('@./test/package/test_lineage_util.pks');
-      print('SHOW ERRORS');
-      print('@./test/package/test_parse_util.pks');
-      print('SHOW ERRORS');
-      print('@./test/package/test_lineage_util.pkb');
-      print('SHOW ERRORS');
-      print('@./test/package/test_parse_util.pkb');
-      print('SHOW ERRORS');
-   end if;
-end options;
+<<install_options>>
+declare
+   procedure print(in_line in varchar2) is
+   begin
+      dbms_output.put_line(in_line);
+   end print; 
+   --
+   procedure options is
+      l_count integer;
+   begin
+      select count(*)
+        into l_count
+        from all_objects
+       where object_name in ('UTL_XML', 'UTL_XML_LIB');
+      if l_count > 0 then
+         print('@./test/package/test_lineage_util.pks');
+         print('SHOW ERRORS');
+         print('@./test/package/test_parse_util.pks');
+         print('SHOW ERRORS');
+         print('@./test/package/test_lineage_util.pkb');
+         print('SHOW ERRORS');
+         print('@./test/package/test_parse_util.pkb');
+         print('SHOW ERRORS');
+      end if;
+   end options;
 begin
    options;
-end;
+end install_options;
 /
 spool off
 set feedback on
