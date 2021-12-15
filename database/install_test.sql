@@ -104,7 +104,7 @@ PROMPT ====================================================================
 PROMPT Run tests with 12.2 code coverage
 PROMPT ====================================================================
 
-DECLARE
+declare
    l_testsuite_run
 number;
 begin
