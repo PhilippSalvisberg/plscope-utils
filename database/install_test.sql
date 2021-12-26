@@ -105,8 +105,7 @@ PROMPT Run tests with 12.2 code coverage
 PROMPT ====================================================================
 
 declare
-   l_testsuite_run
-number;
+   l_testsuite_run number;
 begin
    dbms_plsql_code_coverage.create_coverage_tables(true);
    l_testsuite_run := dbms_plsql_code_coverage.start_coverage('plscope-utils');
