@@ -16,6 +16,7 @@ code_coverage.html
 **/.settings
 **/.scannerwork
 **/.idea
+**/.vscode
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
