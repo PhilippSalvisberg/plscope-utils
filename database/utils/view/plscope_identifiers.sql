@@ -119,9 +119,9 @@ create or replace view plscope_identifiers as
                       usage_context_id
                    else
                       last_value(case
-                            when sane_fk = 'YES' then
-                               usage_id
-                         end) ignore nulls over (
+                                    when sane_fk = 'YES' then
+                                       usage_id
+                                 end) ignore nulls over (
                          partition by owner, object_name, object_type
                          order by line, col
                          rows between unbounded preceding and 1 preceding

@@ -48,13 +48,13 @@ create or replace package body dd_util is
           where o.owner = coalesce(in_obj.owner, in_parse_user, 'PUBLIC')
             and o.object_name = in_obj.object_name
           order by case o.owner
-                   when in_obj.owner then
-                      1
-                   when in_parse_user then
-                      2
-                   else
-                      3
-                end,
+                     when in_obj.owner then
+                        1
+                     when in_parse_user then
+                        2
+                     else
+                        3
+                  end,
                 case o.object_type
                    when in_obj.object_type then
                       1
