@@ -262,7 +262,20 @@ create or replace view plscope_identifiers as
                            'PRIVATE')
                 end                             as procedure_scope,
                 b.name,
-                a.name_path || '/' || b.name    as name_path,
+                case
+                   when lengthb(a.name_path) + lengthb('/') + lengthb(b.name) <= 4000 then
+                      a.name_path || '/' || b.name
+                   else
+                      -- prevent name_path from overflowing: keep the first 3 elements, then
+                      -- remove enough elements to accomodate "..." + "/" + the tail end
+                      regexp_substr(a.name_path, '^(/([^/]+/){3})')
+                            || '...'
+                            || regexp_replace(
+                                  substr(a.name_path, instr(a.name_path, '/', 1, 4) + 1
+                                     + lengthb('.../') + lengthb(b.name)),
+                                     '^[^/]*')
+                            || '/' || b.name
+                end                             as name_path,
                 a.path_len + 1                  as path_len,
                 b.type,
                 b.usage,
