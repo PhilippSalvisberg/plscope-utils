@@ -27,6 +27,7 @@ create or replace view plscope_identifiers as
           where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
             and type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+            and origin_con_id = sys_context('USERENV', 'CON_ID')
       ),
       pls_ids as (
          select owner,
@@ -45,6 +46,7 @@ create or replace view plscope_identifiers as
           where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
             and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+            and origin_con_id = sys_context('USERENV', 'CON_ID')
       ),
       sql_ids as (
          select owner,
@@ -63,6 +65,7 @@ create or replace view plscope_identifiers as
           where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
             and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+            and origin_con_id = sys_context('USERENV', 'CON_ID')
       ),
       fids as (
          select 'NO'                               as is_sql_stmt,
