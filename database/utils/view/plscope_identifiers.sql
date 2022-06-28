@@ -351,7 +351,8 @@ create or replace view plscope_identifiers as
       tree_plus as (                                                    --@formatter:off
          select tree.*,                                                    
                 case
-                   when usage = 'DEFINITION'
+                   when type in ('PROCEDURE', 'FUNCTION')
+                      and usage = 'DEFINITION'
                       and nvl( lag( procedure_signature,
                                     decode(is_def_child_of_decl, 'YES', 2, 'NO', 1)
                                ) over (
