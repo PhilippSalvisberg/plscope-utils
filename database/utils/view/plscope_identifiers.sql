@@ -205,6 +205,7 @@ create or replace view plscope_identifiers as
          parent_statement_type,
          parent_statement_signature,
          parent_statement_path_len,
+         is_def_child_of_decl,
          origin_con_id
       ) as (
          select owner,
@@ -237,6 +238,7 @@ create or replace view plscope_identifiers as
                 cast(null as varchar2(18))   as parent_statement_type,
                 cast(null as varchar2(32))   as parent_statement_signature,
                 cast(null as number)         as parent_statement_path_len,
+                cast(null as varchar2(3))    as is_def_child_of_decl,
                 origin_con_id
            from ids
           where usage_context_id = 0  -- top-level identifiers
@@ -325,6 +327,19 @@ create or replace view plscope_identifiers as
                    else
                       a.parent_statement_path_len
                 end                             as parent_statement_path_len,
+                case
+                   when b.type in ('PROCEDURE', 'FUNCTION')
+                      and b.usage = 'DEFINITION'
+                   then
+                      case
+                         when a.usage = 'DECLARATION'
+                            and b.signature = a.signature
+                         then
+                            'YES'
+                         else
+                            'NO'
+                      end
+                end                             as is_def_child_of_decl,
                 b.origin_con_id
            from tree a,
                 ids b
@@ -332,7 +347,23 @@ create or replace view plscope_identifiers as
             and a.object_type = b.object_type
             and a.object_name = b.object_name
             and a.usage_id    = b.usage_context_id
-      )
+      ),
+      tree_plus as (                                                    --@formatter:off
+         select tree.*,                                                    
+                case
+                   when usage = 'DEFINITION'
+                      and nvl( lag( procedure_signature,
+                                    decode(is_def_child_of_decl, 'YES', 2, 'NO', 1)
+                               ) over (
+                                  partition by tree.owner, tree.object_type, tree.object_name
+                                  order by usage_id asc
+                               ),
+                               '----' ) <> procedure_signature
+                   then
+                      'YES'
+                end  as is_new_proc
+           from tree                                                       
+      )                                                                 --@formatter:on
    select tree.owner,
           tree.object_type,
           tree.object_name,
@@ -393,10 +424,46 @@ create or replace view plscope_identifiers as
           tree.usage_context_id,
           tree.is_fixed_context_id,
           tree.procedure_signature,
+          --tree.is_def_child_of_decl,    --uncomment if needed for debugging
+          --tree.is_new_proc,             --uncomment if needed for debugging
+          case
+             when tree.is_new_proc = 'YES' then
+                nvl(first_value(
+                      case
+                         when tree.is_new_proc = 'YES'
+                            or tree.usage_context_id = 1
+                         then
+                            tree.line
+                      end
+                   ) ignore nulls over (
+                      partition by tree.owner, tree.object_type, tree.object_name
+                      order by tree.usage_id
+                      rows between 1 following and unbounded following
+                   ),
+                   max(tree.line) over (
+                         partition by tree.owner, tree.object_type, tree.object_name
+                   ) + 1)
+          end                             as proc_ends_before_line,
+          case
+             when tree.is_new_proc = 'YES' then
+                nvl(first_value(
+                      case
+                         when tree.is_new_proc       = 'YES'
+                            or tree.usage_context_id = 1
+                         then
+                            tree.col
+                      end
+                   ) ignore nulls over (
+                      partition by tree.owner, tree.object_type, tree.object_name
+                      order by tree.usage_id
+                      rows between 1 following and unbounded following
+                   ),
+                   1)
+          end                             as proc_ends_before_col,
           refs.line                       as ref_line,         -- decl_line
           refs.col                        as ref_col,          -- decl_col
           tree.origin_con_id
-     from tree,
+     from tree_plus tree,
           dba_identifiers refs,
           src,
           stmt
