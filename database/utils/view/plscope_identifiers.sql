@@ -67,6 +67,19 @@ create or replace view plscope_identifiers as
             and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
             and origin_con_id = sys_context('USERENV', 'CON_ID')
       ),
+      stmt as (
+         select /*+ materialize */
+                owner,
+                signature,
+                sql_id,
+                full_text
+           from dba_statements
+          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
+            and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+            and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+            and origin_con_id = sys_context('USERENV', 'CON_ID')
+            and full_text is not null
+      ),
       fids as (
          select 'NO'                               as is_sql_stmt,
                 a.owner,
@@ -344,6 +357,7 @@ create or replace view plscope_identifiers as
           refs.object_name                as ref_object_name,     -- decl_object_name
           regexp_replace(src.text, chr(10) 
                || '+$', null)             as text,  -- remove trailing new line character
+          stmt.full_text                  as sql_fulltext,
           tree.parent_statement_type,
           tree.parent_statement_signature,
           tree.parent_statement_path_len,
@@ -384,10 +398,14 @@ create or replace view plscope_identifiers as
           tree.origin_con_id
      from tree,
           dba_identifiers refs,
-          src
+          src,
+          stmt
     where refs.signature (+) = tree.signature
       and refs.usage (+)     = 'DECLARATION'
       and src.owner (+)      = tree.owner
       and src.type (+)       = tree.object_type
       and src.name (+)       = tree.object_name
-      and src.line (+)       = tree.line;
+      and src.line (+)       = tree.line
+      and stmt.owner (+)     = tree.owner
+      and stmt.sql_id (+)    = tree.name
+      and stmt.signature (+) = tree.signature;
