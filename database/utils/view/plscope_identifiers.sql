@@ -67,19 +67,6 @@ create or replace view plscope_identifiers as
             and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
             and origin_con_id = sys_context('USERENV', 'CON_ID')
       ),
-      stmt as (
-         select /*+ materialize */
-                owner,
-                signature,
-                sql_id,
-                full_text
-           from dba_statements
-          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
-            and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
-            and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
-            and origin_con_id = sys_context('USERENV', 'CON_ID')
-            and full_text is not null
-      ),
       fids as (
          select 'NO'                               as is_sql_stmt,
                 a.owner,
@@ -93,7 +80,8 @@ create or replace view plscope_identifiers as
                 a.line,
                 a.col,
                 a.usage_context_id,
-                nvl2(b.signature, 'PUBLIC', null)  as procedure_scope,
+                nvl2(b.signature, 'PUBLIC', 
+                     cast(null as varchar2(7)))    as procedure_scope,
                 a.origin_con_id
            from pls_ids a,
                 dba_identifiers b
@@ -177,7 +165,7 @@ create or replace view plscope_identifiers as
                 end  as usage_context_id,        -- fix broken hierarchies
                 case
                    when sane_fk = 'NO' then
-                      'YES'
+                      cast('YES' as varchar2(3))
                 end  as is_fixed_context_id,     -- indicator of fixed hierarchies
                 procedure_scope,
                 origin_con_id
@@ -219,7 +207,7 @@ create or replace view plscope_identifiers as
                 end                          as procedure_name,
                 case
                    when object_type in ('PROCEDURE', 'FUNCTION') then
-                      'PUBLIC'
+                      cast('PUBLIC' as varchar2(7))
                 end                          as procedure_scope,
                 name,
                 '/' || name                  as name_path,
@@ -467,13 +455,14 @@ create or replace view plscope_identifiers as
      from tree_plus tree,
           dba_identifiers refs,
           src,
-          stmt
+          dba_statements stmt
     where refs.signature (+) = tree.signature
       and refs.usage (+)     = 'DECLARATION'
       and src.owner (+)      = tree.owner
       and src.type (+)       = tree.object_type
       and src.name (+)       = tree.object_name
       and src.line (+)       = tree.line
-      and stmt.owner (+)     = tree.owner
-      and stmt.sql_id (+)    = tree.name
-      and stmt.signature (+) = tree.signature;
+      and stmt.owner (+)         = tree.owner
+      and stmt.sql_id (+)        = tree.name
+      and stmt.signature (+)     = tree.signature
+      and stmt.origin_con_id (+) = tree.origin_con_id;
