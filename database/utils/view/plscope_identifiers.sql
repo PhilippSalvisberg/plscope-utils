@@ -377,7 +377,6 @@ create or replace view plscope_identifiers as
           refs.object_name                as ref_object_name,     -- decl_object_name
           regexp_replace(src.text, chr(10) 
                || '+$', null)             as text,  -- remove trailing new line character
-          stmt.full_text                  as sql_fulltext,
           tree.parent_statement_type,
           tree.parent_statement_signature,
           tree.parent_statement_path_len,
@@ -454,15 +453,10 @@ create or replace view plscope_identifiers as
           tree.origin_con_id
      from tree_plus tree,
           dba_identifiers refs,
-          src,
-          dba_statements stmt
+          src
     where refs.signature (+) = tree.signature
       and refs.usage (+)     = 'DECLARATION'
       and src.owner (+)      = tree.owner
       and src.type (+)       = tree.object_type
       and src.name (+)       = tree.object_name
-      and src.line (+)       = tree.line
-      and stmt.owner (+)         = tree.owner
-      and stmt.sql_id (+)        = tree.name
-      and stmt.signature (+)     = tree.signature
-      and stmt.origin_con_id (+) = tree.origin_con_id;
+      and src.line (+)       = tree.line;
