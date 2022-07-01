@@ -55,7 +55,7 @@ create or replace view plscope_identifiers as
                 type,
                 object_name,
                 object_type,
-                'SQL_STMT'  as usage, -- new, artificial usage
+                nvl2(sql_id, 'SQL_ID', 'SQL_STMT') as usage, -- new, artificial usage
                 usage_id,
                 line,
                 col,
@@ -362,8 +362,10 @@ create or replace view plscope_identifiers as
           tree.procedure_scope,
           lpad(' ', 2 * (tree.path_len - 1))
                 || case
-                      when tree.usage = 'SQL_STMT' then
+                      when tree.usage = 'SQL_ID' then
                          tree.type || ' statement (sql_id: ' || tree.name || ')'
+                      when tree.usage = 'SQL_STMT' then
+                         tree.type || ' statement'
                       else
                          tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
                    end                    as name_usage,
@@ -371,7 +373,12 @@ create or replace view plscope_identifiers as
           tree.name_path,
           tree.path_len,
           tree.type,
-          tree.usage,
+          case
+             when tree.usage = 'SQL_ID' then  -- make SQL_ID pseudo-usage appear as SQL_STMT
+                'SQL_STMT'
+             else
+                 tree.usage
+          end                             as usage,
           refs.owner                      as ref_owner,           -- decl_owner
           refs.object_type                as ref_object_type,     -- decl_object_type
           refs.object_name                as ref_object_name,     -- decl_object_name
