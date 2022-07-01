@@ -374,8 +374,9 @@ create or replace view plscope_identifiers as
           tree.path_len,
           tree.type,
           case
-             when tree.usage = 'SQL_ID' then  -- make SQL_ID pseudo-usage appear as SQL_STMT
-                'SQL_STMT'
+             -- make SQL_ID and SQL_STMT pseudo-usages appear as EXECUTE
+             when tree.usage in ('SQL_ID', 'SQL_STMT') then
+                'EXECUTE'
              else
                  tree.usage
           end                             as usage,
