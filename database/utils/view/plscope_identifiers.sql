@@ -337,7 +337,15 @@ create or replace view plscope_identifiers as
             and a.usage_id    = b.usage_context_id
       ),
       tree_plus as (                                                    --@formatter:off
-         select tree.*,                                                    
+         select tree.*,
+                case
+                   when tree.usage = 'SQL_ID' then
+                      tree.type || ' statement (sql_id: ' || tree.name || ')'
+                   when tree.usage = 'SQL_STMT' then
+                      tree.type || ' statement'
+                   else
+                      tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
+                end  as name_usage,
                 case
                    when type in ('PROCEDURE', 'FUNCTION')
                       and usage = 'DEFINITION'
@@ -360,15 +368,21 @@ create or replace view plscope_identifiers as
           tree.col,
           tree.procedure_name,
           tree.procedure_scope,
-          lpad(' ', 2 * (tree.path_len - 1))
-                || case
-                      when tree.usage = 'SQL_ID' then
-                         tree.type || ' statement (sql_id: ' || tree.name || ')'
-                      when tree.usage = 'SQL_STMT' then
-                         tree.type || ' statement'
-                      else
-                         tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
-                   end                    as name_usage,
+          cast(
+             -- left indent name_usage according to path_len, wrapping to the left
+             -- if necessary so as not to exceed a limit of 250 characters
+             case
+                when mod(2 * (tree.path_len - 1), 250) 
+                      + length(tree.name_usage) <= 250 then
+                   lpad(' ', mod(2 * (tree.path_len - 1), 250)) || tree.name_usage
+                else
+                   substr(tree.name_usage, 250 - mod(2 * (tree.path_len - 1), 250)
+                         - length(tree.name_usage))
+                   || lpad(' ', 250 - length(tree.name_usage))
+                   || substr(tree.name_usage, 1, 250 - mod(2 * (tree.path_len - 1), 250))
+             end
+             as varchar2(250)
+          )                               as name_usage,
           tree.name,
           tree.name_path,
           tree.path_len,
