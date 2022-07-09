@@ -16,6 +16,7 @@
 
 create or replace view plscope_identifiers as
    with
+      -- database source filtered by PLSCOPE context attributes
       src as (
          select /*+ materialize */
                 owner,
@@ -28,6 +29,7 @@ create or replace view plscope_identifiers as
             and type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
+      -- PL/SQL identifiers filtered by PLSCOPE context attributes
       pls_ids as (
          select owner,
                 name,
@@ -46,6 +48,7 @@ create or replace view plscope_identifiers as
             and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
+      -- SQL identifiers filtered by PLSCOPE context attributes
       sql_ids as (
          select owner,
                 nvl(sql_id, type) as name,
@@ -64,6 +67,7 @@ create or replace view plscope_identifiers as
             and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
+      -- full list of identifers (PL/SQL and SQL) with columns is_sql_stmt and procedure_scope 
       fids as (
          select 'NO' as is_sql_stmt,
                 pls_ids.owner,
@@ -103,6 +107,7 @@ create or replace view plscope_identifiers as
                 origin_con_id
            from sql_ids
       ),
+      -- add column sane_fk to list of identifers
       base_ids as (
          select fids.is_sql_stmt,
                 fids.owner,
@@ -133,6 +138,7 @@ create or replace view plscope_identifiers as
             and parent.object_name = fids.object_name
             and parent.usage_id = fids.usage_context_id
       ),
+      -- add columns usage_context_id, is_fixed_context_id to list of identifiers
       ids as (
          select is_sql_stmt,
                 owner,
@@ -166,6 +172,10 @@ create or replace view plscope_identifiers as
                 origin_con_id
            from base_ids
       ),
+      -- recursive with clause to extend the list of identifiers with the columns
+      -- procedure_name, procedure_scope, name_path, path_len (level), procedure_signature,
+      -- parent_statement_type, parent_statement_signature, parent_statement_path_len,
+      -- is_def_child_of_decl
       tree (
          owner,
          object_type,
@@ -337,6 +347,7 @@ create or replace view plscope_identifiers as
             and tree.object_name = ids.object_name
             and tree.usage_id = ids.usage_context_id
       ),
+      -- add the columns name_usage, is_new_proc to the list of identifiers
       tree_plus as (
          select tree.*,                                                 -- @formatter:off
                 case
@@ -370,6 +381,8 @@ create or replace view plscope_identifiers as
                 end as is_new_proc
            from tree
       )
+   -- add indent to column name_usage, fix column usage and adds the columns text, is_used,
+   -- proc_ends_before_line, proc_ends_before_col, ref_line, ref_col to the list of identifiers
    select tree.owner,
           tree.object_type,
           tree.object_name,
