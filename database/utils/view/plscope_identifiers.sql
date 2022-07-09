@@ -456,7 +456,8 @@ create or replace view plscope_identifiers as
           end as proc_ends_before_line,
           case
              when tree.is_new_proc = 'YES' then
-                nvl(first_value(
+                nvl(
+                   first_value(
                       case
                          when tree.is_new_proc = 'YES'
                             or tree.usage_context_id = 1
@@ -468,7 +469,8 @@ create or replace view plscope_identifiers as
                       order by tree.usage_id
                       rows between 1 following and unbounded following
                    ),
-                   1)
+                   1
+                )
           end as proc_ends_before_col,
           refs.line as ref_line,         -- decl_line
           refs.col as ref_col,           -- decl_col
