@@ -409,7 +409,7 @@ create or replace view plscope_identifiers as
           tree.path_len,
           tree.type,
           case
-                -- make SQL_ID and SQL_STMT pseudo-usages appear as EXECUTE
+             -- make SQL_ID and SQL_STMT pseudo-usages appear as EXECUTE
              when tree.usage in ('SQL_ID', 'SQL_STMT') then
                 'EXECUTE'
              else
@@ -423,10 +423,9 @@ create or replace view plscope_identifiers as
           tree.parent_statement_signature,
           tree.parent_statement_path_len,
           case
-                -- wrong result, if used in statements which do not register usage, 
-                -- such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE.
-                -- Bug 26351814.
-                --
+             -- wrong result, if used in statements which do not register usage, 
+             -- such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE.
+             -- Bug 26351814.
              when tree.object_type in ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
                 and tree.usage = 'DECLARATION'
                 and tree.type not in ('LABEL')

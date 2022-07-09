@@ -157,7 +157,7 @@ create or replace view plscope_naming as
                       name
                 end as name,
                 case
-                      -- global variables (all types)
+                   -- global variables (all types)
                    when parent_usage = 'DECLARATION'
                       and parent_type = 'VARIABLE'
                       and usage = 'REFERENCE'
