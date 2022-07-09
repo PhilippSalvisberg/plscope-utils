@@ -50,7 +50,7 @@ create or replace view plscope_identifiers as
       ),
       sql_ids as (
          select owner,
-                nvl(sql_id, type)  as name,
+                nvl(sql_id, type) as name,
                 signature,
                 type,
                 object_name,
@@ -68,7 +68,7 @@ create or replace view plscope_identifiers as
             and origin_con_id = sys_context('USERENV', 'CON_ID')
       ),
       fids as (
-         select 'NO'                               as is_sql_stmt,
+         select 'NO' as is_sql_stmt,
                 a.owner,
                 a.name,
                 a.signature,
@@ -80,19 +80,18 @@ create or replace view plscope_identifiers as
                 a.line,
                 a.col,
                 a.usage_context_id,
-                nvl2(b.signature, 'PUBLIC', 
-                     cast(null as varchar2(7)))    as procedure_scope,
+                nvl2(b.signature, 'PUBLIC', cast(null as varchar2(7))) as procedure_scope,
                 a.origin_con_id
            from pls_ids a,
                 dba_identifiers b
-          where b.owner (+)         = a.owner
-            and b.object_type (+)   = 'PACKAGE'
-            and b.object_name (+)   = a.object_name
-            and b.usage (+)         = 'DECLARATION'
-            and b.signature (+)     = a.signature
+          where b.owner (+) = a.owner
+            and b.object_type (+) = 'PACKAGE'
+            and b.object_name (+) = a.object_name
+            and b.usage (+) = 'DECLARATION'
+            and b.signature (+) = a.signature
             and b.origin_con_id (+) = a.origin_con_id
          union all
-         select 'YES'                              as is_sql_stmt,
+         select 'YES' as is_sql_stmt,
                 owner,
                 name,
                 signature,
@@ -104,7 +103,7 @@ create or replace view plscope_identifiers as
                 line,
                 col,
                 usage_context_id,
-                null                               as procedure_scope,
+                null as procedure_scope,
                 origin_con_id
            from sql_ids
       ),
@@ -133,10 +132,10 @@ create or replace view plscope_identifiers as
                 fids.origin_con_id
            from fids,
                 fids parent
-          where parent.owner (+)       = fids.owner
+          where parent.owner (+) = fids.owner
             and parent.object_type (+) = fids.object_type
             and parent.object_name (+) = fids.object_name
-            and parent.usage_id (+)    = fids.usage_context_id
+            and parent.usage_id (+) = fids.usage_context_id
       ),
       ids as (
          select is_sql_stmt,
@@ -162,11 +161,11 @@ create or replace view plscope_identifiers as
                          order by line, col
                          rows between unbounded preceding and 1 preceding
                       )
-                end  as usage_context_id,        -- fix broken hierarchies
+                end as usage_context_id,        -- fix broken hierarchies
                 case
                    when sane_fk = 'NO' then
                       cast('YES' as varchar2(3))
-                end  as is_fixed_context_id,     -- indicator of fixed hierarchies
+                end as is_fixed_context_id,     -- indicator of fixed hierarchies
                 procedure_scope,
                 origin_con_id
            from base_ids
@@ -204,14 +203,14 @@ create or replace view plscope_identifiers as
                 case
                    when object_type in ('PROCEDURE', 'FUNCTION') then
                       name
-                end                          as procedure_name,
+                end as procedure_name,
                 case
                    when object_type in ('PROCEDURE', 'FUNCTION') then
                       cast('PUBLIC' as varchar2(7))
-                end                          as procedure_scope,
+                end as procedure_scope,
                 name,
-                '/' || name                  as name_path,
-                1                            as path_len,
+                '/' || name as name_path,
+                1 as path_len,
                 type,
                 usage,
                 signature,
@@ -221,12 +220,12 @@ create or replace view plscope_identifiers as
                 case
                    when object_type in ('PROCEDURE', 'FUNCTION') then
                       signature
-                end                          as procedure_signature,
+                end as procedure_signature,
                 is_sql_stmt,
-                cast(null as varchar2(18))   as parent_statement_type,
-                cast(null as varchar2(32))   as parent_statement_signature,
-                cast(null as number)         as parent_statement_path_len,
-                cast(null as varchar2(3))    as is_def_child_of_decl,
+                cast(null as varchar2(18)) as parent_statement_type,
+                cast(null as varchar2(32)) as parent_statement_signature,
+                cast(null as number) as parent_statement_path_len,
+                cast(null as varchar2(3)) as is_def_child_of_decl,
                 origin_con_id
            from ids
           where usage_context_id = 0  -- top-level identifiers
@@ -245,7 +244,7 @@ create or replace view plscope_identifiers as
                       and b.usage_context_id = 1
                    then
                       b.name
-                end                             as procedure_name,
+                end as procedure_name,
                 case
                    when a.procedure_scope is not null then
                       a.procedure_scope
@@ -260,26 +259,27 @@ create or replace view plscope_identifiers as
                       and b.usage in ('DEFINITION', 'DECLARATION')
                       and b.usage_context_id = 1
                    then
-                      decode(b.procedure_scope,
-                           'PUBLIC', 'PUBLIC',
-                           'PRIVATE')
-                end                             as procedure_scope,
+                      decode(b.procedure_scope, 'PUBLIC', 'PUBLIC', 'PRIVATE')
+                end as procedure_scope,
                 b.name,
                 case
                    when lengthb(a.name_path) + lengthb('/') + lengthb(b.name) <= 4000 then
-                      a.name_path || '/' || b.name
+                      a.name_path
+                      || '/'
+                      || b.name
                    else
                       -- prevent name_path from overflowing: keep the first 3 elements, then
                       -- remove enough elements to accomodate "..." + "/" + the tail end
                       regexp_substr(a.name_path, '^(/([^/]+/){3})')
-                            || '...'
-                            || regexp_replace(
-                                  substr(a.name_path, instr(a.name_path, '/', 1, 4) + 1
-                                     + lengthb('.../') + lengthb(b.name)),
-                                     '^[^/]*')
-                            || '/' || b.name
-                end                             as name_path,
-                a.path_len + 1                  as path_len,
+                      || '...'
+                      || regexp_replace(
+                         substr(a.name_path, instr(a.name_path, '/', 1, 4) + 1
+                            + lengthb('.../') + lengthb(b.name)),
+                         '^[^/]*')
+                      || '/'
+                      || b.name
+                end as name_path,
+                a.path_len + 1 as path_len,
                 b.type,
                 b.usage,
                 b.signature,
@@ -295,26 +295,26 @@ create or replace view plscope_identifiers as
                       and b.usage_context_id = 1
                    then
                       b.signature
-                end                             as procedure_signature,
+                end as procedure_signature,
                 b.is_sql_stmt,
                 case
                    when a.is_sql_stmt = 'YES' then
                       a.type
                    else
                       a.parent_statement_type
-                end                             as parent_statement_type,
+                end as parent_statement_type,
                 case
                    when a.is_sql_stmt = 'YES' then
                       a.signature
                    else
                       a.parent_statement_signature
-                end                             as parent_statement_signature,
+                end as parent_statement_signature,
                 case
                    when a.is_sql_stmt = 'YES' then
                       a.path_len
                    else
                       a.parent_statement_path_len
-                end                             as parent_statement_path_len,
+                end as parent_statement_path_len,
                 case
                    when b.type in ('PROCEDURE', 'FUNCTION')
                       and b.usage = 'DEFINITION'
@@ -327,14 +327,14 @@ create or replace view plscope_identifiers as
                          else
                             'NO'
                       end
-                end                             as is_def_child_of_decl,
+                end as is_def_child_of_decl,
                 b.origin_con_id
            from tree a,
                 ids b
-          where a.owner       = b.owner
+          where a.owner = b.owner
             and a.object_type = b.object_type
             and a.object_name = b.object_name
-            and a.usage_id    = b.usage_context_id
+            and a.usage_id = b.usage_context_id
       ),
       tree_plus as (                                                    --@formatter:off
          select tree.*,
@@ -372,41 +372,39 @@ create or replace view plscope_identifiers as
              -- left indent name_usage according to path_len, wrapping to the left
              -- if necessary so as not to exceed a limit of 250 characters
              case
-                when mod(2 * (tree.path_len - 1), 250) 
-                      + length(tree.name_usage) <= 250 then
+                when mod(2 * (tree.path_len - 1), 250) + length(tree.name_usage) <= 250 then
                    lpad(' ', mod(2 * (tree.path_len - 1), 250)) || tree.name_usage
                 else
                    substr(tree.name_usage, 250 - mod(2 * (tree.path_len - 1), 250)
-                         - length(tree.name_usage))
+                      - length(tree.name_usage))
                    || lpad(' ', 250 - length(tree.name_usage))
                    || substr(tree.name_usage, 1, 250 - mod(2 * (tree.path_len - 1), 250))
              end
              as varchar2(250)
-          )                               as name_usage,
+          ) as name_usage,
           tree.name,
           tree.name_path,
           tree.path_len,
           tree.type,
           case
-             -- make SQL_ID and SQL_STMT pseudo-usages appear as EXECUTE
+                -- make SQL_ID and SQL_STMT pseudo-usages appear as EXECUTE
              when tree.usage in ('SQL_ID', 'SQL_STMT') then
                 'EXECUTE'
              else
-                 tree.usage
-          end                             as usage,
-          refs.owner                      as ref_owner,           -- decl_owner
-          refs.object_type                as ref_object_type,     -- decl_object_type
-          refs.object_name                as ref_object_name,     -- decl_object_name
-          regexp_replace(src.text, chr(10) 
-               || '+$', null)             as text,  -- remove trailing new line character
+                tree.usage
+          end as usage,
+          refs.owner as ref_owner,           -- decl_owner
+          refs.object_type as ref_object_type,     -- decl_object_type
+          refs.object_name as ref_object_name,     -- decl_object_name
+          regexp_replace(src.text, chr(10) || '+$', null) as text,  -- remove trailing new line character
           tree.parent_statement_type,
           tree.parent_statement_signature,
           tree.parent_statement_path_len,
           case
-             -- wrong result, if used in statements which do not register usage, 
-             -- such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE.
-             -- Bug 26351814.
-             --
+                -- wrong result, if used in statements which do not register usage, 
+                -- such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE.
+                -- Bug 26351814.
+                --
              when tree.object_type in ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
                 and tree.usage = 'DECLARATION'
                 and tree.type not in ('LABEL')
@@ -428,7 +426,7 @@ create or replace view plscope_identifiers as
                    else
                       'YES'
                 end
-          end                             as is_used,
+          end as is_used,
           tree.signature,
           tree.usage_id,
           tree.usage_context_id,
@@ -453,12 +451,12 @@ create or replace view plscope_identifiers as
                    max(tree.line) over (
                          partition by tree.owner, tree.object_type, tree.object_name
                    ) + 1)
-          end                             as proc_ends_before_line,
+          end as proc_ends_before_line,
           case
              when tree.is_new_proc = 'YES' then
                 nvl(first_value(
                       case
-                         when tree.is_new_proc       = 'YES'
+                         when tree.is_new_proc = 'YES'
                             or tree.usage_context_id = 1
                          then
                             tree.col
@@ -469,16 +467,16 @@ create or replace view plscope_identifiers as
                       rows between 1 following and unbounded following
                    ),
                    1)
-          end                             as proc_ends_before_col,
-          refs.line                       as ref_line,         -- decl_line
-          refs.col                        as ref_col,          -- decl_col
+          end as proc_ends_before_col,
+          refs.line as ref_line,         -- decl_line
+          refs.col as ref_col,          -- decl_col
           tree.origin_con_id
      from tree_plus tree,
           dba_identifiers refs,
           src
     where refs.signature (+) = tree.signature
-      and refs.usage (+)     = 'DECLARATION'
-      and src.owner (+)      = tree.owner
-      and src.type (+)       = tree.object_type
-      and src.name (+)       = tree.object_name
-      and src.line (+)       = tree.line;
+      and refs.usage (+) = 'DECLARATION'
+      and src.owner (+) = tree.owner
+      and src.type (+) = tree.object_type
+      and src.name (+) = tree.object_name
+      and src.line (+) = tree.line;
