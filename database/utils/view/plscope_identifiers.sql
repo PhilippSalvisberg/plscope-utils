@@ -436,7 +436,8 @@ create or replace view plscope_identifiers as
           --tree.is_new_proc,             --uncomment if needed for debugging
           case
              when tree.is_new_proc = 'YES' then
-                nvl(first_value(
+                coalesce(
+                   first_value(
                       case
                          when tree.is_new_proc = 'YES'
                             or tree.usage_context_id = 1
@@ -450,7 +451,8 @@ create or replace view plscope_identifiers as
                    ),
                    max(tree.line) over (
                          partition by tree.owner, tree.object_type, tree.object_name
-                   ) + 1)
+                   ) + 1
+                )
           end as proc_ends_before_line,
           case
              when tree.is_new_proc = 'YES' then
