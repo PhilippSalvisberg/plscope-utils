@@ -341,8 +341,8 @@ create or replace view plscope_identifiers as
             and tree.object_name = ids.object_name
             and tree.usage_id = ids.usage_context_id
       ),
-      tree_plus as (                                                    --@formatter:off
-         select tree.*,
+      tree_plus as (
+         select tree.*,                                                 -- @formatter:off
                 case
                    when tree.usage = 'SQL_ID' then
                       tree.type || ' statement (sql_id: ' || tree.name || ')'
@@ -350,27 +350,30 @@ create or replace view plscope_identifiers as
                       tree.type || ' statement'
                    else
                       tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
-                end  as name_usage,
+                end as name_usage,                                      -- @formatter:on
                 case
                    when type in ('PROCEDURE', 'FUNCTION')
                       and usage = 'DEFINITION'
-                      and nvl( lag( procedure_signature,
-                                    case is_def_child_of_decl
-                                       when 'YES' then 
-                                          2
-                                       else
-                                          1
-                                    end
-                               ) over (
-                                  partition by tree.owner, tree.object_type, tree.object_name
-                                  order by usage_id asc
-                               ),
-                               '----' ) <> procedure_signature
+                      and nvl(
+                         lag(
+                            procedure_signature,
+                            case is_def_child_of_decl
+                               when 'YES' then
+                                  2
+                               else
+                                  1
+                            end
+                         ) over (
+                            partition by tree.owner, tree.object_type, tree.object_name
+                            order by usage_id asc
+                         ),
+                         '----'
+                      ) != procedure_signature
                    then
                       'YES'
-                end  as is_new_proc
-           from tree                                                       
-      )                                                                 --@formatter:on
+                end as is_new_proc
+           from tree
+      )
    select tree.owner,
           tree.object_type,
           tree.object_name,
