@@ -126,7 +126,7 @@ create or replace package body test_dd_util is
       -- fully qualified
       l_input  := obj_type(user, 'VIEW', 'PLSCOPE_IDENTIFIERS');
       l_actual := dd_util.get_view_source(l_input);
-      ut.expect(l_actual).to_match('^(WITH)(.+)$', 'n');
+      ut.expect(l_actual).to_match('^(WITH)(.+)$', 'ni');
       -- not fully qualified
       l_input  := obj_type(null, 'VIEW', 'PLSCOPE_IDENTIFIERS');
       l_actual := dd_util.get_view_source(l_input);
