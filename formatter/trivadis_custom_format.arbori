@@ -1958,11 +1958,6 @@ r3_commands:
         if (indent.indexOf("\n") == -1) {
             struct.putNewline(node.from, theLineSeparator);
             logger.fine(struct.getClass(), "r3_commands: add line break at " + node.from + ".");
-        } else {
-            // remove existing indentation; enforce conformity in these cases
-            var newIndent = getLeadingNewLines(node.from);
-            struct.putNewline(node.from, newIndent);
-            logger.fine(struct.getClass(), "r3_commands: remove indentation at " + node.from + ".");
         }
     }
 }
@@ -2811,6 +2806,7 @@ r2_common:
     | [node) 'RETURN' & [node^) subprg_spec
     | [node-1) 'RETURN' & [node^) stmt
     | [node) plsql_declarations & ([node^) with_clause | [node^) with_clause___0)
+    | [node) colmapped_query_name___0
 ;
 
 r2_flowcontrol_condition:
@@ -2947,6 +2943,7 @@ r2_decrement_left_margin:
                 | [node^) XML_attributes_clause
                 | [node^^) analytic_function
                 | [node^) external_parameter_list
+                | [node^) colmapped_query_name___0
             )
     | [node) 'XMLTABLE' & [node^) xmltable
     | [node) 'JSON_TABLE' & [node^) json_table
