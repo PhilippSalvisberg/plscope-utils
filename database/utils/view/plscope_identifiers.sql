@@ -393,7 +393,7 @@ create or replace view plscope_identifiers as
              else
                 tree.usage
           end as usage,
-          refs.owner as ref_owner,           -- decl_owner
+          refs.owner as ref_owner,                 -- decl_owner
           refs.object_type as ref_object_type,     -- decl_object_type
           refs.object_name as ref_object_name,     -- decl_object_name
           regexp_replace(src.text, chr(10) || '+$', null) as text,  -- remove trailing new line character
@@ -469,7 +469,7 @@ create or replace view plscope_identifiers as
                    1)
           end as proc_ends_before_col,
           refs.line as ref_line,         -- decl_line
-          refs.col as ref_col,          -- decl_col
+          refs.col as ref_col,           -- decl_col
           tree.origin_con_id
      from tree_plus tree
      left join dba_identifiers refs
