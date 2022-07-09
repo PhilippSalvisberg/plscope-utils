@@ -27,8 +27,9 @@ create or replace view plscope_identifiers as
           where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
             and type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+            and origin_con_id = sys_context('USERENV', 'CON_ID')
       ),
-      prep_ids as (
+      pls_ids as (
          select owner,
                 name,
                 signature,
@@ -42,23 +43,57 @@ create or replace view plscope_identifiers as
                 usage_context_id,
                 origin_con_id
            from dba_identifiers
-         union all
+          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
+            and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+            and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+            and origin_con_id = sys_context('USERENV', 'CON_ID')
+      ),
+      sql_ids as (
          select owner,
-                ':' || nvl(sql_id, type) as name,  -- intermediate statement marker colon
+                nvl(sql_id, type)  as name,
                 signature,
                 type,
                 object_name,
                 object_type,
-                'EXECUTE' as usage, -- new, artificial usage
+                nvl2(sql_id, 'SQL_ID', 'SQL_STMT') as usage, -- new, artificial usage
                 usage_id,
                 line,
                 col,
                 usage_context_id,
                 origin_con_id
            from dba_statements
+          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
+            and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+            and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+            and origin_con_id = sys_context('USERENV', 'CON_ID')
       ),
       fids as (
-         select owner,
+         select 'NO'                               as is_sql_stmt,
+                a.owner,
+                a.name,
+                a.signature,
+                a.type,
+                a.object_name,
+                a.object_type,
+                a.usage,
+                a.usage_id,
+                a.line,
+                a.col,
+                a.usage_context_id,
+                nvl2(b.signature, 'PUBLIC', 
+                     cast(null as varchar2(7)))    as procedure_scope,
+                a.origin_con_id
+           from pls_ids a,
+                dba_identifiers b
+          where b.owner (+)         = a.owner
+            and b.object_type (+)   = 'PACKAGE'
+            and b.object_name (+)   = a.object_name
+            and b.usage (+)         = 'DECLARATION'
+            and b.signature (+)     = a.signature
+            and b.origin_con_id (+) = a.origin_con_id
+         union all
+         select 'YES'                              as is_sql_stmt,
+                owner,
                 name,
                 signature,
                 type,
@@ -69,14 +104,13 @@ create or replace view plscope_identifiers as
                 line,
                 col,
                 usage_context_id,
+                null                               as procedure_scope,
                 origin_con_id
-           from prep_ids
-          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
-            and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
-            and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+           from sql_ids
       ),
       base_ids as (
-         select fids.owner,
+         select fids.is_sql_stmt,
+                fids.owner,
                 fids.name,
                 fids.signature,
                 fids.type,
@@ -85,7 +119,7 @@ create or replace view plscope_identifiers as
                 fids.usage,
                 fids.usage_id,
                 case
-                   when fk.usage_id is not null
+                   when parent.usage_id is not null
                       or fids.usage_context_id = 0
                    then
                       'YES'
@@ -95,16 +129,18 @@ create or replace view plscope_identifiers as
                 fids.line,
                 fids.col,
                 fids.usage_context_id,
+                fids.procedure_scope,
                 fids.origin_con_id
-           from fids
-           left join fids fk
-             on fk.owner = fids.owner
-            and fk.object_type = fids.object_type
-            and fk.object_name = fids.object_name
-            and fk.usage_id = fids.usage_context_id
+           from fids,
+                fids parent
+          where parent.owner (+)       = fids.owner
+            and parent.object_type (+) = fids.object_type
+            and parent.object_name (+) = fids.object_name
+            and parent.usage_id (+)    = fids.usage_context_id
       ),
       ids as (
-         select owner,
+         select is_sql_stmt,
+                owner,
                 name,
                 signature,
                 type,
@@ -126,121 +162,251 @@ create or replace view plscope_identifiers as
                          order by line, col
                          rows between unbounded preceding and 1 preceding
                       )
-                end as usage_context_id, -- fix broken hierarchies
+                end  as usage_context_id,        -- fix broken hierarchies
+                case
+                   when sane_fk = 'NO' then
+                      cast('YES' as varchar2(3))
+                end  as is_fixed_context_id,     -- indicator of fixed hierarchies
+                procedure_scope,
                 origin_con_id
            from base_ids
       ),
-      tree as (
-         select ids.owner,
-                ids.object_type,
-                ids.object_name,
-                ids.line,
-                ids.col,
-                ids.name,
-                replace(sys_connect_by_path(ids.name, '|'), '|', '/') as name_path,
-                level as path_len,
-                ids.type,
-                ids.usage,
-                ids.signature,
-                ids.usage_id,
-                ids.usage_context_id,
-                ids.origin_con_id
+      tree (
+         owner,
+         object_type,
+         object_name,
+         line,
+         col,
+         procedure_name,
+         procedure_scope,
+         name,
+         name_path,
+         path_len,
+         type,
+         usage,
+         signature,
+         usage_id,
+         usage_context_id,
+         is_fixed_context_id,
+         procedure_signature,
+         is_sql_stmt,
+         parent_statement_type,
+         parent_statement_signature,
+         parent_statement_path_len,
+         is_def_child_of_decl,
+         origin_con_id
+      ) as (
+         select owner,
+                object_type,
+                object_name,
+                line,
+                col,
+                case
+                   when object_type in ('PROCEDURE', 'FUNCTION') then
+                      name
+                end                          as procedure_name,
+                case
+                   when object_type in ('PROCEDURE', 'FUNCTION') then
+                      cast('PUBLIC' as varchar2(7))
+                end                          as procedure_scope,
+                name,
+                '/' || name                  as name_path,
+                1                            as path_len,
+                type,
+                usage,
+                signature,
+                usage_id,
+                usage_context_id,
+                is_fixed_context_id,
+                case
+                   when object_type in ('PROCEDURE', 'FUNCTION') then
+                      signature
+                end                          as procedure_signature,
+                is_sql_stmt,
+                cast(null as varchar2(18))   as parent_statement_type,
+                cast(null as varchar2(32))   as parent_statement_signature,
+                cast(null as number)         as parent_statement_path_len,
+                cast(null as varchar2(3))    as is_def_child_of_decl,
+                origin_con_id
            from ids
-          start with ids.usage_context_id = 0
-        connect by prior ids.usage_id = ids.usage_context_id
-            and prior ids.owner = ids.owner
-            and prior ids.object_type = ids.object_type
-            and prior ids.object_name = ids.object_name
-      )
-   select /*+use_hash(tree) use_hash(refs) */
-          tree.owner,
+          where usage_context_id = 0  -- top-level identifiers
+         union all
+         select b.owner,
+                b.object_type,
+                b.object_name,
+                b.line,
+                b.col,
+                case
+                   when a.procedure_name is not null then
+                      a.procedure_name
+                   when b.object_type in ('PACKAGE', 'PACKAGE BODY')
+                      and b.type in ('FUNCTION', 'PROCEDURE')
+                      and b.usage in ('DEFINITION', 'DECLARATION')
+                      and b.usage_context_id = 1
+                   then
+                      b.name
+                end                             as procedure_name,
+                case
+                   when a.procedure_scope is not null then
+                      a.procedure_scope
+                   when b.object_type = 'PACKAGE'
+                      and b.type in ('FUNCTION', 'PROCEDURE')
+                      and b.usage = 'DECLARATION'
+                      and b.usage_context_id = 1
+                   then
+                      'PUBLIC'
+                   when b.object_type = 'PACKAGE BODY'
+                      and b.type in ('FUNCTION', 'PROCEDURE')
+                      and b.usage in ('DEFINITION', 'DECLARATION')
+                      and b.usage_context_id = 1
+                   then
+                      decode(b.procedure_scope,
+                           'PUBLIC', 'PUBLIC',
+                           'PRIVATE')
+                end                             as procedure_scope,
+                b.name,
+                case
+                   when lengthb(a.name_path) + lengthb('/') + lengthb(b.name) <= 4000 then
+                      a.name_path || '/' || b.name
+                   else
+                      -- prevent name_path from overflowing: keep the first 3 elements, then
+                      -- remove enough elements to accomodate "..." + "/" + the tail end
+                      regexp_substr(a.name_path, '^(/([^/]+/){3})')
+                            || '...'
+                            || regexp_replace(
+                                  substr(a.name_path, instr(a.name_path, '/', 1, 4) + 1
+                                     + lengthb('.../') + lengthb(b.name)),
+                                     '^[^/]*')
+                            || '/' || b.name
+                end                             as name_path,
+                a.path_len + 1                  as path_len,
+                b.type,
+                b.usage,
+                b.signature,
+                b.usage_id,
+                b.usage_context_id,
+                b.is_fixed_context_id,
+                case
+                   when a.procedure_signature is not null then
+                      a.procedure_signature
+                   when b.object_type in ('PACKAGE', 'PACKAGE BODY')
+                      and b.type in ('FUNCTION', 'PROCEDURE')
+                      and b.usage in ('DEFINITION', 'DECLARATION')
+                      and b.usage_context_id = 1
+                   then
+                      b.signature
+                end                             as procedure_signature,
+                b.is_sql_stmt,
+                case
+                   when a.is_sql_stmt = 'YES' then
+                      a.type
+                   else
+                      a.parent_statement_type
+                end                             as parent_statement_type,
+                case
+                   when a.is_sql_stmt = 'YES' then
+                      a.signature
+                   else
+                      a.parent_statement_signature
+                end                             as parent_statement_signature,
+                case
+                   when a.is_sql_stmt = 'YES' then
+                      a.path_len
+                   else
+                      a.parent_statement_path_len
+                end                             as parent_statement_path_len,
+                case
+                   when b.type in ('PROCEDURE', 'FUNCTION')
+                      and b.usage = 'DEFINITION'
+                   then
+                      case
+                         when a.usage = 'DECLARATION'
+                            and b.signature = a.signature
+                         then
+                            'YES'
+                         else
+                            'NO'
+                      end
+                end                             as is_def_child_of_decl,
+                b.origin_con_id
+           from tree a,
+                ids b
+          where a.owner       = b.owner
+            and a.object_type = b.object_type
+            and a.object_name = b.object_name
+            and a.usage_id    = b.usage_context_id
+      ),
+      tree_plus as (                                                    --@formatter:off
+         select tree.*,
+                case
+                   when tree.usage = 'SQL_ID' then
+                      tree.type || ' statement (sql_id: ' || tree.name || ')'
+                   when tree.usage = 'SQL_STMT' then
+                      tree.type || ' statement'
+                   else
+                      tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
+                end  as name_usage,
+                case
+                   when type in ('PROCEDURE', 'FUNCTION')
+                      and usage = 'DEFINITION'
+                      and nvl( lag( procedure_signature,
+                                    decode(is_def_child_of_decl, 'YES', 2, 'NO', 1)
+                               ) over (
+                                  partition by tree.owner, tree.object_type, tree.object_name
+                                  order by usage_id asc
+                               ),
+                               '----' ) <> procedure_signature
+                   then
+                      'YES'
+                end  as is_new_proc
+           from tree                                                       
+      )                                                                 --@formatter:on
+   select tree.owner,
           tree.object_type,
           tree.object_name,
           tree.line,
           tree.col,
-          last_value (
+          tree.procedure_name,
+          tree.procedure_scope,
+          cast(
+             -- left indent name_usage according to path_len, wrapping to the left
+             -- if necessary so as not to exceed a limit of 250 characters
              case
-                when tree.type in ('PROCEDURE', 'FUNCTION')
-                   and tree.path_len = 2
-                then
-                   tree.name
+                when mod(2 * (tree.path_len - 1), 250) 
+                      + length(tree.name_usage) <= 250 then
+                   lpad(' ', mod(2 * (tree.path_len - 1), 250)) || tree.name_usage
+                else
+                   substr(tree.name_usage, 250 - mod(2 * (tree.path_len - 1), 250)
+                         - length(tree.name_usage))
+                   || lpad(' ', 250 - length(tree.name_usage))
+                   || substr(tree.name_usage, 1, 250 - mod(2 * (tree.path_len - 1), 250))
              end
-          ) ignore nulls over (
-             partition by tree.owner, tree.object_name, tree.object_type
-             order by tree.line, tree.col, tree.path_len
-          ) as procedure_name,
-          last_value (
-             case
-                when tree.object_type = 'PACKAGE BODY'
-                   and tree.type in ('PROCEDURE', 'FUNCTION')
-                   and tree.path_len = 2
-                then
-                   case tree.usage
-                      when 'DECLARATION' then
-                         'PRIVATE'
-                      when 'DEFINITION' then
-                         'PUBLIC'
-                   end
-             end
-          ) ignore nulls over (
-             partition by tree.owner, tree.object_name, tree.object_type
-             order by tree.line, tree.col, tree.path_len
-          ) as procedure_scope,
-          replace(tree.name, ':', null) as name, -- remove intermediate statement marker
-          replace(tree.name_path, ':', null) as name_path, -- remove intermediate statement marker
+             as varchar2(250)
+          )                               as name_usage,
+          tree.name,
+          tree.name_path,
           tree.path_len,
           tree.type,
-          tree.usage,
-          refs.owner as ref_owner,
-          refs.object_type as ref_object_type,
-          refs.object_name as ref_object_name,
-          regexp_replace(src.text, chr(10) || '+$', null) as text, -- remove trailing new line character
           case
-             when tree.name_path like '%:%'
-                and tree.usage != 'EXECUTE'
-             then
-                -- ensure that this is really a child of a statement
-                last_value (
-                   case
-                      when tree.usage = 'EXECUTE' then
-                         tree.type
-                   end
-                ) ignore nulls over (
-                   partition by tree.owner, tree.object_name, tree.object_type
-                   order by tree.line, tree.col, tree.path_len
-                )
-          end as parent_statement_type,
+             -- make SQL_ID and SQL_STMT pseudo-usages appear as EXECUTE
+             when tree.usage in ('SQL_ID', 'SQL_STMT') then
+                'EXECUTE'
+             else
+                 tree.usage
+          end                             as usage,
+          refs.owner                      as ref_owner,           -- decl_owner
+          refs.object_type                as ref_object_type,     -- decl_object_type
+          refs.object_name                as ref_object_name,     -- decl_object_name
+          regexp_replace(src.text, chr(10) 
+               || '+$', null)             as text,  -- remove trailing new line character
+          tree.parent_statement_type,
+          tree.parent_statement_signature,
+          tree.parent_statement_path_len,
           case
-             when tree.name_path like '%:%'
-                and tree.usage != 'EXECUTE'
-             then
-                -- ensure that this is really a child of a statement
-                last_value (
-                   case
-                      when tree.usage = 'EXECUTE' then
-                         tree.signature
-                   end
-                ) ignore nulls over (
-                   partition by tree.owner, tree.object_name, tree.object_type
-                   order by tree.line, tree.col, tree.path_len
-                )
-          end as parent_statement_signature,
-          case
-             when tree.name_path like '%:%'
-                and tree.usage != 'EXECUTE'
-             then
-                -- ensure that this is really a child of a statement
-                last_value (
-                   case
-                      when tree.usage = 'EXECUTE' then
-                         tree.path_len
-                   end
-                ) ignore nulls over (
-                   partition by tree.owner, tree.object_name, tree.object_type
-                   order by tree.line, tree.col, tree.path_len
-                )
-          end as parent_statement_path_len,
-          case
+             -- wrong result, if used in statements which do not register usage, 
+             -- such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE.
+             -- Bug 26351814.
+             --
              when tree.object_type in ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
                 and tree.usage = 'DECLARATION'
                 and tree.type not in ('LABEL')
@@ -262,17 +428,57 @@ create or replace view plscope_identifiers as
                    else
                       'YES'
                 end
-          end as is_used, -- wrong result, if used in statements which do not register usage, such as a variable for dynamic_sql_stmt in EXECUTE IMMEDIATE. Bug 26351814.
+          end                             as is_used,
           tree.signature,
           tree.usage_id,
           tree.usage_context_id,
+          tree.is_fixed_context_id,
+          tree.procedure_signature,
+          --tree.is_def_child_of_decl,    --uncomment if needed for debugging
+          --tree.is_new_proc,             --uncomment if needed for debugging
+          case
+             when tree.is_new_proc = 'YES' then
+                nvl(first_value(
+                      case
+                         when tree.is_new_proc = 'YES'
+                            or tree.usage_context_id = 1
+                         then
+                            tree.line
+                      end
+                   ) ignore nulls over (
+                      partition by tree.owner, tree.object_type, tree.object_name
+                      order by tree.usage_id
+                      rows between 1 following and unbounded following
+                   ),
+                   max(tree.line) over (
+                         partition by tree.owner, tree.object_type, tree.object_name
+                   ) + 1)
+          end                             as proc_ends_before_line,
+          case
+             when tree.is_new_proc = 'YES' then
+                nvl(first_value(
+                      case
+                         when tree.is_new_proc       = 'YES'
+                            or tree.usage_context_id = 1
+                         then
+                            tree.col
+                      end
+                   ) ignore nulls over (
+                      partition by tree.owner, tree.object_type, tree.object_name
+                      order by tree.usage_id
+                      rows between 1 following and unbounded following
+                   ),
+                   1)
+          end                             as proc_ends_before_col,
+          refs.line                       as ref_line,         -- decl_line
+          refs.col                        as ref_col,          -- decl_col
           tree.origin_con_id
-     from tree
-     left join dba_identifiers refs
-       on refs.signature = tree.signature
-      and refs.usage = 'DECLARATION'
-     left join src
-       on src.owner = tree.owner
-      and src.type = tree.object_type
-      and src.name = tree.object_name
-      and src.line = tree.line;
+     from tree_plus tree,
+          dba_identifiers refs,
+          src
+    where refs.signature (+) = tree.signature
+      and refs.usage (+)     = 'DECLARATION'
+      and src.owner (+)      = tree.owner
+      and src.type (+)       = tree.object_type
+      and src.name (+)       = tree.object_name
+      and src.line (+)       = tree.line;
