@@ -259,7 +259,12 @@ create or replace view plscope_identifiers as
                       and ids.usage in ('DEFINITION', 'DECLARATION')
                       and ids.usage_context_id = 1
                    then
-                      decode(ids.procedure_scope, 'PUBLIC', 'PUBLIC', 'PRIVATE')
+                      case ids.procedure_scope
+                         when 'PUBLIC' then
+                            'PUBLIC'
+                         else
+                            'PRIVATE'
+                      end
                 end as procedure_scope,
                 ids.name,
                 case
@@ -350,7 +355,12 @@ create or replace view plscope_identifiers as
                    when type in ('PROCEDURE', 'FUNCTION')
                       and usage = 'DEFINITION'
                       and nvl( lag( procedure_signature,
-                                    decode(is_def_child_of_decl, 'YES', 2, 'NO', 1)
+                                    case is_def_child_of_decl
+                                       when 'YES' then 
+                                          2
+                                       else
+                                          1
+                                    end
                                ) over (
                                   partition by tree.owner, tree.object_type, tree.object_name
                                   order by usage_id asc
