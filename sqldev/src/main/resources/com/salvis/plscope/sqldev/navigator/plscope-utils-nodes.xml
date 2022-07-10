@@ -133,7 +133,7 @@ select object_name as name,
 		<node>
 			<icon RSKEY="PROCEDURE_FOLDER_ICON" />
 			<childType id="plscope-utils-procedure" nodeType="plscope-utils-procedure">
-				<icon RSKEY="OracleIcons.PROCEDURE" />
+				<icon RSKEY="PROCEDURE_ICON" />
 				<queries>
 					<query minversion="11.1" sharedId="plscope-declarations" />
 				</queries>
@@ -228,7 +228,7 @@ select i.object_name as name,
 	</objectType>
 	<objectType connType="Oracle" id="plscope-utils-procedure">
 		<node>
-			<icon RSKEY="OracleIcons.PROCEDURE" />
+			<icon RSKEY="PROCEDURE_ICON" />
 		</node>
 	</objectType>
 	<objectType connType="Oracle" id="plscope-utils-function">
