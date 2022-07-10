@@ -1,15 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<!-- The Basics -->
 	<groupId>com.salvis</groupId>
 	<artifactId>com.salvis.plscope.sqldev</artifactId>
-	<version>0.6.0</version>
+	<version>0.7.0-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<!-- SQL Developer 4.0 uses JDK 1.7, SQL Developer 4.1, 4.2 use JDK 1.8 -->
+		<!-- SQL Developer 4.0 uses JDK 1.7, SQL Developer 4.1 use JDK 1.8, SQL Developer 22.2.0 JDK 11 -->
 		<jdk.version>1.7</jdk.version>
 		<sqldev.basedir>/Applications/SQLDeveloper4.2.0.app/Contents/Resources/sqldeveloper</sqldev.basedir>
 		<final.name>plscope-utils_for_SQLDev_${project.version}</final.name>
@@ -31,7 +31,7 @@
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<version>3.5.1</version>
+				<version>3.10.1</version>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
 					<source>${jdk.version}</source>
@@ -63,7 +63,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.8</version>
+				<version>3.1.0</version>
 				<executions>
 					<execution>
 						<phase>prepare-package</phase>
@@ -83,7 +83,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>properties-maven-plugin</artifactId>
-				<version>1.0.0</version>
+				<version>1.1.0</version>
 				<executions>
 					<execution>
 						<phase>initialize</phase>
@@ -103,7 +103,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.3.0</version>
 				<executions>
 					<execution>
 						<id>parse-version</id>
@@ -187,8 +187,9 @@
 				</configuration>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.4.1</version>
 				<configuration>
 					<finalName>${final.name}</finalName>
 					<appendAssemblyId>false</appendAssemblyId>
@@ -206,6 +207,11 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.22.2</version>
 			</plugin>
 		</plugins>
 		<pluginManagement>
@@ -239,7 +245,7 @@
 											build-helper-maven-plugin
 										</artifactId>
 										<versionRange>
-											[3.0.0,)
+											[3.3.0,)
 										</versionRange>
 										<goals>
 											<goal>parse-version</goal>
