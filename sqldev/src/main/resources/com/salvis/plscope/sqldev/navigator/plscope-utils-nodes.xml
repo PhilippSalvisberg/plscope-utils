@@ -1,262 +1,267 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Change RESOURCE_FILE to "oracle.dbtools.raptor.navigator.OracleNavigatorResource" when you want to use it as -->
-<!-- "User Defined Extensions". The dedicated resource handler "com.salvis.plscope.sqldev.PlscopeResources" -->
-<!-- is required for the folder label PLSCOPE_LABEL_NAME. -->
 <navigator RESOURCE_FILE="com.salvis.plscope.sqldev.PlscopeResources" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:noNamespaceSchemaLocation="navigator.xsd">
-	<objectType connType="Oracle" id="plscope-utils-root" weight="201">
+	<categoryType connType="Oracle" id="plscope-utils-root" weight="201">
 		<folder>
 			<icon RSKEY="OracleIcons.SEARCH_SOURCEPATH" />
-			<!-- Hard coding labels is not supported. The resource key is shown when -->
-			<!-- "oracle.dbtools.raptor.navigator.OracleNavigatorResource" is configured. -->
-			<label RSKEY="PLSCOPE_LABEL_NAME" />
+			<label RSKEY="PLSCOPE_LABEL" />
+		</folder>
+	</categoryType>
+	<objectType connType="Oracle" id="plscope-utils-package" weight="201.1" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="PACKAGE_FOLDER_ICON" />
+			<label RSKEY="PACKAGE_FOLDER_LABEL" />
 			<queries>
 				<query minversion="11.1">
-					<sql constrained="true"><![CDATA[
-select 'Primary' as name, 'PRIMARY' as value
-  from dual
-union all
-select 'Secondary' as name, 'SECONDARY' as value
-  from dual
+					<sql><![CDATA[
+select object_name
+  from (
+          select object_name
+            from sys.all_identifiers
+           where usage = 'DECLARATION'
+             and usage_context_id = 0
+             and owner = :SCHEMA
+             and object_type = 'PACKAGE'
+       )
 ]]>
 					</sql>
+					<columns>
+						<column filterable="true" sortable="true" id="NAME">
+							<colName>
+								<![CDATA[OBJECT_NAME]]>
+							</colName>
+						</column>
+					</columns>
 				</query>
 			</queries>
 		</folder>
 		<node>
-			<childType id="plscope-utils-package-folder" nodeType="plscope-utils-package-folder">
-				<queries>
-					<query minversion="11.1">
-						<sql><![CDATA[
-select 'Packages' as name, 'PACKAGE' as value from dual where :VALUE = 'PRIMARY'
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-			<childType id="plscope-utils-procedure-folder" nodeType="plscope-utils-procedure-folder">
-				<queries>
-					<query minversion="11.1">
-						<sql><![CDATA[
-select 'Procedures' as name, 'PROCEDURE' as value from dual where :VALUE = 'PRIMARY'
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-			<childType id="plscope-utils-function-folder" nodeType="plscope-utils-function-folder">
-				<queries>
-					<query minversion="11.1">
-						<sql><![CDATA[
-select 'Functions' as name, 'FUNCTION' as value from dual where :VALUE = 'PRIMARY'
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-			<childType id="plscope-utils-trigger-folder" nodeType="plscope-utils-trigger-folder">
-				<queries>
-					<query minversion="11.1">
-						<sql><![CDATA[
-select 'Triggers' as name, 'TRIGGER' as value from dual where :VALUE = 'PRIMARY'
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-			<childType id="plscope-utils-type-folder" nodeType="plscope-utils-type-folder">
-				<queries>
-					<query minversion="11.1">
-						<sql><![CDATA[
-select 'Types' as name, 'TYPE' as value from dual where :VALUE = 'PRIMARY'
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-			<childType id="plscope-utils-synonym-folder" nodeType="plscope-utils-synonym-folder">
-				<queries>
-					<query minversion="11.1">
-						<sql><![CDATA[
-select 'Synonyms' as name, 'SYNONYM' as value from dual where :VALUE = 'PRIMARY'
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-			<childType id="plscope-utils-table-folder" nodeType="plscope-utils-table-folder">
-				<queries>
-					<query minversion="11.1">
-						<sql><![CDATA[
-select 'Tables' as name, 'TABLE' as value from dual where :VALUE = 'SECONDARY'
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-			<childType id="plscope-utils-view-folder" nodeType="plscope-utils-view-folder">
-				<queries>
-					<query minversion="11.1">
-						<sql><![CDATA[
-select 'Views' as name, 'VIEW' as value from dual where :VALUE = 'SECONDARY'
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-		</node>
-	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-package-folder" weight="201.1">
-		<node>
-			<icon RSKEY="PACKAGE_FOLDER_ICON" />
-			<childType id="plscope-utils-package" nodeType="plscope-utils-package">
-				<icon RSKEY="OracleIcons.PACKAGE" />
-				<queries>
-					<query minversion="11.1" id="plscope-declarations">
-						<sql><![CDATA[
-select object_name as name,
-       object_name as value
-  from sys.all_identifiers
- where usage = 'DECLARATION'
-   and usage_context_id = 0
-   and owner = :SCHEMA
-   and object_type = :VALUE
- order by object_name
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-		</node>
-	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-procedure-folder" weight="201.2">
-		<node>
-			<icon RSKEY="PROCEDURE_FOLDER_ICON" />
-			<childType id="plscope-utils-procedure" nodeType="plscope-utils-procedure">
-				<icon RSKEY="PROCEDURE_ICON" />
-				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations" />
-				</queries>
-			</childType>
-		</node>
-	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-function-folder" weight="201.3">
-		<node>
-			<icon RSKEY="FUNCTION_FOLDER_ICON" />
-			<childType id="plscope-utils-function" nodeType="plscope-utils-function">
-				<icon RSKEY="OracleIcons.FUNCTION" />
-				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations" />
-				</queries>
-			</childType>
-		</node>
-	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-trigger-folder" weight="201.4">
-		<node>
-			<icon RSKEY="TRIGGER_FOLDER_ICON" />
-			<childType id="plscope-utils-trigger" nodeType="plscope-utils-trigger">
-				<icon RSKEY="OracleIcons.TRIGGER" />
-				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations" />
-				</queries>
-			</childType>
-		</node>
-	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-type-folder" weight="201.5">
-		<node>
-			<icon RSKEY="TYPE_FOLDER_ICON" />
-			<childType id="plscope-utils-type" nodeType="plscope-utils-type">
-				<icon RSKEY="OracleIcons.DOMAIN" />
-				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations" />
-				</queries>
-			</childType>
-		</node>
-	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-synonym-folder" weight="201.6">
-		<node>
-			<icon RSKEY="SYNONYM_FOLDER_ICON" />
-			<childType id="plscope-utils-synonym" nodeType="plscope-utils-synonym">
-				<icon RSKEY="OracleIcons.SYNONYM" />
-				<queries>
-					<query>
-						<sql><![CDATA[
-select i.object_name as name,
-       i.object_name as value
-  from sys.all_identifiers i
-  join sys.all_synonyms s
-    on i.owner = s.owner
-   and i.object_name = s.synonym_name
- where i.usage = 'DECLARATION'
-   and i.usage_context_id = 0
-   and (i.owner = :SCHEMA or s.table_owner = :SCHEMA)
-   and i.object_type = :VALUE
- order by object_name
-]]>
-						</sql>
-					</query>
-				</queries>
-			</childType>
-		</node>
-	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-table-folder" weight="201.1">
-		<node>
-			<icon RSKEY="TABLE_FOLDER_ICON" />
-			<childType id="plscope-utils-table" nodeType="plscope-utils-table">
-				<icon RSKEY="OracleIcons.TABLE" />
-				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations" />
-				</queries>
-			</childType>
-		</node>
-	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-view-folder" weight="201.2">
-		<node>
-			<icon RSKEY="VIEW_FOLDER_ICON" />
-			<childType id="plscope-utils-view" nodeType="plscope-utils-view">
-				<icon RSKEY="OracleIcons.VIEW" />
-				<queries>
-					<query minversion="11.1" sharedId="plscope-declarations" />
-				</queries>
-			</childType>
-		</node>
-	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-package">
-		<node>
 			<icon RSKEY="OracleIcons.PACKAGE" />
 		</node>
 	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-procedure">
+	<objectType connType="Oracle" id="plscope-utils-procedure" weight="201.2" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="PROCEDURE_FOLDER_ICON" />
+			<label RSKEY="PROCEDURE_FOLDER_LABEL" />
+			<queries>
+				<query minversion="11.1">
+					<sql><![CDATA[
+select object_name
+  from (
+          select object_name
+            from sys.all_identifiers
+           where usage = 'DECLARATION'
+             and usage_context_id = 0
+             and owner = :SCHEMA
+             and object_type = 'PROCEDURE'
+       )
+]]>
+					</sql>
+					<columns>
+						<column filterable="true" sortable="true" id="NAME">
+							<colName>
+								<![CDATA[OBJECT_NAME]]>
+							</colName>
+						</column>
+					</columns>
+				</query>
+			</queries>
+		</folder>
 		<node>
 			<icon RSKEY="PROCEDURE_ICON" />
 		</node>
 	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-function">
+	<objectType connType="Oracle" id="plscope-utils-function" weight="201.3" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="FUNCTION_FOLDER_ICON" />
+			<label RSKEY="FUNCTION_FOLDER_LABEL" />
+			<queries>
+				<query minversion="11.1">
+					<sql><![CDATA[
+select object_name
+  from (
+          select object_name
+            from sys.all_identifiers
+           where usage = 'DECLARATION'
+             and usage_context_id = 0
+             and owner = :SCHEMA
+             and object_type = 'FUNCTION'
+       )
+]]>
+					</sql>
+					<columns>
+						<column filterable="true" sortable="true" id="NAME">
+							<colName>
+								<![CDATA[OBJECT_NAME]]>
+							</colName>
+						</column>
+					</columns>
+				</query>
+			</queries>
+		</folder>
 		<node>
 			<icon RSKEY="OracleIcons.FUNCTION" />
 		</node>
 	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-trigger">
+	<objectType connType="Oracle" id="plscope-utils-trigger" weight="201.4" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="TRIGGER_FOLDER_ICON" />
+			<label RSKEY="TRIGGER_FOLDER_LABEL" />
+			<queries>
+				<query minversion="11.1">
+					<sql><![CDATA[
+select object_name
+  from (
+          select object_name
+            from sys.all_identifiers
+           where usage = 'DECLARATION'
+             and usage_context_id = 0
+             and owner = :SCHEMA
+             and object_type = 'TRIGGER'
+       )
+]]>
+					</sql>
+					<columns>
+						<column filterable="true" sortable="true" id="NAME">
+							<colName>
+								<![CDATA[OBJECT_NAME]]>
+							</colName>
+						</column>
+					</columns>
+				</query>
+			</queries>
+		</folder>
 		<node>
 			<icon RSKEY="OracleIcons.TRIGGER" />
 		</node>
 	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-type">
+	<objectType connType="Oracle" id="plscope-utils-type" weight="201.5" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="TYPE_FOLDER_ICON" />
+			<label RSKEY="TYPE_FOLDER_LABEL" />
+			<queries>
+				<query minversion="11.1">
+					<sql><![CDATA[
+select object_name
+  from (
+          select object_name
+            from sys.all_identifiers
+           where usage = 'DECLARATION'
+             and usage_context_id = 0
+             and owner = :SCHEMA
+             and object_type = 'TYPE'
+       )
+]]>
+					</sql>
+					<columns>
+						<column filterable="true" sortable="true" id="NAME">
+							<colName>
+								<![CDATA[OBJECT_NAME]]>
+							</colName>
+						</column>
+					</columns>
+				</query>
+			</queries>
+		</folder>
 		<node>
 			<icon RSKEY="OracleIcons.DOMAIN" />
 		</node>
 	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-synonym">
+	<objectType connType="Oracle" id="plscope-utils-synonym" weight="201.6" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="SYNONYM_FOLDER_ICON" />
+			<label RSKEY="SYNONYM_FOLDER_LABEL" />
+			<queries>
+				<query minversion="11.1">
+					<sql><![CDATA[
+select object_name
+  from (
+          select i.object_name
+            from sys.all_identifiers i
+            join sys.all_synonyms s
+              on i.owner = s.owner
+             and i.object_name = s.synonym_name
+           where i.usage = 'DECLARATION'
+             and i.usage_context_id = 0
+             and (i.owner = :SCHEMA or s.table_owner = :SCHEMA)
+             and i.object_type = 'SYNONYM'
+       )
+]]>
+					</sql>
+					<columns>
+						<column filterable="true" sortable="true" id="NAME">
+							<colName>
+								<![CDATA[OBJECT_NAME]]>
+							</colName>
+						</column>
+					</columns>
+				</query>
+			</queries>
+		</folder>
 		<node>
 			<icon RSKEY="OracleIcons.SYNONYM" />
 		</node>
 	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-table">
+	<objectType connType="Oracle" id="plscope-utils-table" weight="201.7" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="TABLE_FOLDER_ICON" />
+			<label RSKEY="TABLE_FOLDER_LABEL" />
+			<queries>
+				<query minversion="11.1">
+					<sql><![CDATA[
+select object_name
+  from (
+          select object_name
+            from sys.all_identifiers
+           where usage = 'DECLARATION'
+             and usage_context_id = 0
+             and owner = :SCHEMA
+             and object_type = 'TABLE'
+       )
+]]>
+					</sql>
+					<columns>
+						<column filterable="true" sortable="true" id="NAME">
+							<colName>
+								<![CDATA[OBJECT_NAME]]>
+							</colName>
+						</column>
+					</columns>
+				</query>
+			</queries>
+		</folder>
 		<node>
 			<icon RSKEY="OracleIcons.TABLE" />
 		</node>
 	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-view">
+	<objectType connType="Oracle" id="plscope-utils-view" weight="201.8" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="VIEW_FOLDER_ICON" />
+			<label RSKEY="VIEW_FOLDER_LABEL" />
+			<queries>
+				<query minversion="11.1">
+					<sql><![CDATA[
+select object_name
+  from (
+          select object_name
+            from sys.all_identifiers
+           where usage = 'DECLARATION'
+             and usage_context_id = 0
+             and owner = :SCHEMA
+             and object_type = 'VIEW'
+       )
+]]>
+					</sql>
+					<columns>
+						<column filterable="true" sortable="true" id="NAME">
+							<colName>
+								<![CDATA[OBJECT_NAME]]>
+							</colName>
+						</column>
+					</columns>
+				</query>
+			</queries>
+		</folder>
 		<node>
 			<icon RSKEY="OracleIcons.VIEW" />
 		</node>
