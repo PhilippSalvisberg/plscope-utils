@@ -28,7 +28,7 @@ select 'Secondary' as name, 'SECONDARY' as value
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-select 'Packages' as name, 'PACKAGE' as value from dual where :value = 'PRIMARY'
+select 'Packages' as name, 'PACKAGE' as value from dual where :VALUE = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -38,7 +38,7 @@ select 'Packages' as name, 'PACKAGE' as value from dual where :value = 'PRIMARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-select 'Procedures' as name, 'PROCEDURE' as value from dual where :value = 'PRIMARY'
+select 'Procedures' as name, 'PROCEDURE' as value from dual where :VALUE = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -48,7 +48,7 @@ select 'Procedures' as name, 'PROCEDURE' as value from dual where :value = 'PRIM
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-select 'Functions' as name, 'FUNCTION' as value from dual where :value = 'PRIMARY'
+select 'Functions' as name, 'FUNCTION' as value from dual where :VALUE = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -58,7 +58,7 @@ select 'Functions' as name, 'FUNCTION' as value from dual where :value = 'PRIMAR
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-select 'Triggers' as name, 'TRIGGER' as value from dual where :value = 'PRIMARY'
+select 'Triggers' as name, 'TRIGGER' as value from dual where :VALUE = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -68,7 +68,7 @@ select 'Triggers' as name, 'TRIGGER' as value from dual where :value = 'PRIMARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-select 'Types' as name, 'TYPE' as value from dual where :value = 'PRIMARY'
+select 'Types' as name, 'TYPE' as value from dual where :VALUE = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -78,7 +78,7 @@ select 'Types' as name, 'TYPE' as value from dual where :value = 'PRIMARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-select 'Synonyms' as name, 'SYNONYM' as value from dual where :value = 'PRIMARY'
+select 'Synonyms' as name, 'SYNONYM' as value from dual where :VALUE = 'PRIMARY'
 ]]>
 						</sql>
 					</query>
@@ -88,7 +88,7 @@ select 'Synonyms' as name, 'SYNONYM' as value from dual where :value = 'PRIMARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-select 'Tables' as name, 'TABLE' as value from dual where :value = 'SECONDARY'
+select 'Tables' as name, 'TABLE' as value from dual where :VALUE = 'SECONDARY'
 ]]>
 						</sql>
 					</query>
@@ -98,7 +98,7 @@ select 'Tables' as name, 'TABLE' as value from dual where :value = 'SECONDARY'
 				<queries>
 					<query minversion="11.1">
 						<sql><![CDATA[
-select 'Views' as name, 'VIEW' as value from dual where :value = 'SECONDARY'
+select 'Views' as name, 'VIEW' as value from dual where :VALUE = 'SECONDARY'
 ]]>
 						</sql>
 					</query>
@@ -119,8 +119,8 @@ select object_name as name,
   from sys.all_identifiers
  where usage = 'DECLARATION'
    and usage_context_id = 0
-   and owner = :schema
-   and object_type = :value
+   and owner = :SCHEMA
+   and object_type = :VALUE
  order by object_name
 ]]>
 						</sql>
@@ -189,8 +189,8 @@ select i.object_name as name,
    and i.object_name = s.synonym_name
  where i.usage = 'DECLARATION'
    and i.usage_context_id = 0
-   and (i.owner = :schema or s.table_owner = :schema)
-   and i.object_type = :value
+   and (i.owner = :SCHEMA or s.table_owner = :SCHEMA)
+   and i.object_type = :VALUE
  order by object_name
 ]]>
 						</sql>

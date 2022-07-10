@@ -27,8 +27,8 @@ with
              line,
              text
         from sys.all_source
-       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
-         and name = :object_name
+       where type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and name = :OBJECT_NAME
    ),
    prep_ids as (
       select owner,
@@ -70,10 +70,10 @@ with
              col,
              usage_context_id
         from prep_ids
-       where (owner = :object_owner or upper(replace(:object_type, 'plscope-utils-')) = 'SYNONYM')
-         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+       where (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
+         and object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
          ' BODY')
-         and object_name = :object_name
+         and object_name = :OBJECT_NAME
    ),
    base_ids as (
       select fids.owner,
@@ -217,8 +217,8 @@ with
              line,
              text
         from sys.all_source
-       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
-         and name = :object_name
+       where type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and name = :OBJECT_NAME
    ),
    fids as (
       select owner,
@@ -233,10 +233,10 @@ with
              col,
              usage_context_id
         from sys.all_identifiers
-       where (owner = :object_owner or upper(replace(:object_type, 'plscope-utils-')) = 'SYNONYM')
-         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+       where (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
+         and object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
          ' BODY')
-         and object_name = :object_name
+         and object_name = :OBJECT_NAME
    ),
    base_ids as (
       select fids.owner,
@@ -419,9 +419,9 @@ select case
        has_in_binds as "Has binds?",
        full_text as "Text"
   from sys.all_statements
- where owner = :object_owner
-   and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
-   and object_name = :object_name
+ where owner = :OBJECT_OWNER
+   and object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+   and object_name = :OBJECT_NAME
  order by length(object_type), line, col
 ]]>
             </sql>
@@ -448,8 +448,8 @@ with
              line,
              text
         from sys.all_source
-       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
-         and name = :object_name
+       where type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and name = :OBJECT_NAME
    ),
    ids as (
       select /*+ materialize */
@@ -464,10 +464,10 @@ with
              col
         from sys.all_identifiers
        where usage in ('CALL', 'REFERENCE')
-         and (owner = :object_owner or upper(replace(:object_type, 'plscope-utils-')) = 'SYNONYM')
-         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+         and (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
+         and object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
          ' BODY')
-         and object_name = :object_name
+         and object_name = :OBJECT_NAME
    )
 select case
           when ids.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
@@ -527,10 +527,10 @@ select case
    and o.object_name = s.table_name
  where refs.usage = 'DECLARATION'
    and not (
-          refs.owner = :object_owner
-          and refs.object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+          refs.owner = :OBJECT_OWNER
+          and refs.object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
           ' BODY')
-          and refs.object_name = :object_name
+          and refs.object_name = :OBJECT_NAME
        )
    and not (
           refs.owner = 'SYS'
@@ -563,17 +563,17 @@ with
              line,
              text
         from sys.all_source
-       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
-         and name = :object_name
+       where type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and name = :OBJECT_NAME
    ),
    refs as (
       select /*+materialize */
              signature
         from sys.all_identifiers refs
        where usage = 'DECLARATION'
-         and (owner = :object_owner or upper(replace(:object_type, 'plscope-utils-')) = 'SYNONYM')
-         and object_type = upper(replace(:object_type, 'plscope-utils-'))
-         and object_name = :object_name
+         and (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
+         and object_type = upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+         and object_name = :OBJECT_NAME
    )
 select case
           when ids.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
@@ -611,10 +611,10 @@ select case
    and src.name = ids.object_name
    and src.line = ids.line
  where not (
-          ids.owner = :object_owner
-          and ids.object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+          ids.owner = :OBJECT_OWNER
+          and ids.object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
           ' BODY')
-          and ids.object_name = :object_name
+          and ids.object_name = :OBJECT_NAME
        )
  order by ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
 ]]>
@@ -642,8 +642,8 @@ with
              line,
              text
         from sys.all_source
-       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
-         and name = :object_name
+       where type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and name = :OBJECT_NAME
    ),
    prep_ids as (
       select owner,
@@ -685,10 +685,10 @@ with
              col,
              usage_context_id
         from prep_ids
-       where owner = :object_owner
-         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+       where owner = :OBJECT_OWNER
+         and object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
          ' BODY')
-         and object_name = :object_name
+         and object_name = :OBJECT_NAME
    ),
    base_ids as (
       select fids.owner,
@@ -946,8 +946,8 @@ with
              line,
              text
         from sys.all_source
-       where type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) || ' BODY')
-         and name = :object_name
+       where type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and name = :OBJECT_NAME
    ),
    prep_ids as (
       select owner,
@@ -989,10 +989,10 @@ with
              col,
              usage_context_id
         from prep_ids
-       where owner = :object_owner
-         and object_type in (upper(replace(:object_type, 'plscope-utils-')), upper(replace(:object_type, 'plscope-utils-')) ||
+       where owner = :OBJECT_OWNER
+         and object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
          ' BODY')
-         and object_name = :object_name
+         and object_name = :OBJECT_NAME
    ),
    base_ids as (
       select fids.owner,
