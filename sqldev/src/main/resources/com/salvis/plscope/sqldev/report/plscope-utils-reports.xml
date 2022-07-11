@@ -31,7 +31,7 @@ with
              end as is_duplicate,
              full_text
         from sys.all_statements
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    )
 select case
           when object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
@@ -113,7 +113,7 @@ with
              line,
              text
         from sys.all_source
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    prep_ids as (
       select owner,
@@ -155,7 +155,7 @@ with
              col,
              usage_context_id
         from prep_ids
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    base_ids as (
       select fids.owner,
@@ -385,7 +385,7 @@ with
              line,
              text
         from sys.all_source
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    dep as (
       select owner as owner,
@@ -460,7 +460,7 @@ with
              col,
              usage_context_id
         from prep_ids
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    base_ids as (
       select fids.owner,
@@ -759,7 +759,7 @@ with
              line,
              text
         from sys.all_source
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    prep_ids as (
       select owner,
@@ -801,7 +801,7 @@ with
              col,
              usage_context_id
         from prep_ids
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    base_ids as (
       select fids.owner,
@@ -993,7 +993,7 @@ with
              line,
              text
         from sys.all_source
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    fids as (
       select owner,
@@ -1008,7 +1008,7 @@ with
              col,
              usage_context_id
         from sys.all_identifiers
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    base_ids as (
       select fids.owner,
@@ -1228,7 +1228,7 @@ with
              line,
              text
         from sys.all_source
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    ids as (
       select owner,
@@ -1242,7 +1242,7 @@ with
              col,
              usage_context_id
         from sys.all_identifiers
-       where owner like nvl(:object_owner, user)
+       where owner like nvl(:OBJECT_OWNER, user)
    ),
    tree as (
       select ids.owner,
@@ -1335,11 +1335,11 @@ with
                    and regexp_like(type_path, '/PACKAGE/VARIABLE/[A-Z0-9_ ]*$')
                 then
                    case
-                      when regexp_like(parent_name, nvl(:global_variable_regex, '^g_.*'), 'i') then
+                      when regexp_like(parent_name, nvl(:GLOBAL_VARIABLE_REGEX, '^g_.*'), 'i') then
                          'OK'
                       else
                          'Global variable does not match regex "'
-                         || nvl(:global_variable_regex, '^g_.*')
+                         || nvl(:GLOBAL_VARIABLE_REGEX, '^g_.*')
                          || '".'
                    end 
                    -- local record variables
@@ -1351,11 +1351,11 @@ with
                    and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                 then
                    case
-                      when regexp_like(parent_name, nvl(:local_record_variable_regex, '^r_.*'), 'i') then
+                      when regexp_like(parent_name, nvl(:LOCAL_RECORD_VARIABLE_REGEX, '^r_.*'), 'i') then
                          'OK'
                       else
                          'Local record variable does not match regex "'
-                         || nvl(:local_record_variable_regex, '^r_.*')
+                         || nvl(:LOCAL_RECORD_VARIABLE_REGEX, '^r_.*')
                          || '".'
                    end
                    -- local array/table variables
@@ -1367,11 +1367,11 @@ with
                    and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                 then
                    case
-                      when regexp_like(parent_name, nvl(:local_array_variable_regex, '^t_.*'), 'i') then
+                      when regexp_like(parent_name, nvl(:LOCAL_ARRAY_VARIABLE_REGEX, '^t_.*'), 'i') then
                          'OK'
                       else
                          'Local array/table variable does not match regex "'
-                         || nvl(:local_array_variable_regex, '^t_.*')
+                         || nvl(:LOCAL_ARRAY_VARIABLE_REGEX, '^t_.*')
                          || '".'
                    end
                    -- local object variables
@@ -1383,11 +1383,11 @@ with
                    and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                 then
                    case
-                      when regexp_like(parent_name, nvl(:local_object_variable_regex, '^o_.*'), 'i') then
+                      when regexp_like(parent_name, nvl(:LOCAL_OBJECT_VARIABLE_REGEX, '^o_.*'), 'i') then
                          'OK'
                       else
                          'Local object variable does not match regex "'
-                         || nvl(:local_object_variable_regex, '^o_.*')
+                         || nvl(:LOCAL_OBJECT_VARIABLE_REGEX, '^o_.*')
                          || '".'
                    end
                    -- local variables for other types
@@ -1398,11 +1398,11 @@ with
                    and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                 then
                    case
-                      when regexp_like(parent_name, nvl(:local_variable_regex, '^l_.*'), 'i') then
+                      when regexp_like(parent_name, nvl(:LOCAL_VARIABLE_REGEX, '^l_.*'), 'i') then
                          'OK'
                       else
                          'Local variable does not match regex "'
-                         || nvl(:local_variable_regex, '^l_.*')
+                         || nvl(:LOCAL_VARIABLE_REGEX, '^l_.*')
                          || '".'
                    end
                    -- cursors
@@ -1410,11 +1410,11 @@ with
                    and type = 'CURSOR'
                 then
                    case
-                      when regexp_like(name, nvl(:cursor_regex, '^c_.*'), 'i') then
+                      when regexp_like(name, nvl(:CURSOR_REGEX, '^c_.*'), 'i') then
                          'OK'
                       else
                          'Cursor does not match regex "'
-                         || nvl(:cursor_regex, '^c_.*')
+                         || nvl(:CURSOR_REGEX, '^c_.*')
                          || '".'
                    end
                    -- cursor parameters
@@ -1424,11 +1424,11 @@ with
                    and type like 'FORMAL%'
                 then
                    case
-                      when regexp_like(name, nvl(:cursor_parameter_regex, '^p_.*'), 'i') then
+                      when regexp_like(name, nvl(:CURSOR_PARAMETER_REGEX, '^p_.*'), 'i') then
                          'OK'
                       else
                          'Cursor parameter does not match regex "'
-                         || nvl(:cursor_parameter_regex, '^p_.*')
+                         || nvl(:CURSOR_PARAMETER_REGEX, '^p_.*')
                          || '".'
                    end
                    -- IN parameters
@@ -1436,13 +1436,13 @@ with
                    and type = 'FORMAL IN'
                 then
                    case
-                      when regexp_like(name, nvl(:in_parameter_regex, '^in_.*'), 'i')
+                      when regexp_like(name, nvl(:IN_PARAMETER_REGEX, '^in_.*'), 'i')
                          or (object_type in ('TYPE', 'TYPE BODY') and name = 'SELF')
                       then
                          'OK'
                       else
                          'IN parameter does not match regex "'
-                         || nvl(:in_parameter_regex, '^in_.*')
+                         || nvl(:IN_PARAMETER_REGEX, '^in_.*')
                          || '".'
                    end
                    -- OUT parameters
@@ -1450,13 +1450,13 @@ with
                    and type = 'FORMAL OUT'
                 then
                    case
-                      when regexp_like(name, nvl(:out_parameter_regex, '^out_.*'), 'i')
+                      when regexp_like(name, nvl(:OUT_PARAMETER_REGEX, '^out_.*'), 'i')
                          or (object_type in ('TYPE', 'TYPE BODY') and name = 'SELF')
                       then
                          'OK'
                       else
                          'OUT parameter does not match regex "'
-                         || nvl(:out_parameter_regex, '^out_.*')
+                         || nvl(:OUT_PARAMETER_REGEX, '^out_.*')
                          || '".'
                    end
                    -- IN OUT parameters
@@ -1464,13 +1464,13 @@ with
                    and type = 'FORMAL IN OUT'
                 then
                    case
-                      when regexp_like(name, nvl(:in_out_parameter_regex, '^io_.*'), 'i')
+                      when regexp_like(name, nvl(:IN_OUT_PARAMETER_REGEX, '^io_.*'), 'i')
                          or (object_type in ('TYPE', 'TYPE BODY') and name = 'SELF')
                       then
                          'OK'
                       else
                          'IN OUT parameter does not match regex "'
-                         || nvl(:in_out_parameter_regex, '^io_.*')
+                         || nvl(:IN_OUT_PARAMETER_REGEX, '^io_.*')
                          || '".'
                    end
                    -- records
@@ -1478,11 +1478,11 @@ with
                    and type = 'RECORD'
                 then
                    case
-                      when regexp_like(name, nvl(:record_regex, '^r_.*_type$'), 'i') then
+                      when regexp_like(name, nvl(:RECORD_REGEX, '^r_.*_type$'), 'i') then
                          'OK'
                       else
                          'Record does not match regex "'
-                         || nvl(:record_regex, '^r_.*_type$')
+                         || nvl(:RECORD_REGEX, '^r_.*_type$')
                          || '".'
                    end
                    -- arrays/tables
@@ -1490,11 +1490,11 @@ with
                    and type in ('ASSOCIATIVE ARRAY', 'VARRAY', 'INDEX TABLE', 'NESTED TABLE')
                 then
                    case
-                      when regexp_like(name, nvl(:array_regex, '^t_.*_type$'), 'i') then
+                      when regexp_like(name, nvl(:ARRAY_REGEX, '^t_.*_type$'), 'i') then
                          'OK'
                       else
                          'Array/table does not match regex "'
-                         || nvl(:array_regex, '^t_.*_type$')
+                         || nvl(:ARRAY_REGEX, '^t_.*_type$')
                          || '".'
                    end
                    -- exceptions
@@ -1502,11 +1502,11 @@ with
                    and type = 'EXCEPTION'
                 then
                    case
-                      when regexp_like(name, nvl(:exception_regex, '^e_.*'), 'i') then
+                      when regexp_like(name, nvl(:EXCEPTION_REGEX, '^e_.*'), 'i') then
                          'OK'
                       else
                          'Exception does not match regex "'
-                         || nvl(:exception_regex, '^e_.*')
+                         || nvl(:EXCEPTION_REGEX, '^e_.*')
                          || '".'
                    end
                    -- constants
@@ -1514,11 +1514,11 @@ with
                    and type = 'CONSTANT'
                 then
                    case
-                      when regexp_like(name, nvl(:constant_regex, '^co_.*'), 'i') then
+                      when regexp_like(name, nvl(:CONSTANT_REGEX, '^co_.*'), 'i') then
                          'OK'
                       else
                          'Constant does not match regex "'
-                         || nvl(:constant_regex, '^co_.*')
+                         || nvl(:CONSTANT_REGEX, '^co_.*')
                          || '".'
                    end
                    -- subtypes
@@ -1526,11 +1526,11 @@ with
                    and type = 'SUBTYPE'
                 then
                    case
-                      when regexp_like(name, nvl(:subtype_regex, '.*_type$'), 'i') then
+                      when regexp_like(name, nvl(:SUBTYPE_REGEX, '.*_type$'), 'i') then
                          'OK'
                       else
                          'Subtype does not match regex "'
-                         || nvl(:subtype_regex, '.*_type$')
+                         || nvl(:SUBTYPE_REGEX, '.*_type$')
                          || '".'
                    end
              end as message,
