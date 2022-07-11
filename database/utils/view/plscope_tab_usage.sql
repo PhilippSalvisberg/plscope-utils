@@ -34,21 +34,69 @@ create or replace view plscope_tab_usage as
            from dba_dependencies
           where type in ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
       ),
-      dep_graph as (
-         select /*+materialize */
-       distinct
-                owner,
-                type as object_type,
-                name as object_name,
-                connect_by_root(owner) as ref_owner,
-                connect_by_root(type) as ref_object_type,
-                connect_by_root(name) as ref_object_name,
-                sys_connect_by_path(type, '/') as ref_object_type_path,
-                level as path_len
+      -- recursive with clause to calculate ref_object_type_path
+      dep_graph_base (
+         owner,
+         object_type,
+         object_name,
+         ref_owner,
+         ref_object_type,
+         ref_object_name,
+         ref_object_type_path,
+         path_len
+      ) as (
+         select owner,
+                type,
+                name,
+                owner as ref_owner,
+                type as ref_object_type,
+                name as ref_object_name,
+                '/' || type as ref_object_type_path,
+                1 as path_len
            from dep
-        connect by prior dep.owner = dep.referenced_owner
-            and prior dep.type = dep.referenced_type
-            and prior dep.name = dep.referenced_name
+         union all
+         select dep.owner,
+                dep.type,
+                dep.name,
+                dep_graph_base.ref_owner,
+                dep_graph_base.ref_object_type,
+                dep_graph_base.ref_object_name,
+                case
+                   when lengthb(dep_graph_base.ref_object_type_path) + lengthb('/') + lengthb(dep.type) <= 4000 then
+                      dep_graph_base.ref_object_type_path
+                      || '/'
+                      || dep.type
+                   else
+                      -- prevent ref_object_type_path from overflowing: keep the first 3 elements, then
+                      -- remove enough elements to accomodate "..." + "/" + the tail end
+                      regexp_substr(dep_graph_base.ref_object_type_path, '^(/([^/]+/){3})')
+                      || '...'
+                      || regexp_replace(
+                         substr(dep_graph_base.ref_object_type_path, instr(dep_graph_base.ref_object_type_path, '/', 1, 4) + 1
+                            + lengthb('.../') + lengthb(dep.type)),
+                         '^[^/]*')
+                      || '/'
+                      || dep.type
+                end as ref_object_type_path,
+                dep_graph_base.path_len + 1 as path_len
+           from dep_graph_base
+           join dep
+             on dep_graph_base.owner = dep.referenced_owner
+            and dep_graph_base.object_type = dep.referenced_type
+            and dep_graph_base.object_name = dep.referenced_name
+      ) cycle owner, object_type, object_name set is_cycle to 'Y' default 'N',
+      -- remove duplicate rows
+      dep_graph as (
+         select distinct
+                owner,
+                object_type,
+                object_name,
+                ref_owner,
+                ref_object_type,
+                ref_object_name,
+                ref_object_type_path,
+                path_len
+           from dep_graph_base
       ),
       tab_usage as (
          select /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
