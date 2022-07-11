@@ -87,7 +87,7 @@ All views are filtered by the following session context attributes:
 
 Attribute | Default Value | Predicate used in views
 --------- | ------------- | -----------------------
-OWNER | ```USER``` | ```owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)```
+OWNER | ```sys_context('USERENV', 'AUTHENTICATED_IDENTITY')``` | ```owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))```
 OBJECT_TYPE | ```%``` | ```object_type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')```
 OBJECT_NAME | ```%``` | ```object_name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')```
 

@@ -53,7 +53,7 @@ create or replace view plscope_naming as
                 line,
                 text
            from dba_source
-          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
+          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
             and type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
@@ -69,7 +69,7 @@ create or replace view plscope_naming as
                 col,
                 usage_context_id
            from sys.dba_identifiers
-          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
+          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
             and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),

@@ -42,6 +42,6 @@ create or replace view plscope_statements as
           full_text,
           origin_con_id
      from dba_statements stmt
-    where owner like nvl(sys_context('PLSCOPE', 'OWNER'), user)
+    where owner like nvl(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
       and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
       and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%');
