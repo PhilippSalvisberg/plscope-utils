@@ -327,7 +327,7 @@ create or replace view plscope_naming as
                       and type in ('ASSOCIATIVE ARRAY', 'VARRAY', 'INDEX TABLE', 'NESTED TABLE')
                    then
                       case
-                         when regexp_like(name, nvl(sys_context('PLSCOPE', 'ARRAY_REGEX'), '^t_.*_type$'), 'i') then
+                         when regexp_like(name, nvl(sys_context('PLSCOPE', 'ARRAY_REGEX'), '^t_.*_type$|^.*_ct$'), 'i') then
                             'OK'
                          else
                             'Array/table does not match regex "'

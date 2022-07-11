@@ -1490,7 +1490,7 @@ with
                    and type in ('ASSOCIATIVE ARRAY', 'VARRAY', 'INDEX TABLE', 'NESTED TABLE')
                 then
                    case
-                      when regexp_like(name, nvl(:ARRAY_REGEX, '^t_.*_type$'), 'i') then
+                      when regexp_like(name, nvl(:ARRAY_REGEX, '^t_.*_type$|^.*_ct$'), 'i') then
                          'OK'
                       else
                          'Array/table does not match regex "'
@@ -1658,7 +1658,7 @@ select case
 				<bind id="ARRAY_REGEX">
 					<prompt><![CDATA[Array/table regex]]></prompt>
 					<tooltip><![CDATA[ARRAY_REGEX]]></tooltip>
-					<value><![CDATA[^t_.*_type$]]></value>
+					<value><![CDATA[^t_.*_type$|^.*_ct$]]></value>
 					<bracket><![CDATA[null]]></bracket>
 				</bind>
 				<bind id="EXCEPTION_REGEX">
