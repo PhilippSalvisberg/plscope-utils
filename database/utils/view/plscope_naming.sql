@@ -73,31 +73,119 @@ create or replace view plscope_naming as
             and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
-      tree as (
+      tree (
+         owner,
+         object_type,
+         object_name,
+         line,
+         col,
+         procedure_name,
+         name,
+         name_path,
+         path_len,
+         type,
+         type_path,
+         parent_usage,
+         parent_type,
+         parent_name,
+         parent_line,
+         parent_col,
+         usage,
+         usage_id,
+         usage_context_id
+      ) as (
+         select owner,
+                object_type,
+                object_name,
+                line,
+                col,
+                case
+                   when object_type in ('PROCEDURE', 'FUNCTION') then
+                      name
+                end as procedure_name,
+                name,
+                '/' || name as name_path,
+                1 as path_len,
+                type,
+                '/' || type as type_path,
+                null as parent_usage,
+                null as parent_type,
+                null as parent_name,
+                null as parent_line,
+                null as parent_col,
+                usage,
+                usage_id,
+                usage_context_id
+           from ids
+          where usage_context_id = 0  -- top-level identifiers
+         union all
          select ids.owner,
                 ids.object_type,
                 ids.object_name,
                 ids.line,
                 ids.col,
+                case
+                   when tree.procedure_name is not null then
+                      tree.procedure_name
+                   when ids.object_type in ('PACKAGE', 'PACKAGE BODY')
+                      and ids.type in ('FUNCTION', 'PROCEDURE')
+                      and ids.usage in ('DEFINITION', 'DECLARATION')
+                      and ids.usage_context_id = 1
+                   then
+                      ids.name
+                end as procedure_name,
                 ids.name,
-                level as path_len,
+                case
+                   when lengthb(tree.name_path) + lengthb('/') + lengthb(ids.name) <= 4000 then
+                      tree.name_path
+                      || '/'
+                      || ids.name
+                   else
+                      -- prevent name_path from overflowing: keep the first 3 elements, then
+                      -- remove enough elements to accomodate "..." + "/" + the tail end
+                      regexp_substr(tree.name_path, '^(/([^/]+/){3})')
+                      || '...'
+                      || regexp_replace(
+                         substr(tree.name_path, instr(tree.name_path, '/', 1, 4) + 1
+                            + lengthb('.../') + lengthb(ids.name)),
+                         '^[^/]*')
+                      || '/'
+                      || ids.name
+                end as name_path,
+                tree.path_len + 1 as path_len,
                 ids.type,
-                sys_connect_by_path(ids.type, '/') as type_path,
+                case
+                   when lengthb(tree.type_path) + lengthb('/') + lengthb(ids.type) <= 4000 then
+                      tree.type_path
+                      || '/'
+                      || ids.type
+                   else
+                      -- prevent name_path from overflowing: keep the first 3 elements, then
+                      -- remove enough elements to accomodate "..." + "/" + the tail end
+                      regexp_substr(tree.type_path, '^(/([^/]+/){3})')
+                      || '...'
+                      || regexp_replace(
+                         substr(tree.type_path, instr(tree.type_path, '/', 1, 4) + 1
+                            + lengthb('.../') + lengthb(ids.type)),
+                         '^[^/]*')
+                      || '/'
+                      || ids.type
+                end as type_path,
+                tree.usage as parent_usage,
+                tree.type as parent_type,
+                tree.name as parent_name,
+                tree.line as parent_line,
+                tree.col as parent_col,
                 ids.usage,
                 ids.usage_id,
-                ids.usage_context_id,
-                prior ids.type as parent_type,
-                prior ids.usage as parent_usage,
-                prior ids.line as parent_line,
-                prior ids.col as parent_col,
-                prior ids.name as parent_name
-           from ids
-          start with ids.usage_context_id = 0
-        connect by prior ids.usage_id = ids.usage_context_id
-            and prior ids.owner = ids.owner
-            and prior ids.object_type = ids.object_type
-            and prior ids.object_name = ids.object_name
-      ),
+                ids.usage_context_id
+           from tree
+           join ids
+             on tree.owner = ids.owner
+            and tree.object_type = ids.object_type
+            and tree.object_name = ids.object_name
+            and tree.usage_id = ids.usage_context_id
+      ) cycle owner, object_type, object_name, usage_id set is_cycle to 'Y' default 'N',
       prepared as (
          select tree.owner,
                 tree.object_type,
