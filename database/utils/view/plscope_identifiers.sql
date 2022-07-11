@@ -31,7 +31,8 @@ create or replace view plscope_identifiers as
       ),
       -- PL/SQL identifiers filtered by PLSCOPE context attributes
       pls_ids as (
-         select owner,
+         select /*+ materialize */
+                owner,
                 name,
                 signature,
                 type,
@@ -50,7 +51,8 @@ create or replace view plscope_identifiers as
       ),
       -- SQL identifiers filtered by PLSCOPE context attributes
       sql_ids as (
-         select owner,
+         select /*+ materialize */
+                owner,
                 nvl(sql_id, type) as name,
                 signature,
                 type,
@@ -67,7 +69,7 @@ create or replace view plscope_identifiers as
             and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
-      -- full list of identifers (PL/SQL and SQL) with columns is_sql_stmt and procedure_scope 
+      -- full list of identifiers (PL/SQL and SQL) with columns is_sql_stmt and procedure_scope 
       fids as (
          select 'NO' as is_sql_stmt,
                 pls_ids.owner,
@@ -84,7 +86,7 @@ create or replace view plscope_identifiers as
                 nvl2(sig.signature, 'PUBLIC', cast(null as varchar2(7))) as procedure_scope,
                 pls_ids.origin_con_id
            from pls_ids
-           left join dba_identifiers sig
+           left join pls_ids sig
              on sig.owner = pls_ids.owner
             and sig.object_type = 'PACKAGE'
             and sig.object_name = pls_ids.object_name
@@ -107,7 +109,7 @@ create or replace view plscope_identifiers as
                 origin_con_id
            from sql_ids
       ),
-      -- add column sane_fk to list of identifers
+      -- add column sane_fk to list of identifiers
       base_ids as (
          select fids.is_sql_stmt,
                 fids.owner,
@@ -497,7 +499,7 @@ create or replace view plscope_identifiers as
           refs.col as ref_col,           -- decl_col
           tree.origin_con_id
      from tree_plus tree
-     left join dba_identifiers refs
+     left join pls_ids refs
        on refs.signature = tree.signature
       and refs.usage = 'DECLARATION'
      left join src
