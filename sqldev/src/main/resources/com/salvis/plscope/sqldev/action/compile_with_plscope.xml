@@ -62,7 +62,7 @@ begin
          select synonym_name
            from sys.all_synonyms
           where owner = 'PUBLIC'
-            and table_owner = user
+            and table_owner = sys_context('userenv', 'authenticated_identity')
       )
       loop
          <<compile_public_synonym>>
@@ -87,7 +87,7 @@ begin
              on d.owner = o.owner
             and d.type = o.object_type
             and d.name = o.object_name
-          where o.owner = user
+          where o.owner = sys_context('userenv', 'authenticated_identity')
             and o.object_type in ('TYPE', 'TYPE BODY')
           group by o.object_type, o.object_name
           order by priority
@@ -115,7 +115,7 @@ begin
       end loop types;
       /* Compile schema handles procedures, functions, packages, views and triggers only */
       dbms_utility.compile_schema(
-         schema         => user,
+         schema         => sys_context('userenv', 'authenticated_identity'),
          compile_all    => true,
          reuse_settings => false
       );
@@ -174,7 +174,8 @@ begin
       <<synonyms>>
       for r in (
          select synonym_name
-           from user_synonyms
+           from all_synonyms
+          where owner = sys_context('userenv', 'authenticated_identity')
       )
       loop
          execute immediate 'ALTER SYNONYM "'
@@ -186,7 +187,7 @@ begin
          select synonym_name
            from sys.all_synonyms
           where owner = 'PUBLIC'
-            and table_owner = user
+            and table_owner = sys_context('userenv', 'authenticated_identity')
       )
       loop
          <<compile_public_synonym>>
@@ -211,7 +212,7 @@ begin
              on d.owner = o.owner
             and d.type = o.object_type
             and d.name = o.object_name
-          where o.owner = user
+          where o.owner = sys_context('userenv', 'authenticated_identity')
             and o.object_type in ('TYPE', 'TYPE BODY')
           group by o.object_type, o.object_name
           order by priority
@@ -239,7 +240,7 @@ begin
       end loop types;
       /* Compile schema handles procedures, functions, packages, views and triggers only */
       dbms_utility.compile_schema(
-         schema         => user,
+         schema         => sys_context('userenv', 'authenticated_identity'),
          compile_all    => true,
          reuse_settings => false
       );
