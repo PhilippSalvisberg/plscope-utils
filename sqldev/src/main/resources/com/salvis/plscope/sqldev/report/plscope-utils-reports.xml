@@ -1431,7 +1431,7 @@ with
          and tree.object_type = ids.object_type
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
-   ),
+   ) cycle owner, object_type, object_name, usage_id set is_cycle to 'Y' default 'N',
    -- add the columns name_usage, is_new_proc to the list of identifiers
    tree_plus as (
       select tree.*,                                                 -- @formatter:off
@@ -1934,7 +1934,7 @@ with
          and tree.object_type = ids.object_type
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
-   ),
+   ) cycle owner, object_type, object_name, usage_id set is_cycle to 'Y' default 'N',
    -- add the columns name_usage, is_new_proc to the list of identifiers
    tree_plus as (
       select tree.*,                                                 -- @formatter:off
