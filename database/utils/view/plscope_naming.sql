@@ -234,12 +234,12 @@ create or replace view plscope_naming as
                       and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                    then
                       case
-                         when regexp_like(parent_name, nvl(sys_context('PLSCOPE', 'LOCAL_VARIABLE_REGEX'), '^l_.*'), 'i')
+                         when regexp_like(parent_name, nvl(sys_context('PLSCOPE', 'LOCAL_VARIABLE_REGEX'), '^(l|c)_.*'), 'i')
                          then
                             'OK'
                          else
                             'Local variable does not match regex "'
-                            || nvl(sys_context('PLSCOPE', 'LOCAL_VARIABLE_REGEX'), '^l_.*')
+                            || nvl(sys_context('PLSCOPE', 'LOCAL_VARIABLE_REGEX'), '^(l|c)_.*')
                             || '".'
                       end
                       -- cursors

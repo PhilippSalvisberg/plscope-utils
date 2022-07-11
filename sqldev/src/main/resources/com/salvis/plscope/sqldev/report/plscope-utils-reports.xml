@@ -1398,11 +1398,11 @@ with
                    and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                 then
                    case
-                      when regexp_like(parent_name, nvl(:LOCAL_VARIABLE_REGEX, '^l_.*'), 'i') then
+                      when regexp_like(parent_name, nvl(:LOCAL_VARIABLE_REGEX, '^(l|c)_.*'), 'i') then
                          'OK'
                       else
                          'Local variable does not match regex "'
-                         || nvl(:LOCAL_VARIABLE_REGEX, '^l_.*')
+                         || nvl(:LOCAL_VARIABLE_REGEX, '^(l|c)_.*')
                          || '".'
                    end
                    -- cursors
@@ -1616,7 +1616,7 @@ select case
 				<bind id="LOCAL_VARIABLE_REGEX">
 					<prompt><![CDATA[Local variable regex]]></prompt>
 					<tooltip><![CDATA[LOCAL_VARIABLE_REGEX]]></tooltip>
-					<value><![CDATA[^l_.*]]></value>
+					<value><![CDATA[^(l|c)_.*]]></value>
 					<bracket><![CDATA[null]]></bracket>
 				</bind>
 				<bind id="CURSOR_REGEX">
