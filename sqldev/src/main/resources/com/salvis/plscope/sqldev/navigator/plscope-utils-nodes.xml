@@ -21,7 +21,7 @@ select object_name
            where usage = 'DECLARATION'
              and usage_context_id = 0
              and owner = :SCHEMA
-             and object_type = upper(replace(:TYPE, 'plscope-utils-', null))
+             and object_type = upper(replace(:TYPE, 'plscope-utils-'))
        )
 ]]>
 					</sql>
