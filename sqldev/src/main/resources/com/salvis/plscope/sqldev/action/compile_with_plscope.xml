@@ -49,7 +49,8 @@ begin
       <<synonyms>>
       for r in (
          select synonym_name
-           from user_synonyms
+           from all_synonyms
+          where owner = sys_context('userenv', 'authenticated_identity')
       )
       loop
          execute immediate 'ALTER SYNONYM "'
