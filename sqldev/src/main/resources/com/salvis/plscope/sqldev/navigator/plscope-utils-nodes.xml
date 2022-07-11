@@ -12,7 +12,7 @@
 			<icon RSKEY="PACKAGE_FOLDER_ICON" />
 			<label RSKEY="PACKAGE_FOLDER_LABEL" />
 			<queries>
-				<query minversion="11.1">
+				<query minversion="11.1" id="plscope-declarations">
 					<sql><![CDATA[
 select object_name
   from (
@@ -21,7 +21,7 @@ select object_name
            where usage = 'DECLARATION'
              and usage_context_id = 0
              and owner = :SCHEMA
-             and object_type = 'PACKAGE'
+             and object_type = upper(replace(:TYPE, 'plscope-utils-', null))
        )
 ]]>
 					</sql>
@@ -44,27 +44,7 @@ select object_name
 			<icon RSKEY="PROCEDURE_FOLDER_ICON" />
 			<label RSKEY="PROCEDURE_FOLDER_LABEL" />
 			<queries>
-				<query minversion="11.1">
-					<sql><![CDATA[
-select object_name
-  from (
-          select object_name
-            from sys.all_identifiers
-           where usage = 'DECLARATION'
-             and usage_context_id = 0
-             and owner = :SCHEMA
-             and object_type = 'PROCEDURE'
-       )
-]]>
-					</sql>
-					<columns>
-						<column filterable="true" sortable="true" id="NAME">
-							<colName>
-								<![CDATA[OBJECT_NAME]]>
-							</colName>
-						</column>
-					</columns>
-				</query>
+				<query minversion="11.1" sharedId="plscope-declarations" />
 			</queries>
 		</folder>
 		<node>
@@ -76,27 +56,7 @@ select object_name
 			<icon RSKEY="FUNCTION_FOLDER_ICON" />
 			<label RSKEY="FUNCTION_FOLDER_LABEL" />
 			<queries>
-				<query minversion="11.1">
-					<sql><![CDATA[
-select object_name
-  from (
-          select object_name
-            from sys.all_identifiers
-           where usage = 'DECLARATION'
-             and usage_context_id = 0
-             and owner = :SCHEMA
-             and object_type = 'FUNCTION'
-       )
-]]>
-					</sql>
-					<columns>
-						<column filterable="true" sortable="true" id="NAME">
-							<colName>
-								<![CDATA[OBJECT_NAME]]>
-							</colName>
-						</column>
-					</columns>
-				</query>
+				<query minversion="11.1" sharedId="plscope-declarations" />
 			</queries>
 		</folder>
 		<node>
@@ -108,27 +68,7 @@ select object_name
 			<icon RSKEY="TRIGGER_FOLDER_ICON" />
 			<label RSKEY="TRIGGER_FOLDER_LABEL" />
 			<queries>
-				<query minversion="11.1">
-					<sql><![CDATA[
-select object_name
-  from (
-          select object_name
-            from sys.all_identifiers
-           where usage = 'DECLARATION'
-             and usage_context_id = 0
-             and owner = :SCHEMA
-             and object_type = 'TRIGGER'
-       )
-]]>
-					</sql>
-					<columns>
-						<column filterable="true" sortable="true" id="NAME">
-							<colName>
-								<![CDATA[OBJECT_NAME]]>
-							</colName>
-						</column>
-					</columns>
-				</query>
+				<query minversion="11.1" sharedId="plscope-declarations" />
 			</queries>
 		</folder>
 		<node>
@@ -140,27 +80,7 @@ select object_name
 			<icon RSKEY="TYPE_FOLDER_ICON" />
 			<label RSKEY="TYPE_FOLDER_LABEL" />
 			<queries>
-				<query minversion="11.1">
-					<sql><![CDATA[
-select object_name
-  from (
-          select object_name
-            from sys.all_identifiers
-           where usage = 'DECLARATION'
-             and usage_context_id = 0
-             and owner = :SCHEMA
-             and object_type = 'TYPE'
-       )
-]]>
-					</sql>
-					<columns>
-						<column filterable="true" sortable="true" id="NAME">
-							<colName>
-								<![CDATA[OBJECT_NAME]]>
-							</colName>
-						</column>
-					</columns>
-				</query>
+				<query minversion="11.1" sharedId="plscope-declarations" />
 			</queries>
 		</folder>
 		<node>
@@ -207,27 +127,7 @@ select object_name
 			<icon RSKEY="TABLE_FOLDER_ICON" />
 			<label RSKEY="TABLE_FOLDER_LABEL" />
 			<queries>
-				<query minversion="11.1">
-					<sql><![CDATA[
-select object_name
-  from (
-          select object_name
-            from sys.all_identifiers
-           where usage = 'DECLARATION'
-             and usage_context_id = 0
-             and owner = :SCHEMA
-             and object_type = 'TABLE'
-       )
-]]>
-					</sql>
-					<columns>
-						<column filterable="true" sortable="true" id="NAME">
-							<colName>
-								<![CDATA[OBJECT_NAME]]>
-							</colName>
-						</column>
-					</columns>
-				</query>
+				<query minversion="11.1" sharedId="plscope-declarations" />
 			</queries>
 		</folder>
 		<node>
@@ -239,27 +139,7 @@ select object_name
 			<icon RSKEY="VIEW_FOLDER_ICON" />
 			<label RSKEY="VIEW_FOLDER_LABEL" />
 			<queries>
-				<query minversion="11.1">
-					<sql><![CDATA[
-select object_name
-  from (
-          select object_name
-            from sys.all_identifiers
-           where usage = 'DECLARATION'
-             and usage_context_id = 0
-             and owner = :SCHEMA
-             and object_type = 'VIEW'
-       )
-]]>
-					</sql>
-					<columns>
-						<column filterable="true" sortable="true" id="NAME">
-							<colName>
-								<![CDATA[OBJECT_NAME]]>
-							</colName>
-						</column>
-					</columns>
-				</query>
+				<query minversion="11.1" sharedId="plscope-declarations" />
 			</queries>
 		</folder>
 		<node>
