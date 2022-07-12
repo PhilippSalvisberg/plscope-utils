@@ -10,7 +10,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<!-- SQL Developer 4.0 uses JDK 1.7, SQL Developer 4.1 use JDK 1.8, SQL Developer 22.2.0 JDK 11 -->
-		<jdk.version>1.7</jdk.version>
+		<jdk.version>7</jdk.version>
+		<jdk.test.version>17</jdk.test.version>
 		<sqldev.basedir>/Applications/SQLDeveloper22.2.0.app/Contents/Resources/sqldeveloper</sqldev.basedir>
 		<final.name>plscope-utils_for_SQLDev_${project.version}</final.name>
 	</properties>
@@ -30,6 +31,28 @@
 			<scope>system</scope>
 			<systemPath>${sqldev.basedir}/sqldeveloper/extensions/oracle.sqldeveloper.jar</systemPath>
 		</dependency>
+		<!-- Test dependencies -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>5.8.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- access the database via JdbcTemplate -->
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>5.3.20</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- Oracle JDBC driver -->
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ojdbc8-production</artifactId>
+			<version>21.6.0.0.1</version>
+			<type>pom</type>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<!-- Build Settings -->
@@ -41,8 +64,8 @@
 				<version>3.10.1</version>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>${jdk.version}</source>
-					<target>${jdk.version}</target>
+					<release>${jdk.version}</release>
+					<testRelease>${jdk.test.version}</testRelease>
 					<includes>
 						<include>**/*.java</include>
 					</includes>
@@ -141,10 +164,12 @@
 					<replacements>
 						<replacement>
 							<token>#EXTENSION_VERSION#</token>
+							<!--suppress UnresolvedMavenProperty -->
 							<value>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${buildNumber}</value>
 						</replacement>
 						<replacement>
 							<token>#EXTENSION_SHORT_VERSION#</token>
+							<!--suppress UnresolvedMavenProperty -->
 							<value>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}</value>
 						</replacement>
 						<replacement>
@@ -153,14 +178,17 @@
 						</replacement>
 						<replacement>
 							<token>#EXTENSION_NAME#</token>
+							<!--suppress UnresolvedMavenProperty -->
 							<value>${EXTENSION_NAME}</value>
 						</replacement>
 						<replacement>
 							<token>#EXTENSION_DESCRIPTION#</token>
+							<!--suppress UnresolvedMavenProperty -->
 							<value>${EXTENSION_DESCRIPTION}</value>
 						</replacement>
 						<replacement>
 							<token>#EXTENSION_OWNER#</token>
+							<!--suppress UnresolvedMavenProperty -->
 							<value>${EXTENSION_OWNER}</value>
 						</replacement>
 					</replacements>
@@ -178,6 +206,7 @@
 					</archive>
 					<instructions>
 						<Bundle-SymbolicName>${project.name}</Bundle-SymbolicName>
+						<!--suppress UnresolvedMavenProperty -->
 						<Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}</Bundle-Version>
 						<Bundle-Build>${buildNumber}</Bundle-Build>
 						<Include-Resource>
@@ -259,7 +288,7 @@
 										</goals>
 									</pluginExecutionFilter>
 									<action>
-										<ignore></ignore>
+										<ignore/>
 									</action>
 								</pluginExecution>
 							</pluginExecutions>
@@ -315,4 +344,57 @@
 		<tag>master</tag>
 		<url>https://github.com/PhilippSalvisberg/plscope-utils/</url>
 	</scm>
+
+	<!-- Profiles as workaround for https://youtrack.jetbrains.com/issue/IDEA-85478 as described in -->
+	<!-- https://intellij-support.jetbrains.com/hc/en-us/community/posts/360009767720-I-want-to-run-tests-with-different-java-version-than-my-source-java-version -->
+	<profiles>
+		<profile>
+			<id>default</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+				<property>
+					<name>skip.native</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<version>3.10.1</version>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<!-- different Java version for main and test -->
+							<!-- works with Maven builder from IDE or command line -->
+							<release>${jdk.version}</release>
+							<testRelease>${jdk.test.version}</testRelease>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>idea</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<property>
+					<name>idea.maven.embedder.version</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<version>3.10.1</version>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<!-- IDEA requires same Java version for main and test -->
+							<!-- see https://youtrack.jetbrains.com/issue/IDEA-85478 -->
+							<release>${jdk.test.version}</release>
+							<testRelease>${jdk.test.version}</testRelease>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
