@@ -326,7 +326,7 @@ create or replace package body lineage_util is
       fetch c_stmt into r_stmt;
       close c_stmt;
       if r_stmt.type = 'INSERT' then
-         t_targets := dd_util.get_objects(
+         t_targets := dd_util.get_objects( -- NOSONAR: G-2135 false positive t_target used in c_stmt
                          in_parse_user => r_stmt.owner,
                          in_t_obj      => parse_util.get_insert_targets(
                                              in_parse_user => r_stmt.owner,
