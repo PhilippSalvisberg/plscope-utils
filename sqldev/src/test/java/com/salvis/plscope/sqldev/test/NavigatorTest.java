@@ -204,4 +204,27 @@ public class NavigatorTest extends AbstractJdbcTest{
             Assertions.assertEquals(expected.size(), actual.size());
         }
     }
+
+    @Nested
+    class plscope_utils_sequence {
+
+        @Test
+        public void query111() {
+            // shared query id
+            var node = xmlTools.getNode(doc, "/navigator/objectType[@id='plscope-utils-package']/folder/queries/query[@minversion='11.1']/sql");
+            var query = node.getTextContent()
+                    .replaceAll(":SCHEMA", "user")
+                    .replaceAll(":TYPE", "'plscope-utils-sequence'");
+            var actual = jdbcTemplate.queryForList(query);
+            var expected = jdbcTemplate.queryForList("""
+                        select object_name
+                          from sys.all_identifiers
+                         where usage = 'DECLARATION'
+                           and usage_context_id = 0
+                           and owner = user
+                           and object_type = 'SEQUENCE'
+                    """);
+            Assertions.assertEquals(expected.size(), actual.size());
+        }
+    }
 }
