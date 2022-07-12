@@ -45,12 +45,12 @@ with
         from sys.all_identifiers
       union all
       select owner,
-             ':' || nvl(sql_id, type) as name,  -- intermediate statement marker colon
+             nvl(sql_id, type) as name,  -- intermediate statement marker colon
              signature,
              type,
              object_name,
              object_type,
-             'EXECUTE' as usage, -- new, artificial usage
+             nvl2(sql_id, 'SQL_ID', 'SQL_STMT') as usage, -- new, artificial usage
              usage_id,
              line,
              col,
@@ -118,9 +118,9 @@ with
                    usage_context_id
                 else
                    last_value(case
-                         when sane_fk = 'YES' then
-                            usage_id
-                      end) ignore nulls over (
+                                 when sane_fk = 'YES' then
+                                    usage_id
+                              end) ignore nulls over (
                       partition by owner, object_name, object_type
                       order by line, col
                       rows between unbounded preceding and 1 preceding
@@ -194,7 +194,20 @@ with
          and tree.object_type = ids.object_type
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
-   ) cycle owner, object_type, object_name, usage_id set is_cycle to 'Y' default 'N'
+   ) cycle owner, object_type, object_name, usage_id set is_cycle to 'Y' default 'N',
+   -- add the columns name_usage, is_new_proc to the list of identifiers
+   tree_plus as (
+      select tree.*,                                                 -- @formatter:off
+             case
+                   when tree.usage = 'SQL_ID' then
+                      tree.type || ' statement (sql_id: ' || tree.name || ')'
+                   when tree.usage = 'SQL_STMT' then
+                      tree.type || ' statement'
+                   else
+                      tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
+                end as name_usage                                    -- @formatter:on
+        from tree
+   )
 select case
           when tree.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
              'SQLDEV:LINK:'
@@ -213,9 +226,32 @@ select case
           else
              null
        end as "Link",
-       lpad(' ', 3 * (tree.path_len - 1)) || tree.usage as "Usage",
+       cast(
+          -- left indent name_usage according to path_len, wrapping to the left
+          -- if necessary so as not to exceed a limit of 250 characters
+          case
+             when mod(2 * (tree.path_len - 1), 250) + length(tree.name_usage) <= 250 then
+                lpad(' ', mod(2 * (tree.path_len - 1), 250)) || tree.name_usage
+             else
+                substr(tree.name_usage, 250 - mod(2 * (tree.path_len - 1), 250)
+                   - length(tree.name_usage))
+                || lpad(' ', 250 - length(tree.name_usage))
+                || substr(tree.name_usage, 1, 250 - mod(2 * (tree.path_len - 1), 250))
+          end
+          as varchar2(250)
+       ) as "Name (Type, Usage)",
+       tree.line as "Line",
+       tree.col as "Col",
+       regexp_replace(src.text, chr(10) || '+$', null) as "Text", -- remove trailing new line character
+       tree.name as "Name",
        tree.type as "Type",
-       replace(tree.name, ':', null) as "Name", -- remove intermediate statement marker
+       case
+             -- make SQL_ID and SQL_STMT pseudo-usages appear as EXECUTE
+          when tree.usage in ('SQL_ID', 'SQL_STMT') then
+             'EXECUTE'
+          else
+             tree.usage
+       end as "Usage",
        case
           when tree.object_type in ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
              and tree.usage = 'DECLARATION'
@@ -238,11 +274,8 @@ select case
                 else
                    'YES'
              end
-       end as "Used?",
-       tree.line as "Line",
-       tree.col as "Col",
-       regexp_replace(src.text, chr(10) || '+$', null) as "Text" -- remove trailing new line character
-  from tree
+       end as "Used?"
+  from tree_plus tree
   left join src
     on src.owner = tree.owner
    and src.type = tree.object_type
@@ -327,9 +360,9 @@ with
                    usage_context_id
                 else
                    last_value(case
-                         when sane_fk = 'YES' then
-                            usage_id
-                      end) ignore nulls over (
+                                 when sane_fk = 'YES' then
+                                    usage_id
+                              end) ignore nulls over (
                       partition by owner, object_name, object_type
                       order by line, col
                       rows between unbounded preceding and 1 preceding
@@ -403,7 +436,18 @@ with
          and tree.object_type = ids.object_type
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
-   ) cycle owner, object_type, object_name, usage_id set is_cycle to 'Y' default 'N'
+   ) cycle owner, object_type, object_name, usage_id set is_cycle to 'Y' default 'N',
+   -- add the columns name_usage, is_new_proc to the list of identifiers
+   tree_plus as (
+      select tree.*,
+             tree.name
+             || ' ('
+             || lower(tree.type)
+             || ' '
+             || lower(tree.usage)
+             || ')' as name_usage
+        from tree
+   )
 select case
           when tree.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
              'SQLDEV:LINK:'
@@ -422,9 +466,26 @@ select case
           else
              null
        end as "Link",
-       lpad(' ', 3 * (tree.path_len - 1)) || tree.usage as "Usage",
+       cast(
+          -- left indent name_usage according to path_len, wrapping to the left
+          -- if necessary so as not to exceed a limit of 250 characters
+          case
+             when mod(2 * (tree.path_len - 1), 250) + length(tree.name_usage) <= 250 then
+                lpad(' ', mod(2 * (tree.path_len - 1), 250)) || tree.name_usage
+             else
+                substr(tree.name_usage, 250 - mod(2 * (tree.path_len - 1), 250)
+                   - length(tree.name_usage))
+                || lpad(' ', 250 - length(tree.name_usage))
+                || substr(tree.name_usage, 1, 250 - mod(2 * (tree.path_len - 1), 250))
+          end
+          as varchar2(250)
+       ) as "Name (Type, Usage)",
+       tree.line as "Line",
+       tree.col as "Col",
+       regexp_replace(src.text, chr(10) || '+$', null) as "Text", -- remove trailing new line character
+       tree.name as "Name",
        tree.type as "Type",
-       replace(tree.name, ':', null) as "Name", -- remove intermediate statement marker
+       tree.usage as "Usage",
        case
           when tree.object_type in ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
              and tree.usage = 'DECLARATION'
@@ -447,11 +508,8 @@ select case
                 else
                    'YES'
              end
-       end as "Used?",
-       tree.line as "Line",
-       tree.col as "Col",
-       regexp_replace(src.text, chr(10) || '+$', null) as "Text" -- remove trailing new line character
-  from tree
+       end as "Used?"
+  from tree_plus tree
   left join src
     on src.owner = tree.owner
    and src.type = tree.object_type
