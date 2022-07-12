@@ -14,7 +14,7 @@ create or replace package body type_util is
                    object_type,
                    object_name
               from table(in_t_obj)
-             order by 1, 2, 3
+             order by owner, object_type, object_name
          )
          loop
             t_result.extend;
@@ -43,7 +43,7 @@ create or replace package body type_util is
                    object_name,
                    column_name
               from table(in_t_col)
-             order by 1, 2, 3
+             order by owner, object_type, object_name, column_name
          )
          loop
             t_result.extend;
@@ -77,7 +77,14 @@ create or replace package body type_util is
                    to_object_name,
                    to_column_name
               from table(in_t_col_lineage)
-             order by 1, 2, 3, 4, 5, 6, 7, 8
+             order by from_owner,
+                   from_object_type,
+                   from_object_name,
+                   from_column_name,
+                   to_owner,
+                   to_object_type,
+                   to_object_name,
+                   to_column_name
          )
          loop
             t_result.extend;
