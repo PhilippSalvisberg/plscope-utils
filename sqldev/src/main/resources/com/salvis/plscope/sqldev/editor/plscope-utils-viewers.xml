@@ -8,7 +8,7 @@
 	<!-- used sys.all_ instead of dba_ - SQL Developer uses dba_ views, if the the connected use has the privileges -->
 	<!-- Use case sensitive result columns including spaces -->
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view,plscope-utils-sequence">
 		<name><![CDATA[Identifiers]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -694,7 +694,7 @@ select case
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view,plscope-utils-sequence">
 		<name><![CDATA[Used by]]></name>
 		<description><![CDATA[]]>
 		</description>
