@@ -109,7 +109,7 @@ prompt ====================================================================
 declare
    procedure exec_sql(in_sql in varchar2) is
    begin
-      execute immediate in_sql;
+      execute immediate sys.dbms_assert.noop(in_sql);
    end exec_sql; 
    --
    procedure options is
@@ -118,7 +118,8 @@ declare
       select count(*)
         into l_count
         from all_objects
-       where object_name in ('UTL_XML', 'UTL_XML_LIB');
+       where object_name in ('UTL_XML', 'UTL_XML_LIB')
+         and rownum = 1;
       if l_count > 0 then
          -- to parse queries in PL/SQL packages
          exec_sql('grant execute on sys.utl_xml     to &&username'); -- for 12.2 only
