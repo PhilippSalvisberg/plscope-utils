@@ -25,9 +25,9 @@ create or replace view plscope_identifiers as
                 line,
                 text
            from dba_source
-          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
-            and type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
-            and name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+          where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
+            and type like coalesce(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+            and name like coalesce(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
       -- PL/SQL identifiers filtered by PLSCOPE context attributes
       pls_ids as (
@@ -45,9 +45,9 @@ create or replace view plscope_identifiers as
                 usage_context_id,
                 origin_con_id
            from dba_identifiers
-          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
-            and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
-            and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+          where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
+            and object_type like coalesce(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+            and object_name like coalesce(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
       -- SQL identifiers filtered by PLSCOPE context attributes
       sql_ids as (
@@ -65,9 +65,9 @@ create or replace view plscope_identifiers as
                 usage_context_id,
                 origin_con_id
            from dba_statements
-          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
-            and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
-            and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+          where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
+            and object_type like coalesce(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+            and object_name like coalesce(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
       -- full list of identifiers (PL/SQL and SQL) with columns is_sql_stmt and procedure_scope 
       fids as (

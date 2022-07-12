@@ -53,9 +53,9 @@ create or replace view plscope_naming as
                 line,
                 text
            from dba_source
-          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
-            and type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
-            and name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+          where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
+            and type like coalesce(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+            and name like coalesce(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
       ids as (
          select owner,
@@ -69,9 +69,9 @@ create or replace view plscope_naming as
                 col,
                 usage_context_id
            from sys.dba_identifiers
-          where owner like nvl(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
-            and object_type like nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
-            and object_name like nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
+          where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
+            and object_type like coalesce(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
+            and object_name like coalesce(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
       ),
       tree (
          owner,
