@@ -146,4 +146,16 @@ select object_name
 			<icon RSKEY="OracleIcons.VIEW" />
 		</node>
 	</objectType>
+	<objectType connType="Oracle" id="plscope-utils-sequence" weight="201.9" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="SEQUENCE_FOLDER_ICON" />
+			<label RSKEY="SEQUENCE_FOLDER_LABEL" />
+			<queries>
+				<query minversion="11.1" sharedId="plscope-declarations" />
+			</queries>
+		</folder>
+		<node>
+			<icon RSKEY="OracleIcons.SEQUENCE" />
+		</node>
+	</objectType>
 </navigator>
