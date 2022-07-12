@@ -49,8 +49,8 @@ create or replace package body lineage_util is
       in_column_pos in integer,
       in_recursive  in integer default 1
    ) return t_col_type is
-      l_parse_tree xmltype;
-      l_dep_cols   xmltype;
+      l_parse_tree sys.xmltype;
+      l_dep_cols   sys.xmltype;
       o_obj        obj_type;
       t_col        t_col_type := t_col_type();
    begin
@@ -190,7 +190,7 @@ create or replace package body lineage_util is
       t_result    t_col_lineage_type := t_col_lineage_type();
       cursor c_insert is
          select full_text, owner
-           from dba_statements
+           from sys.dba_statements -- NOSONAR: avoid public synonym
           where signature = in_signature;
       r_insert    c_insert%rowtype;
    begin
@@ -279,7 +279,7 @@ create or replace package body lineage_util is
       t_targets    t_obj_type;
       cursor c_stmt is
          select owner, object_type, object_name, type, usage_id, full_text
-           from dba_statements
+           from sys.dba_statements -- NOSONAR: avoid public synonym
           where signature = in_signature;
       r_stmt       c_stmt%rowtype;
       cursor c_table is
@@ -287,7 +287,7 @@ create or replace package body lineage_util is
                 t.object_type,
                 t.object_name,
                 t.signature
-           from dba_identifiers t
+           from sys.dba_identifiers t -- NOSONAR: avoid public synonym
            join table(t_targets) o
              on o.owner = t.owner
             and o.object_type = t.object_type
@@ -300,8 +300,8 @@ create or replace package body lineage_util is
          p_object_name in varchar2
       ) is
          select col.name
-           from dba_identifiers cu
-           join dba_identifiers col
+           from sys.dba_identifiers cu  -- NOSONAR: avoid public synonym
+           join sys.dba_identifiers col -- NOSONAR: avoid public synonym
              on col.signature = cu.signature
             and col.usage = 'DECLARATION'
           where cu.owner = r_stmt.owner
@@ -318,7 +318,7 @@ create or replace package body lineage_util is
          p_object_name in varchar2
       ) is
          select column_name
-           from dba_tab_columns
+           from sys.dba_tab_columns -- NOSONAR: avoid public synonym
           where owner = p_owner
             and table_name = p_object_name;
    begin

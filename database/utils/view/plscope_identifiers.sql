@@ -24,7 +24,7 @@ create or replace view plscope_identifiers as
                 name,
                 line,
                 text
-           from dba_source
+           from sys.dba_source -- NOSONAR: avoid public synonym
           where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
             and type like coalesce(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and name like coalesce(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
@@ -44,7 +44,7 @@ create or replace view plscope_identifiers as
                 col,
                 usage_context_id,
                 origin_con_id
-           from dba_identifiers
+           from sys.dba_identifiers -- NOSONAR: avoid public synonym
           where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
             and object_type like coalesce(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and object_name like coalesce(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')
@@ -64,7 +64,7 @@ create or replace view plscope_identifiers as
                 col,
                 usage_context_id,
                 origin_con_id
-           from dba_statements
+           from sys.dba_statements -- NOSONAR: avoid public synonym
           where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
             and object_type like coalesce(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
             and object_name like coalesce(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')

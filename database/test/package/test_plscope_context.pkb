@@ -36,7 +36,7 @@ create or replace package body test_plscope_context is
       plscope_context.remove_all;
       select count(*)
         into l_actual
-        from session_context
+        from sys.session_context -- NOSONAR: avoid public synonym
        where namespace = 'PLSCOPE';
       ut.expect(l_actual).to_equal(0);
    end test_remove_all;

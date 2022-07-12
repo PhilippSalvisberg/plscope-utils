@@ -23,7 +23,7 @@ create or replace view plscope_tab_usage as
                 null as referenced_owner,
                 null as referenced_type,
                 null as referenced_name
-           from dba_tables
+           from sys.dba_tables -- NOSONAR: avoid public synonym
          union all
          select owner,
                 type,
@@ -31,7 +31,7 @@ create or replace view plscope_tab_usage as
                 referenced_owner,
                 referenced_type,
                 referenced_name
-           from dba_dependencies
+           from sys.dba_dependencies -- NOSONAR: avoid public synonym
           where type in ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
       ),
       -- recursive with clause to calculate ref_object_type_path
@@ -131,7 +131,7 @@ create or replace view plscope_tab_usage as
              on dep_graph.owner = ids.ref_owner
             and dep_graph.object_type = ids.ref_object_type
             and dep_graph.object_name = ids.ref_object_name
-           left join dba_statements refs
+           left join sys.dba_statements refs -- NOSONAR: avoid public synonym
              on refs.signature = parent_statement_signature
           where ids.type in ('VIEW', 'TABLE', 'SYNONYM')
       )

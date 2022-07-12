@@ -4,7 +4,7 @@ create or replace package body test_parse_util is
    -- test_parse_query
    --
    procedure test_parse_query is
-      l_actual   xmltype;
+      l_actual   sys.xmltype;
       l_expected clob;
    begin
       l_expected := q'[<QUERY>
@@ -44,7 +44,7 @@ create or replace package body test_parse_util is
                         INSERT INTO dept VALUES (50, 'TRAINING', 'ZURICH')
                      ]'
                     );
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
       -- multitable insert
       l_expected := t_obj_type(
                        obj_type(null, null, 'EMP'),
@@ -80,7 +80,7 @@ create or replace package body test_parse_util is
                            FROM dual
                      ]'
                     );
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_get_insert_targets;
 
    --
@@ -142,8 +142,8 @@ create or replace package body test_parse_util is
    -- test_get_dep_cols
    --
    procedure test_get_dep_cols is
-      l_parse_tree xmltype;
-      l_actual     xmltype;
+      l_parse_tree sys.xmltype;
+      l_actual     sys.xmltype;
       l_expected   clob;
    begin
       l_parse_tree := parse_util.parse_query(

@@ -19,7 +19,7 @@ create or replace package body test_type_util is
                     );
       l_actual   := type_util.dedup(l_input);
       ut.expect(l_actual.count).to_equal(2);
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_dedup_t_obj;
    
    --
@@ -44,7 +44,7 @@ create or replace package body test_type_util is
                     );
       l_actual   := type_util.dedup(l_input);
       ut.expect(l_actual.count).to_equal(3);
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_dedup_t_col;
 
    --
@@ -66,7 +66,7 @@ create or replace package body test_type_util is
                     );
       l_actual   := type_util.dedup(l_input);
       ut.expect(l_actual.count).to_equal(2);
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_dedup_t_col_lineage;
 
 end test_type_util;

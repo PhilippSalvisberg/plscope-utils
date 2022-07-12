@@ -39,7 +39,7 @@ create or replace package body test_lineage_util is
                        col_type(user, 'TABLE', 'EMP', 'COMM'),
                        col_type(user, 'TABLE', 'EMP', 'SAL')
                     );
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
       -- recursive
       l_actual   := lineage_util.get_dep_cols_from_query(
                        user,
@@ -56,7 +56,7 @@ create or replace package body test_lineage_util is
                        col_type(user, 'TABLE', 'EMP', 'SAL'),
                        col_type(user, 'VIEW', 'SOURCE_VIEW', 'SALARY')
                     );
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_get_dep_cols_from_query;
 
    --
@@ -77,7 +77,7 @@ create or replace package body test_lineage_util is
                        col_type(user, 'TABLE', 'EMP', 'COMM'),
                        col_type(user, 'TABLE', 'EMP', 'SAL')
                     );
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_get_dep_cols_from_view;
 
    --
@@ -90,7 +90,7 @@ create or replace package body test_lineage_util is
    begin
       select signature
         into l_signature
-        from user_statements
+        from sys.user_statements
        where text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
       -- non-recursive
       l_actual   := lineage_util.get_dep_cols_from_insert(l_signature, 0);
@@ -100,7 +100,7 @@ create or replace package body test_lineage_util is
                        col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
                        col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'SALARY', user, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected))
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected))
       .join_by('FROM_COLUMN_NAME');
       -- recursive
       l_actual   := lineage_util.get_dep_cols_from_insert(l_signature, 1);
@@ -114,7 +114,7 @@ create or replace package body test_lineage_util is
                        col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
                        col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'SALARY', user, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_get_dep_cols_from_insert;
    
    --
@@ -128,7 +128,7 @@ create or replace package body test_lineage_util is
       -- explicit target columns
       select signature
         into l_signature
-        from user_statements
+        from sys.user_statements
        where text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
       l_actual   := lineage_util.get_target_cols_from_insert(l_signature);
       ut.expect(l_actual.count).to_equal(3);
@@ -137,11 +137,11 @@ create or replace package body test_lineage_util is
                        col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
                        col_type(user, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
       -- implicit target columns
       select signature
         into l_signature
-        from user_statements
+        from sys.user_statements
        where text = 'INSERT INTO DEPTSAL SELECT T.* FROM SOURCE_SYN T';
       l_actual   := lineage_util.get_target_cols_from_insert(l_signature);
       ut.expect(l_actual.count).to_equal(3);
@@ -150,7 +150,7 @@ create or replace package body test_lineage_util is
                        col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
                        col_type(user, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_get_target_cols_from_insert;
 
 end test_lineage_util;

@@ -35,7 +35,7 @@ create or replace package body test_plscope_identifiers is
                 usage_id,
                 usage_context_id,
                 origin_con_id
-           from user_identifiers
+           from sys.user_identifiers
           where object_name = 'DD_UTIL'
           order by object_type, object_name, line, col, usage, usage_id;
 
@@ -76,7 +76,7 @@ create or replace package body test_plscope_identifiers is
                 usage_id,
                 usage_context_id,
                 origin_con_id
-           from user_statements
+           from sys.user_statements
           order by object_type, object_name, line, col, usage_id;
 
       -- assert

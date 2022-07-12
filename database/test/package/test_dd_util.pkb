@@ -99,7 +99,7 @@ create or replace package body test_dd_util is
                     );
       l_actual   := dd_util.get_objects(user, l_input);
       ut.expect(l_actual.count).to_equal(2);
-      ut.expect(anydata.convertcollection(l_actual)).to_equal(anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_get_objects;
 
    --

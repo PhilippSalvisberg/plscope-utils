@@ -31,7 +31,7 @@ create or replace package parse_util is
    function parse_query(
       in_parse_user in varchar2,
       in_query      in clob
-   ) return xmltype;
+   ) return sys.xmltype;
    
    /**
    * Gets target objects (tables, views, materialized views, synonyms) of an insert statement.
@@ -62,9 +62,9 @@ create or replace package parse_util is
    * @returns columns in xml <column><schemaName/><tableName/><columName/></column>
    */
    function get_dep_cols(
-      in_parse_tree in xmltype,
+      in_parse_tree in sys.xmltype,
       in_column_pos in integer
-   ) return xmltype;
+   ) return sys.xmltype;
 
 end parse_util;
 /

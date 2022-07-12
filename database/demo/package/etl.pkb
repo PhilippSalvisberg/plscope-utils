@@ -1,5 +1,5 @@
 create or replace package body etl as
-   g_unused_column v$mystat.sid%type;
+   g_unused_column sys.v_$mystat.sid%type;
 
    procedure clear_deptsal is
    begin

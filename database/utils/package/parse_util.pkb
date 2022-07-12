@@ -18,7 +18,7 @@ create or replace package body parse_util is
    --
    -- utl_xml_parse_query (private)
    --
-   $IF DBMS_DB_VERSION.VERSION >= 18 $THEN
+   $if sys.dbms_db_version.version >= 18 $then
       -- workaround for utl_xml.parsequery which is protected by an accessible_by_clause
       procedure utl_xml_parse_query (
          in_current_userid in number,
@@ -40,7 +40,7 @@ create or replace package body parse_util is
             in_result         ociloblocator,
             in_result         indicator
          );
-   $END
+   $end
 
    --
    -- parse_query
@@ -48,20 +48,20 @@ create or replace package body parse_util is
    function parse_query(
       in_parse_user in varchar2,
       in_query      in clob
-   ) return xmltype is
+   ) return sys.xmltype is
       l_clob clob;
-      l_xml  xmltype;
+      l_xml  sys.xmltype;
    begin
       if in_query is not null and sys.dbms_lob.getlength(in_query) > 0 then
          sys.dbms_lob.createtemporary(l_clob, true);
          
          -- parse query and get XML as CLOB
          -- parsing user must have access to objects in query
-         $IF DBMS_DB_VERSION.VER_LE_12_2 $THEN
+         $if sys.dbms_db_version.ver_le_12_2 $then
             sys.utl_xml.parsequery(in_parse_user, in_query, l_clob);
-         $ELSE
+         $else
             utl_xml_parse_query(sys_context('USERENV','SESSION_USERID'), in_parse_user, in_query, l_clob);
-         $END
+         $end
 
          -- create XMLTYPE from CLOB
          if sys.dbms_lob.getlength(l_clob) > 0 then
@@ -82,7 +82,7 @@ create or replace package body parse_util is
    ) return t_obj_type
    is
       t_obj t_obj_type := t_obj_type();
-      l_xml xmltype;
+      l_xml sys.xmltype;
    begin
       if regexp_like(in_sql, '^(\s*)(INSERT)(.+)$', 'in') then
          l_xml := parse_query(in_parse_user => in_parse_user, in_query => in_sql);
@@ -132,10 +132,10 @@ create or replace package body parse_util is
    -- get_dep_cols
    --
    function get_dep_cols(
-      in_parse_tree in xmltype,
+      in_parse_tree in sys.xmltype,
       in_column_pos in integer
-   ) return xmltype is
-      l_result xmltype;
+   ) return sys.xmltype is
+      l_result sys.xmltype;
    begin
       -- TODO: handle <LITERAL>*</LITERAL> in SELECT_LIST_ITEM
       -- Note: "select t.* from emp t" leads to a parse tree without literals!
@@ -206,7 +206,7 @@ create or replace package body parse_util is
                 returning content
              )
         into l_result
-        from dual;
+        from sys.dual; -- NOSONAR: avoid public synonym
       return l_result;
    end get_dep_cols;
 

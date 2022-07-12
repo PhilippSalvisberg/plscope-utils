@@ -36,7 +36,7 @@ create or replace view plscope_col_usage as
                 ids.name as column_name,
                 ids.text
            from plscope_identifiers ids
-           left join dba_statements refs
+           left join sys.dba_statements refs -- NOSONAR: avoid public synonym
              on refs.signature = parent_statement_signature
           where ids.type = 'COLUMN'
             and ids.usage != 'DECLARATION'
@@ -56,10 +56,10 @@ create or replace view plscope_col_usage as
                 tc.column_name,
                 t.text
            from plscope_tab_usage t
-           left join dba_synonyms s
+           left join sys.dba_synonyms s -- NOSONAR: avoid public synonym
              on s.owner = t.ref_owner
             and s.synonym_name = t.ref_object_name
-           left join dba_objects o
+           left join sys.dba_objects o -- NOSONAR: avoid public synonym
              on o.owner = s.table_owner
             and o.object_name = s.table_name
            left join scope_cols c
@@ -70,7 +70,7 @@ create or replace view plscope_col_usage as
             and coalesce(o.owner, t.ref_owner) = c.ref_owner
             and coalesce(o.object_type, t.ref_object_type) = c.ref_object_type
             and coalesce(o.object_name, t.ref_object_name) = c.ref_object_name
-           join dba_tab_columns tc
+           join sys.dba_tab_columns tc -- NOSONAR: avoid public synonym
              on tc.owner = t.owner
             and tc.table_name = coalesce(o.object_name, t.ref_object_name)
           where t.direct_dependency = 'YES'

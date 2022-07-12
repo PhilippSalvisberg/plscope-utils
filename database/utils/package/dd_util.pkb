@@ -14,8 +14,8 @@ create or replace package body dd_util is
                    object_type => o.object_type,
                    object_name => o.object_name
                 )
-           from dba_synonyms s
-           join dba_objects o
+           from sys.dba_synonyms s -- NOSONAR: avoid public synonym
+           join sys.dba_objects o -- NOSONAR: avoid public synonym
              on o.owner = s.table_owner
             and o.object_name = s.table_name
           where s.owner = o_obj.owner
@@ -44,7 +44,7 @@ create or replace package body dd_util is
                    object_type => o.object_type,
                    object_name => o.object_name
                 )
-           from dba_objects o
+           from sys.dba_objects o -- NOSONAR: avoid public synonym
           where o.owner = coalesce(in_obj.owner, in_parse_user, 'PUBLIC')
             and o.object_name = in_obj.object_name
           order by case o.owner
@@ -110,7 +110,7 @@ create or replace package body dd_util is
       l_column_id integer;
       cursor c_lookup is
          select column_id
-           from dba_tab_columns
+           from sys.dba_tab_columns -- NOSONAR: avoid public synonym
           where owner = in_owner
             and table_name = in_object_name
             and column_name = in_column_name;
@@ -131,7 +131,7 @@ create or replace package body dd_util is
       l_source_clob clob;
       cursor c_lookup is
          select text
-           from dba_views
+           from sys.dba_views -- NOSONAR: avoid public synonym
           where owner = in_obj.owner
             and view_name = in_obj.object_name;
    begin
