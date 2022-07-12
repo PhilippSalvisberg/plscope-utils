@@ -130,7 +130,7 @@ end;
 	</item>
 
 	<!-- Copy of the previous item. Changed type only. A menu cannot be assigned to multiple nodes. -->
-	<item connType="Oracle" type="plscope-utils-root_FOLDER" reload="true" minversion="11.1">
+	<item connType="Oracle" type="plscope-utils-root" reload="true" minversion="11.1">
 		<title>Compile with PL/Scope...</title>
 		<prompt type="radio">
 			<label>Identifiers</label>
