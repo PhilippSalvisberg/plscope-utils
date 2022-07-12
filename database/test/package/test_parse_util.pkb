@@ -27,7 +27,7 @@ create or replace package body test_parse_util is
 ]';
       l_actual   := parse_util.parse_query(user, 'SELECT ename FROM emp');
       ut.expect(l_actual.getclobval()).to_equal(l_expected);
-   end;
+   end test_parse_query;
 
    --
    -- test_get_insert_targets
