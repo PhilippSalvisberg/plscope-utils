@@ -209,7 +209,7 @@ with
         from tree
    )
 select case
-          when tree.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
+          when tree.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY', 'TABLE', 'VIEW', 'SEQUENCE', 'SYNONYM') then
              'SQLDEV:LINK:'
              || tree.owner
              || ':'
@@ -449,7 +449,7 @@ with
         from tree
    )
 select case
-          when tree.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
+          when tree.object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY', 'TABLE', 'VIEW', 'SEQUENCE', 'SYNONYM') then
              'SQLDEV:LINK:'
              || tree.owner
              || ':'
