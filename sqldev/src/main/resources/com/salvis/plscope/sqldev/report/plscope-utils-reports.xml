@@ -2900,7 +2900,7 @@ with
              text
         from prepared
    ),
-   plscope_nameing as (
+   plscope_naming as (
       select owner,
              object_type,
              object_name,
