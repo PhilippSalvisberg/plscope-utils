@@ -15,13 +15,16 @@
 		<query minversion="12.2">
 			<sql><![CDATA[
 with
-   stmt as (
+   plscope_statements as (
       select owner,
-             object_type,
-             object_name,
+             signature,
              type,
+             object_name,
+             object_type,
+             usage_id,
              line,
              col,
+             usage_context_id,
              sql_id,
              case
                 when (count(sql_id) over (partition by sql_id)) > 1 then
@@ -29,8 +32,17 @@ with
                 else
                    'NO'
              end as is_duplicate,
-             full_text
-        from sys.all_statements
+             has_hint,
+             has_into_bulk,
+             has_into_returning,
+             has_into_record,
+             has_current_of,
+             has_for_update,
+             has_in_binds,
+             text,
+             full_text,
+             origin_con_id
+        from sys.all_statements stmt -- NOSONAR: avoid public synonym
        where owner like nvl(:OBJECT_OWNER, user)
    )
 select case
@@ -59,7 +71,7 @@ select case
        col as "Col",
        sql_id as "SQL_ID",
        full_text as "Text"
-  from stmt
+  from plscope_statements
  where is_duplicate = 'YES'
  order by owner, object_type, object_name, sql_id, line, col
 ]]>
