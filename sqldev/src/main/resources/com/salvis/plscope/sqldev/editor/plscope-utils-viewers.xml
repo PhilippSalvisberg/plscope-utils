@@ -5,7 +5,7 @@
 	<!-- - https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_statements.sql -->
 	<!-- - https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_tab_usage.sql -->
 	<!-- - https://github.com/PhilippSalvisberg/plscope-utils/blob/master/database/utils/view/plscope_col_usage.sql -->
-	<!-- used sys.all_ instead of dba_ - SQL Developer uses dba_ views, if the the connected use has the privileges -->
+	<!-- used sys.all_ instead of dba_ - SQL Developer uses dba_ views, if the connected user has the privileges -->
 	<!-- Use case sensitive result columns including spaces -->
 	<display type="editor" style="null" enable="true" connType="Oracle"
 		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view,plscope-utils-sequence">
@@ -1058,6 +1058,41 @@ select case
 		<queries>
 			<query minversion="12.2">
 				<sql><![CDATA[
+with
+   plscope_statements as (
+      select owner,
+             signature,
+             type,
+             object_name,
+             object_type,
+             usage_id,
+             line,
+             col,
+             usage_context_id,
+             sql_id,
+             case
+                when (count(sql_id) over (partition by sql_id)) > 1 then
+                   'YES'
+                else
+                   'NO'
+             end as is_duplicate,
+             has_hint,
+             has_into_bulk,
+             has_into_returning,
+             has_into_record,
+             has_current_of,
+             has_for_update,
+             has_in_binds,
+             text,
+             full_text,
+             origin_con_id
+        from sys.dba_statements stmt -- NOSONAR: avoid public synonym
+       where owner = :OBJECT_OWNER
+         and object_type in (
+                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+             )
+         and object_name = :OBJECT_NAME
+   )
 select case
           when object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
              'SQLDEV:LINK:'
@@ -1080,12 +1115,7 @@ select case
        line as "Line",
        col as "Col",
        sql_id as "SQL_ID",
-       case
-          when (count(sql_id) over (partition by sql_id)) > 1 then
-             'YES'
-          else
-             'NO'
-       end as "Duplicate?",
+       is_duplicate as "Duplicate?",
        has_hint as "Has hint?",
        has_into_bulk as "Has bulk into?",
        has_into_returning as "Has returning into?",
@@ -1094,10 +1124,7 @@ select case
        has_for_update as "Has for update?",
        has_in_binds as "Has binds?",
        full_text as "Text"
-  from sys.all_statements
- where owner = :OBJECT_OWNER
-   and object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
-   and object_name = :OBJECT_NAME
+  from plscope_statements
  order by length(object_type), line, col
 ]]>
             </sql>
