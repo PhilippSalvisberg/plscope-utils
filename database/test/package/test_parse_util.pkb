@@ -33,24 +33,24 @@ create or replace package body test_parse_util is
    -- test_get_insert_targets
    --
    procedure test_get_insert_targets is
-      l_actual   t_obj_type;
-      l_expected t_obj_type;
+      t_actual   t_obj_type;
+      t_expected t_obj_type;
    begin
       -- single table insert
-      l_expected := t_obj_type(obj_type(null, null, 'DEPT'));
-      l_actual   := parse_util.get_insert_targets(
+      t_expected := t_obj_type(obj_type(null, null, 'DEPT'));
+      t_actual   := parse_util.get_insert_targets(
                        in_parse_user => user,
                        in_sql        => q'[
                           insert into dept values (50, 'TRAINING', 'ZURICH')
                        ]'
                     );
-      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
       -- multitable insert
-      l_expected := t_obj_type(
+      t_expected := t_obj_type(
                        obj_type(null, null, 'EMP'),
                        obj_type(null, null, 'DEPT')
                     );
-      l_actual   := parse_util.get_insert_targets(
+      t_actual   := parse_util.get_insert_targets(
                        in_parse_user => user,
                        in_sql        => q'[
                            insert all
@@ -81,7 +81,7 @@ create or replace package body test_parse_util is
                              from dual
                        ]'
                     );
-      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
+      ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
    end test_get_insert_targets;
 
    --

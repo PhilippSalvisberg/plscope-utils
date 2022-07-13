@@ -29,77 +29,77 @@ create or replace package body test_dd_util is
    -- test_resolve_synonym
    --
    procedure test_resolve_synonym is
-      l_input  obj_type;
-      l_actual obj_type;
+      o_input  obj_type;
+      o_actual obj_type;
    begin
       -- resolve
-      l_input  := obj_type(null, null, 'S1');
-      l_actual := dd_util.resolve_synonym(in_parse_user => user, in_obj => l_input);
-      ut.expect(l_actual.owner).to_equal(user);
-      ut.expect(l_actual.object_type).to_equal('PROCEDURE');
-      ut.expect(l_actual.object_name).to_equal('P1');
+      o_input  := obj_type(null, null, 'S1');
+      o_actual := dd_util.resolve_synonym(in_parse_user => user, in_obj => o_input);
+      ut.expect(o_actual.owner).to_equal(user);
+      ut.expect(o_actual.object_type).to_equal('PROCEDURE');
+      ut.expect(o_actual.object_name).to_equal('P1');
       -- no resolve
-      l_input  := obj_type(null, null, 'P1');
-      l_actual := dd_util.resolve_synonym(in_parse_user => user, in_obj => l_input);
-      ut.expect(l_actual.owner).to_equal(user);
-      ut.expect(l_actual.object_type).to_equal('PROCEDURE');
-      ut.expect(l_actual.object_name).to_equal('P1');
+      o_input  := obj_type(null, null, 'P1');
+      o_actual := dd_util.resolve_synonym(in_parse_user => user, in_obj => o_input);
+      ut.expect(o_actual.owner).to_equal(user);
+      ut.expect(o_actual.object_type).to_equal('PROCEDURE');
+      ut.expect(o_actual.object_name).to_equal('P1');
       -- unknown object
-      l_input  := obj_type(null, null, 'X1');
-      l_actual := dd_util.resolve_synonym(in_parse_user => user, in_obj => l_input);
-      ut.expect(l_actual.owner).to_(be_null);
-      ut.expect(l_actual.object_type).to_(be_null);
-      ut.expect(l_actual.object_name).to_(be_null);
+      o_input  := obj_type(null, null, 'X1');
+      o_actual := dd_util.resolve_synonym(in_parse_user => user, in_obj => o_input);
+      ut.expect(o_actual.owner).to_(be_null);
+      ut.expect(o_actual.object_type).to_(be_null);
+      ut.expect(o_actual.object_name).to_(be_null);
    end test_resolve_synonym;
 
    --
    -- test_get_object
    --
    procedure test_get_object is
-      l_input  obj_type;
-      l_actual obj_type;
+      o_input  obj_type;
+      o_actual obj_type;
    begin
       -- synonym
-      l_input  := obj_type(null, null, 'S1');
-      l_actual := dd_util.get_object(in_parse_user => user, in_obj => l_input);
-      ut.expect(l_actual.owner).to_(equal(user));
-      ut.expect(l_actual.object_type).to_(equal('SYNONYM'));
-      ut.expect(l_actual.object_name).to_(equal('S1'));
+      o_input  := obj_type(null, null, 'S1');
+      o_actual := dd_util.get_object(in_parse_user => user, in_obj => o_input);
+      ut.expect(o_actual.owner).to_(equal(user));
+      ut.expect(o_actual.object_type).to_(equal('SYNONYM'));
+      ut.expect(o_actual.object_name).to_(equal('S1'));
       -- procedure
-      l_input  := obj_type(null, null, 'P1');
-      l_actual := dd_util.get_object(in_parse_user => user, in_obj => l_input);
-      ut.expect(l_actual.owner).to_(equal(user));
-      ut.expect(l_actual.object_type).to_(equal('PROCEDURE'));
-      ut.expect(l_actual.object_name).to_(equal('P1'));
+      o_input  := obj_type(null, null, 'P1');
+      o_actual := dd_util.get_object(in_parse_user => user, in_obj => o_input);
+      ut.expect(o_actual.owner).to_(equal(user));
+      ut.expect(o_actual.object_type).to_(equal('PROCEDURE'));
+      ut.expect(o_actual.object_name).to_(equal('P1'));
       -- unknown object
-      l_input  := obj_type(null, null, 'X1');
-      l_actual := dd_util.get_object(in_parse_user => user, in_obj => l_input);
-      ut.expect(l_actual.owner).to_(be_null);
-      ut.expect(l_actual.object_type).to_(be_null);
-      ut.expect(l_actual.object_name).to_(be_null);
+      o_input  := obj_type(null, null, 'X1');
+      o_actual := dd_util.get_object(in_parse_user => user, in_obj => o_input);
+      ut.expect(o_actual.owner).to_(be_null);
+      ut.expect(o_actual.object_type).to_(be_null);
+      ut.expect(o_actual.object_name).to_(be_null);
    end test_get_object;
 
    --
    -- test_get_objects
    --
    procedure test_get_objects is
-      l_input    t_obj_type;
-      l_actual   t_obj_type;
-      l_expected t_obj_type;
+      t_input    t_obj_type;
+      t_actual   t_obj_type;
+      t_expected t_obj_type;
    begin
-      l_input    := t_obj_type(
+      t_input    := t_obj_type(
                        obj_type(null, null, 'P1'),
                        obj_type(null, null, 'S1'),
                        obj_type(null, null, 'XYZ'), -- not existing
                        obj_type(null, 'SYNONYM', 'S1') -- duplicate
                     );
-      l_expected := t_obj_type(
+      t_expected := t_obj_type(
                        obj_type(user, 'PROCEDURE', 'P1'),
                        obj_type(user, 'SYNONYM', 'S1')
                     );
-      l_actual   := dd_util.get_objects(in_parse_user => user, in_t_obj => l_input);
-      ut.expect(l_actual.count).to_equal(2);
-      ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
+      t_actual   := dd_util.get_objects(in_parse_user => user, in_t_obj => t_input);
+      ut.expect(t_actual.count).to_equal(2);
+      ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
    end test_get_objects;
 
    --
@@ -128,16 +128,16 @@ create or replace package body test_dd_util is
    -- test_get_view_source
    --
    procedure test_get_view_source is
-      l_input  obj_type;
+      o_input  obj_type;
       l_actual clob;
    begin
       -- fully qualified
-      l_input  := obj_type(user, 'VIEW', 'PLSCOPE_IDENTIFIERS');
-      l_actual := dd_util.get_view_source(l_input);
+      o_input  := obj_type(user, 'VIEW', 'PLSCOPE_IDENTIFIERS');
+      l_actual := dd_util.get_view_source(o_input);
       ut.expect(l_actual).to_match(a_pattern => '^(WITH)(.+)$', a_modifiers => 'ni');
       -- not fully qualified
-      l_input  := obj_type(null, 'VIEW', 'PLSCOPE_IDENTIFIERS');
-      l_actual := dd_util.get_view_source(l_input);
+      o_input  := obj_type(null, 'VIEW', 'PLSCOPE_IDENTIFIERS');
+      l_actual := dd_util.get_view_source(o_input);
       ut.expect(l_actual).to_(be_null);
    end test_get_view_source;
 
