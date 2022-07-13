@@ -1296,7 +1296,7 @@ with
    )
 select case
           when object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
-             'SQLDEVnull:'
+             'SQLDEV:LINK:'
              || owner
              || ':'
              || object_type
