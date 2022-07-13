@@ -25,7 +25,7 @@ create or replace package body test_parse_util is
   </FROM>
 </QUERY>
 ]';
-      l_actual   := parse_util.parse_query(user, 'SELECT ename FROM emp');
+      l_actual   := parse_util.parse_query(in_parse_user => user, in_query => 'select ename from emp');
       ut.expect(l_actual.getclobval()).to_equal(l_expected);
    end test_parse_query;
 
@@ -39,10 +39,10 @@ create or replace package body test_parse_util is
       -- single table insert
       l_expected := t_obj_type(obj_type(null, null, 'DEPT'));
       l_actual   := parse_util.get_insert_targets(
-                       user,
-                       q'[
-                        INSERT INTO dept VALUES (50, 'TRAINING', 'ZURICH')
-                     ]'
+                       in_parse_user => user,
+                       in_sql        => q'[
+                          insert into dept values (50, 'TRAINING', 'ZURICH')
+                       ]'
                     );
       ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
       -- multitable insert
@@ -51,34 +51,35 @@ create or replace package body test_parse_util is
                        obj_type(null, null, 'DEPT')
                     );
       l_actual   := parse_util.get_insert_targets(
-                       user,
-                       q'[
-                        INSERT ALL
-                           WHEN rec_type = 'EMP' THEN
-                              INTO emp (empno, ename, job, mgr, hiredate, sal, deptno)
-                              VALUES (c1, c2, c3, c4, to_date(c5, 'YYYY-MM-DD'), c6, c7)
-                           WHEN rec_type = 'DEPT' THEN
-                              INTO dept(deptno, dname, loc)
-                              VALUES (c1, c2, c3)
-                        SELECT 'EMP' AS rec_type, '9999' AS c1, 
-                               'ROBERTS' AS c2, 
-                               'CLERK' AS c3, 
-                               '7788' AS c4, 
-                               '2017-01-01' AS c5, 
-                               '3000' AS c6, 
-                               '10' AS c7
-                          FROM dual
-                        UNION ALL
-                        SELECT 'DEPT' AS rec_type, 
-                                '50' AS c1, 
-                                'TRAINING' AS c2, 
-                                'ZURICH' AS c3, 
-                                NULL AS c4, 
-                                NULL AS c5, 
-                                NULL AS c6, 
-                                NULL AS c7
-                           FROM dual
-                     ]'
+                       in_parse_user => user,
+                       in_sql        => q'[
+                           insert all
+                              when rec_type = 'EMP' then
+                                 into emp (empno, ename, job, mgr, hiredate, sal, deptno)
+                                 values (c1, c2, c3, c4, to_date(c5, 'YYYY-MM-DD'), c6, c7)
+                              when rec_type = 'DEPT' then
+                                 into dept(deptno, dname, loc)
+                                 values (c1, c2, c3)
+                           select 'EMP' as rec_type,
+                                  '9999' as c1,
+                                  'ROBERTS' as c2,
+                                  'CLERK' as c3,
+                                  '7788' as c4,
+                                  '2017-01-01' as c5,
+                                  '3000' as c6,
+                                  '10' as c7
+                             from dual
+                           union all
+                           select 'DEPT' as rec_type,
+                                  '50' as c1,
+                                  'TRAINING' as c2,
+                                  'ZURICH' as c3,
+                                  null as c4,
+                                  null as c5,
+                                  null as c6,
+                                  null as c7
+                             from dual
+                       ]'
                     );
       ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_get_insert_targets;
@@ -147,17 +148,17 @@ create or replace package body test_parse_util is
       l_expected   clob;
    begin
       l_parse_tree := parse_util.parse_query(
-                         user,
-                         q'[
-                            SELECT /*+ordered */ 
-                                   d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) AS sal
-                              FROM dept d
-                              LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
-                                ON e.deptno = d.deptno
-                            GROUP BY d.deptno, d.dname
+                         in_parse_user => user,
+                         in_query      => q'[
+                            select /*+ordered */
+                                   d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+                              from dept d
+                              left join (select * from emp where hiredate > date '1980-01-01') e
+                                on e.deptno = d.deptno
+                             group by d.deptno, d.dname
                          ]'
                       );
-      l_actual     := parse_util.get_dep_cols(l_parse_tree, 3);
+      l_actual     := parse_util.get_dep_cols(in_parse_tree => l_parse_tree, in_column_pos => 3);
       l_expected   := '<column><schemaName/><tableName>EMP</tableName><columnName>SAL</columnName></column><column><schemaName/><tableName>EMP</tableName><columnName>COMM</columnName></column>';
       ut.expect(l_actual.getclobval()).to_equal(l_expected);
    end test_get_dep_cols;
