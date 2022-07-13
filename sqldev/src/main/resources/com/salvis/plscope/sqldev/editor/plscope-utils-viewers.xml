@@ -1086,7 +1086,7 @@ with
              text,
              full_text,
              origin_con_id
-        from sys.dba_statements stmt -- NOSONAR: avoid public synonym
+        from sys.all_statements stmt -- NOSONAR: avoid public synonym
        where owner = :OBJECT_OWNER
          and object_type in (
                 upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
