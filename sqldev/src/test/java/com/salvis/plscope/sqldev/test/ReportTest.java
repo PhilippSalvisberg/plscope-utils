@@ -77,6 +77,10 @@ public class ReportTest extends AbstractJdbcTest{
                           from plscope_tab_usage
                          where operation in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'REFERENCE')
                            and direct_dependency = 'YES'
+                           and (ref_owner, ref_object_type, ref_object_name) in (
+                                  select owner, object_type, object_name
+                                    from all_identifiers
+                               )
                          group by owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name
                     """);
             Assertions.assertEquals(expected.size(), actual.size());
