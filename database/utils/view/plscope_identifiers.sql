@@ -499,7 +499,7 @@ create or replace view plscope_identifiers as
           refs.col as ref_col,           -- decl_col
           tree.origin_con_id
      from tree_plus tree
-     left join pls_ids refs
+     left join sys.dba_identifiers refs -- must not used pls_ids to consider all identifiers
        on refs.signature = tree.signature
       and refs.usage = 'DECLARATION'
      left join src
