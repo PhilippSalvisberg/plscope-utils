@@ -1151,7 +1151,10 @@ with
              line,
              text
         from sys.all_source
-       where type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+       where owner = :OBJECT_OWNER
+         and type in (
+                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+             )
          and name = :OBJECT_NAME
    ),
    ids as (
@@ -1168,8 +1171,9 @@ with
         from sys.all_identifiers
        where usage in ('CALL', 'REFERENCE')
          and (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
-         and object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
-         ' BODY')
+         and object_type in (
+                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+             )
          and object_name = :OBJECT_NAME
    )
 select case
@@ -1231,8 +1235,9 @@ select case
  where refs.usage = 'DECLARATION'
    and not (
           refs.owner = :OBJECT_OWNER
-          and refs.object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
-          ' BODY')
+          and refs.object_type in (
+             upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+          )
           and refs.object_name = :OBJECT_NAME
        )
    and not (
