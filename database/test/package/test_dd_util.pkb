@@ -5,13 +5,13 @@ create or replace package body test_dd_util is
    --
    procedure setup is
    begin
-      execute immediate q'[
-         CREATE OR REPLACE PROCEDURE p1 IS 
-         BEGIN 
-            NULL; 
-         END;
+      execute immediate q'[ -- NOSONAR: G-6010
+         create or replace procedure p1 is
+         begin
+            null;
+         end;
       ]';
-      execute immediate 'CREATE OR REPLACE SYNONYM s1 FOR p1';
+      execute immediate 'create or replace synonym s1 for p1'; -- NOSONAR: G-6010
       -- issue 31: fix ORA-6550 that occurs from time to time while querying dba_synonyms
       ut_runner.rebuild_annotation_cache(user);
    end setup;
@@ -21,8 +21,8 @@ create or replace package body test_dd_util is
    --
    procedure teardown is
    begin
-      execute immediate 'DROP SYNONYM s1';
-      execute immediate 'DROP PROCEDURE p1';
+      execute immediate 'drop synonym s1';   -- NOSONAR: G-6010
+      execute immediate 'drop procedure P1'; -- NOSONAR: G-6010
    end teardown;
 
    --
@@ -34,19 +34,19 @@ create or replace package body test_dd_util is
    begin
       -- resolve
       l_input  := obj_type(null, null, 'S1');
-      l_actual := dd_util.resolve_synonym(user, l_input);
+      l_actual := dd_util.resolve_synonym(in_parse_user => user, in_obj => l_input);
       ut.expect(l_actual.owner).to_equal(user);
       ut.expect(l_actual.object_type).to_equal('PROCEDURE');
       ut.expect(l_actual.object_name).to_equal('P1');
       -- no resolve
       l_input  := obj_type(null, null, 'P1');
-      l_actual := dd_util.resolve_synonym(user, l_input);
+      l_actual := dd_util.resolve_synonym(in_parse_user => user, in_obj => l_input);
       ut.expect(l_actual.owner).to_equal(user);
       ut.expect(l_actual.object_type).to_equal('PROCEDURE');
       ut.expect(l_actual.object_name).to_equal('P1');
       -- unknown object
       l_input  := obj_type(null, null, 'X1');
-      l_actual := dd_util.resolve_synonym(user, l_input);
+      l_actual := dd_util.resolve_synonym(in_parse_user => user, in_obj => l_input);
       ut.expect(l_actual.owner).to_(be_null);
       ut.expect(l_actual.object_type).to_(be_null);
       ut.expect(l_actual.object_name).to_(be_null);
@@ -61,19 +61,19 @@ create or replace package body test_dd_util is
    begin
       -- synonym
       l_input  := obj_type(null, null, 'S1');
-      l_actual := dd_util.get_object(user, l_input);
+      l_actual := dd_util.get_object(in_parse_user => user, in_obj => l_input);
       ut.expect(l_actual.owner).to_(equal(user));
       ut.expect(l_actual.object_type).to_(equal('SYNONYM'));
       ut.expect(l_actual.object_name).to_(equal('S1'));
       -- procedure
       l_input  := obj_type(null, null, 'P1');
-      l_actual := dd_util.get_object(user, l_input);
+      l_actual := dd_util.get_object(in_parse_user => user, in_obj => l_input);
       ut.expect(l_actual.owner).to_(equal(user));
       ut.expect(l_actual.object_type).to_(equal('PROCEDURE'));
       ut.expect(l_actual.object_name).to_(equal('P1'));
       -- unknown object
       l_input  := obj_type(null, null, 'X1');
-      l_actual := dd_util.get_object(user, l_input);
+      l_actual := dd_util.get_object(in_parse_user => user, in_obj => l_input);
       ut.expect(l_actual.owner).to_(be_null);
       ut.expect(l_actual.object_type).to_(be_null);
       ut.expect(l_actual.object_name).to_(be_null);
@@ -97,7 +97,7 @@ create or replace package body test_dd_util is
                        obj_type(user, 'PROCEDURE', 'P1'),
                        obj_type(user, 'SYNONYM', 'S1')
                     );
-      l_actual   := dd_util.get_objects(user, l_input);
+      l_actual   := dd_util.get_objects(in_parse_user => user, in_t_obj => l_input);
       ut.expect(l_actual.count).to_equal(2);
       ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
    end test_get_objects;
@@ -109,10 +109,18 @@ create or replace package body test_dd_util is
       l_actual integer;
    begin
       -- existing column
-      l_actual := dd_util.get_column_id(user, 'PLSCOPE_IDENTIFIERS', 'LINE');
+      l_actual := dd_util.get_column_id(
+                     in_owner       => user,
+                     in_object_name => 'PLSCOPE_IDENTIFIERS',
+                     in_column_name => 'LINE'
+                  );
       ut.expect(l_actual).to_equal(4);
       -- non-existing column
-      l_actual := dd_util.get_column_id(user, 'PLSCOPE_IDENTIFIERS', 'XYZ');
+      l_actual := dd_util.get_column_id(
+                     in_owner       => user,
+                     in_object_name => 'PLSCOPE_IDENTIFIERS',
+                     in_column_name => 'XYZ'
+                  );
       ut.expect(l_actual).to_(be_null);
    end test_get_column_id;
 
@@ -126,7 +134,7 @@ create or replace package body test_dd_util is
       -- fully qualified
       l_input  := obj_type(user, 'VIEW', 'PLSCOPE_IDENTIFIERS');
       l_actual := dd_util.get_view_source(l_input);
-      ut.expect(l_actual).to_match('^(WITH)(.+)$', 'ni');
+      ut.expect(l_actual).to_match(a_pattern => '^(WITH)(.+)$', a_modifiers => 'ni');
       -- not fully qualified
       l_input  := obj_type(null, 'VIEW', 'PLSCOPE_IDENTIFIERS');
       l_actual := dd_util.get_view_source(l_input);
