@@ -1271,7 +1271,10 @@ with
              line,
              text
         from sys.all_source
-       where type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+       where owner = :OBJECT_OWNER
+         and type in (
+                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+             )
          and name = :OBJECT_NAME
    ),
    refs as (
@@ -1320,8 +1323,9 @@ select case
    and src.line = ids.line
  where not (
           ids.owner = :OBJECT_OWNER
-          and ids.object_type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) ||
-          ' BODY')
+          and ids.object_type in (
+             upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+          )
           and ids.object_name = :OBJECT_NAME
        )
  order by ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
