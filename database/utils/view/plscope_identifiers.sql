@@ -83,7 +83,7 @@ create or replace view plscope_identifiers as
                 pls_ids.line,
                 pls_ids.col,
                 pls_ids.usage_context_id,
-                nvl2(sig.signature, 'PUBLIC', cast(null as varchar2(7))) as procedure_scope,
+                nvl2(sig.signature, 'PUBLIC', cast(null as varchar2(7 char))) as procedure_scope,
                 pls_ids.origin_con_id
            from pls_ids
            left join pls_ids sig
@@ -168,7 +168,7 @@ create or replace view plscope_identifiers as
                 end as usage_context_id,        -- fix broken hierarchies
                 case
                    when sane_fk = 'NO' then
-                      cast('YES' as varchar2(3))
+                      cast('YES' as varchar2(3 char))
                 end as is_fixed_context_id,     -- indicator of fixed hierarchies
                 procedure_scope,
                 origin_con_id
@@ -214,7 +214,7 @@ create or replace view plscope_identifiers as
                 end as procedure_name,
                 case
                    when object_type in ('PROCEDURE', 'FUNCTION') then
-                      cast('PUBLIC' as varchar2(7))
+                      cast('PUBLIC' as varchar2(7 char))
                 end as procedure_scope,
                 name,
                 '/' || name as name_path,
@@ -230,10 +230,10 @@ create or replace view plscope_identifiers as
                       signature
                 end as procedure_signature,
                 is_sql_stmt,
-                cast(null as varchar2(18)) as parent_statement_type,
-                cast(null as varchar2(32)) as parent_statement_signature,
+                cast(null as varchar2(18 char)) as parent_statement_type,
+                cast(null as varchar2(32 char)) as parent_statement_signature,
                 cast(null as number) as parent_statement_path_len,
-                cast(null as varchar2(3)) as is_def_child_of_decl,
+                cast(null as varchar2(3 char)) as is_def_child_of_decl,
                 origin_con_id
            from ids
           where usage_context_id = 0  -- top-level identifiers
@@ -404,7 +404,7 @@ create or replace view plscope_identifiers as
                    || lpad(' ', 250 - length(tree.name_usage))
                    || substr(tree.name_usage, 1, 250 - mod(2 * (tree.path_len - 1), 250))
              end
-             as varchar2(250)
+             as varchar2(250 char)
           ) as name_usage,
           tree.name,
           tree.name_path,
