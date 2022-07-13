@@ -22,17 +22,17 @@ create or replace package body test_lineage_util is
    begin
       -- non-recursive
       l_actual   := lineage_util.get_dep_cols_from_query(
-                       user,
-                       q'[
-                        SELECT /*+ordered */ 
-                               d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) AS sal
-                          FROM dept d
-                          LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
-                            ON e.deptno = d.deptno
-                        GROUP BY d.deptno, d.dname
-                     ]',
-                       3,
-                       0
+                       in_parse_user => user,
+                       in_query      => q'[
+                          select /*+ordered */
+                                 d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+                            from dept d
+                            left join (select * from emp where hiredate > date '1980-01-01') e
+                              on e.deptno = d.deptno
+                           group by d.deptno, d.dname
+                       ]',
+                       in_column_pos => 3,
+                       in_recursive  => 0
                     );
       ut.expect(l_actual.count).to_equal(2);
       l_expected := t_col_type(
@@ -42,13 +42,13 @@ create or replace package body test_lineage_util is
       ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
       -- recursive
       l_actual   := lineage_util.get_dep_cols_from_query(
-                       user,
-                       q'[
-                        SELECT dept_no, dept_name, salary
-                          FROM source_view
-                     ]',
-                       3,
-                       1
+                       in_parse_user => user,
+                       in_query      => q'[
+                          select dept_no, dept_name, salary
+                            from source_view
+                       ]',
+                       in_column_pos => 3,
+                       in_recursive  => 1
                     );
       ut.expect(l_actual.count).to_equal(3);
       l_expected := t_col_type(
@@ -67,10 +67,10 @@ create or replace package body test_lineage_util is
       l_expected t_col_type;
    begin
       l_actual   := lineage_util.get_dep_cols_from_view(
-                       user,
-                       'SOURCE_VIEW',
-                       'SALARY',
-                       0
+                       in_owner       => user,
+                       in_object_name => 'SOURCE_VIEW',
+                       in_column_name => 'SALARY',
+                       in_recursive   => 0
                     );
       ut.expect(l_actual.count).to_equal(2);
       l_expected := t_col_type(
@@ -84,16 +84,16 @@ create or replace package body test_lineage_util is
    -- test_get_dep_cols_from_insert
    --
    procedure test_get_dep_cols_from_insert is
-      l_signature varchar2(32 byte);
+      l_signature varchar2(32 byte); -- NOSONAR: G-2110
       l_actual    t_col_lineage_type;
       l_expected  t_col_lineage_type;
    begin
-      select signature
+      select signature -- NOSONAR: G-5060
         into l_signature
-        from sys.user_statements
+        from sys.user_statements -- NOSONAR: avoid public synonym
        where text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
       -- non-recursive
-      l_actual   := lineage_util.get_dep_cols_from_insert(l_signature, 0);
+      l_actual   := lineage_util.get_dep_cols_from_insert(in_signature => l_signature, in_recursive => 0);
       ut.expect(l_actual.count).to_equal(3);
       l_expected := t_col_lineage_type(
                        col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
@@ -103,7 +103,7 @@ create or replace package body test_lineage_util is
       ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected))
       .join_by('FROM_COLUMN_NAME');
       -- recursive
-      l_actual   := lineage_util.get_dep_cols_from_insert(l_signature, 1);
+      l_actual   := lineage_util.get_dep_cols_from_insert(in_signature => l_signature, in_recursive => 1);
       ut.expect(l_actual.count).to_equal(7);
       l_expected := t_col_lineage_type(
                        col_lineage_type(user, 'TABLE', 'DEPT', 'DEPTNO', user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
@@ -121,14 +121,14 @@ create or replace package body test_lineage_util is
    -- test_get_target_cols_from_insert
    --
    procedure test_get_target_cols_from_insert is
-      l_signature varchar2(32 byte);
+      l_signature varchar2(32 byte); -- NOSONAR: G-2110
       l_actual    t_col_type;
       l_expected  t_col_type;
    begin
       -- explicit target columns
-      select signature
+      select signature -- NOSONAR: G-5060
         into l_signature
-        from sys.user_statements
+        from sys.user_statements -- NOSONAR: avoid public synonym
        where text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
       l_actual   := lineage_util.get_target_cols_from_insert(l_signature);
       ut.expect(l_actual.count).to_equal(3);
@@ -139,9 +139,9 @@ create or replace package body test_lineage_util is
                     );
       ut.expect(sys.anydata.convertcollection(l_actual)).to_equal(sys.anydata.convertcollection(l_expected)).unordered;
       -- implicit target columns
-      select signature
+      select signature -- NOSONAR: G-5060
         into l_signature
-        from sys.user_statements
+        from sys.user_statements -- NOSONAR: avoid public synonym
        where text = 'INSERT INTO DEPTSAL SELECT T.* FROM SOURCE_SYN T';
       l_actual   := lineage_util.get_target_cols_from_insert(l_signature);
       ut.expect(l_actual.count).to_equal(3);
