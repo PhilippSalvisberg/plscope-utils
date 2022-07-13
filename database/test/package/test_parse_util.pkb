@@ -93,49 +93,49 @@ create or replace package body test_parse_util is
    begin
       -- normal query
       l_actual   := parse_util.get_insert_subquery(q'[
-                     INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY)
-                     SELECT /*+ordered */ 
-                            d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) AS sal
-                       FROM dept d
-                       LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
-                         ON e.deptno = d.deptno
-                     GROUP BY d.deptno, d.dname
-                  ]');
+                      insert into DEPTSAL (DEPT_NO, DEPT_NAME, SALARY)
+                      select /*+ordered */
+                             d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+                        from dept d
+                        left join (select * from emp where hiredate > date '1980-01-01') e
+                          on e.deptno = d.deptno
+                       group by d.deptno, d.dname
+                    ]');
       l_expected := q'[
-                     SELECT /*+ordered */ 
-                            d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) AS sal
-                       FROM dept d
-                       LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
-                         ON e.deptno = d.deptno
-                     GROUP BY d.deptno, d.dname
-                  ]';
+                       select /*+ordered */
+                              d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+                         from dept d
+                         left join (select * from emp where hiredate > date '1980-01-01') e
+                           on e.deptno = d.deptno
+                        group by d.deptno, d.dname
+                    ]';
       -- with_clause and error_logging_clause
       l_actual   := parse_util.get_insert_subquery(q'[
-                     INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY)
-                     WITH result AS (
-                        SELECT /*+ordered */ 
-                               d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) AS sal
-                          FROM dept d
-                          LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
-                            ON e.deptno = d.deptno
-                        GROUP BY d.deptno, d.dname
-                     )
-                     SELECT deptno, dname, sal
-                       FROM result
-                     LOG ERRORS INTO deptsal_err
-                  ]');
+                       insert into DEPTSAL (DEPT_NO, DEPT_NAME, SALARY)
+                       with result as (
+                             select /*+ordered */
+                                    d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+                               from dept d
+                               left join (select * from emp where hiredate > date '1980-01-01') e
+                                 on e.deptno = d.deptno
+                              group by d.deptno, d.dname
+                          )
+                       select deptno, dname, sal
+                         from result
+                          log errors into deptsal_err
+                    ]');
       l_expected := q'[
-                     WITH result AS (
-                        SELECT /*+ordered */ 
-                               d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) AS sal
-                          FROM dept d
-                          LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
-                            ON e.deptno = d.deptno
-                        GROUP BY d.deptno, d.dname
-                     )
-                     SELECT deptno, dname, sal
-                       FROM result
-                  ]';
+                       with result as (
+                             select /*+ordered */
+                                    d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+                               from dept d
+                               left join (select * from emp where hiredate > date '1980-01-01') e
+                                 on e.deptno = d.deptno
+                              group by d.deptno, d.dname
+                          )
+                       select deptno, dname, sal
+                         from result
+                    ]';
       ut.expect(trim(l_actual)).to_equal(trim(l_expected));
    end test_get_insert_subquery;
    
