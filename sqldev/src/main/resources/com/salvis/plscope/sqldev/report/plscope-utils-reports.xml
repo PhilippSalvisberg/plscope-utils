@@ -2490,12 +2490,11 @@ with
              name,
              line,
              text
-        from sys.all_source
+        from sys.all_source -- NOSONAR: avoid public synonym
        where owner like nvl(:OBJECT_OWNER, user)
    ),
    ids as (
-      select /*+ materialize */
-             owner,
+      select owner,
              name,
              type,
              object_name,
@@ -2505,7 +2504,7 @@ with
              line,
              col,
              usage_context_id
-        from sys.all_identifiers
+        from sys.all_identifiers -- NOSONAR: avoid public synonym
        where owner like nvl(:OBJECT_OWNER, user)
    ),
    tree (
@@ -2625,8 +2624,18 @@ with
       select tree.owner,
              tree.object_type,
              tree.object_name,
-             tree.procedure_name,
-             regexp_replace(src.text, chr(10) || '+$', null) text, -- remove trailing new line character
+             last_value (
+                case
+                   when tree.type in ('PROCEDURE', 'FUNCTION')
+                      and tree.path_len = 2
+                   then
+                      tree.name
+                end
+             ) ignore nulls over (
+                partition by tree.owner, tree.object_name, tree.object_type
+                order by tree.line, tree.col, tree.path_len
+             ) as procedure_name,
+             regexp_replace(src.text, chr(10) || '+$', null) as text, -- remove trailing new line character
              tree.usage,
              tree.type,
              tree.name,
@@ -2890,6 +2899,20 @@ with
              end as col,
              text
         from prepared
+   ),
+   plscope_nameing as (
+      select owner,
+             object_type,
+             object_name,
+             procedure_name,
+             type,
+             name,
+             message,
+             line,
+             col,
+             text
+        from checked
+       where message is not null
    )
 select case
           when object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
@@ -2919,7 +2942,7 @@ select case
        line as "Line",
        col as "Col",
        text as "Text"
-  from checked
+  from plscope_naming
  where message != 'OK'
  order by owner, object_type, object_name, line, col
  ]]>
