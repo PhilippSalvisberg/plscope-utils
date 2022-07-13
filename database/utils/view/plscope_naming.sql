@@ -266,7 +266,7 @@ create or replace view plscope_naming as
                       and usage = 'REFERENCE'
                       and (type = 'RECORD' or regexp_like(text, '.*%\s*rowtype.*', 'i'))
                       and object_type != 'TYPE'
-                      and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
+                      and not regexp_like(type_path, '/(RECORD ITERATOR|RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                    then
                       case
                          when regexp_like(parent_name, nvl(sys_context('PLSCOPE', 'LOCAL_RECORD_VARIABLE_REGEX'), '^r_.*'),
@@ -284,7 +284,7 @@ create or replace view plscope_naming as
                       and usage = 'REFERENCE'
                       and type in ('ASSOCIATIVE ARRAY', 'VARRAY', 'INDEX TABLE', 'NESTED TABLE')
                       and object_type != 'TYPE'
-                      and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
+                      and not regexp_like(type_path, '/(RECORD ITERATOR|RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                    then
                       case
                          when regexp_like(parent_name, nvl(sys_context('PLSCOPE', 'LOCAL_ARRAY_VARIABLE_REGEX'), '^t_.*'),
@@ -302,7 +302,7 @@ create or replace view plscope_naming as
                       and usage = 'REFERENCE'
                       and type = 'OBJECT'
                       and object_type != 'TYPE'
-                      and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
+                      and not regexp_like(type_path, '/(RECORD ITERATOR|RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                    then
                       case
                          when regexp_like(parent_name, nvl(sys_context('PLSCOPE', 'LOCAL_OBJECT_VARIABLE_REGEX'), '^o_.*'),
@@ -319,7 +319,7 @@ create or replace view plscope_naming as
                       and parent_type = 'VARIABLE'
                       and usage = 'REFERENCE'
                       and object_type != 'TYPE'
-                      and not regexp_like(type_path, '/(RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
+                      and not regexp_like(type_path, '/(RECORD ITERATOR|RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                    then
                       case
                          when regexp_like(parent_name, nvl(sys_context('PLSCOPE', 'LOCAL_VARIABLE_REGEX'), '^(l|c)_.*'), 'i')
