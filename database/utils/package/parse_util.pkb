@@ -24,7 +24,7 @@ create or replace package body parse_util is
          in_current_userid in number,
          in_schema_name    in varchar2,
          in_query          in clob,
-         in_result         in out nocopy clob
+         io_result         in out nocopy clob
       ) is
          language c 
          library sys.utl_xml_lib 
@@ -37,8 +37,8 @@ create or replace package body parse_util is
             in_schema_name    indicator,     -- usage not registered by PL/Scope in 19c
             in_query          ociloblocator, -- usage not registered by PL/Scope in 19c
             in_query          indicator,     -- usage not registered by PL/Scope in 19c
-            in_result         ociloblocator, -- usage not registered by PL/Scope in 19c
-            in_result         indicator      -- usage not registered by PL/Scope in 19c
+            io_result         ociloblocator, -- usage not registered by PL/Scope in 19c
+            io_result         indicator      -- usage not registered by PL/Scope in 19c
          );
    $end
 
