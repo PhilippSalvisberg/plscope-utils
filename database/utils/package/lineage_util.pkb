@@ -185,7 +185,7 @@ create or replace package body lineage_util is
    ) return t_col_lineage_type is
       l_query     clob;
       l_column_id integer;
-      l_prev_obj  varchar2(512 char) := '.';
+      l_prev_obj  varchar2(512 char) := '.'; -- NOSONAR G-2130
       t_col       t_col_type         := t_col_type();
       t_result    t_col_lineage_type := t_col_lineage_type();
       cursor c_insert is
