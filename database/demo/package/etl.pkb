@@ -1,11 +1,11 @@
 create or replace package body etl as
-   g_unused_column sys.v_$mystat.sid%type;
+   g_unused_column sys.v_$mystat.sid%type; -- NOSONAR: G-1030
 
    procedure clear_deptsal is
    begin
       delete from deptsal;
       delete from deptsal_err;
-      sys.dbms_output.put_line('deptsal an deptsal_err deleted.'); -- use synonym
+      sys.dbms_output.put_line('deptsal and deptsal_err deleted.'); -- use synonym
    end clear_deptsal;
 
    procedure load_from_tab is
@@ -86,7 +86,7 @@ create or replace package body etl as
            from source_syn
       )
       loop
-         insert into deptsal (dept_no, dept_name, salary)
+         insert into deptsal (dept_no, dept_name, salary) -- NOSONAR: G-3210
          values (r_src.dept_no, r_src.dept_name, r_src.salary);
       end loop deptsal;
       commit;
@@ -102,7 +102,7 @@ create or replace package body etl as
       <<deptsal>>
       for r_src in c_src
       loop
-         insert into deptsal (dept_no, dept_name, salary)
+         insert into deptsal (dept_no, dept_name, salary) -- NOSONAR: G-3210
          values (r_src.dept_no, r_src.dept_name, r_src.salary);
       end loop deptsal;
       commit;
@@ -111,13 +111,13 @@ create or replace package body etl as
 
    procedure load_from_dyn_sql is
       l_sql clob := q'[
-            INSERT INTO deptsal (dept_no, dept_name, salary)
-            SELECT /*+ordered */ d.deptno, d.dname, SUM(e.sal + NVL(e.comm, 0)) AS sal
-              FROM dept d
-              LEFT JOIN (SELECT * FROM emp WHERE hiredate > DATE '1980-01-01') e
-                ON e.deptno = d.deptno
-             GROUP BY d.deptno, d.dname
-         ]';
+         insert into deptsal (dept_no, dept_name, salary)
+         select /*+ordered */ d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
+           from dept d
+           left join (select * from emp where hiredate > date '1980-01-01') e
+             on e.deptno = d.deptno
+          group by d.deptno, d.dname
+      ]';
    begin
       clear_deptsal;
       execute immediate l_sql;
