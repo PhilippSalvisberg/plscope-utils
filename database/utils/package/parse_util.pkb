@@ -31,14 +31,14 @@ create or replace package body parse_util is
          name "kuxParseQuery"
          with context parameters (
             context,
-            in_current_userid ocinumber,
-            in_current_userid indicator,
-            in_schema_name    ocistring,
-            in_schema_name    indicator,
-            in_query          ociloblocator,
-            in_query          indicator,
-            in_result         ociloblocator,
-            in_result         indicator
+            in_current_userid ocinumber,     -- usage not registered by PL/Scope in 19c
+            in_current_userid indicator,     -- usage not registered by PL/Scope in 19c
+            in_schema_name    ocistring,     -- usage not registered by PL/Scope in 19c
+            in_schema_name    indicator,     -- usage not registered by PL/Scope in 19c
+            in_query          ociloblocator, -- usage not registered by PL/Scope in 19c
+            in_query          indicator,     -- usage not registered by PL/Scope in 19c
+            in_result         ociloblocator, -- usage not registered by PL/Scope in 19c
+            in_result         indicator      -- usage not registered by PL/Scope in 19c
          );
    $end
 
