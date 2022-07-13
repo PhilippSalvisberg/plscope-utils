@@ -4,12 +4,12 @@ create or replace package body test_etl is
    -- check_deptsal_content
    --
    procedure check_deptsal_content is
-      l_actual   sys_refcursor;
-      l_expected sys_refcursor;
+      c_actual   sys_refcursor;
+      c_expected sys_refcursor;
    begin
-      open l_actual for select * from deptsal;
-      open l_expected for select * from source_view;
-      ut.expect(l_actual).to_equal(l_expected).unordered;
+      open c_actual for select * from deptsal;
+      open c_expected for select * from source_view;
+      ut.expect(c_actual).to_equal(c_expected).unordered;
    end check_deptsal_content;
    
    --
@@ -111,7 +111,7 @@ create or replace package body test_etl is
    -- test_sal_of_dept
    --
    procedure test_sal_of_dept is
-      l_actual number;
+      l_actual deptsal.salary%type;
    begin
       l_actual := etl.sal_of_dept(10);
       ut.expect(l_actual).to_equal(8750);
