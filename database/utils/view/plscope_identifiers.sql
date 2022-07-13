@@ -162,7 +162,7 @@ create or replace view plscope_identifiers as
                                        usage_id
                                  end) ignore nulls over (
                          partition by owner, object_name, object_type
-                         order by line, col
+                         order by line, col, usage_id
                          rows between unbounded preceding and 1 preceding
                       )
                 end as usage_context_id,        -- fix broken hierarchies
