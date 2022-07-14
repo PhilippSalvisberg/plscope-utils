@@ -42,6 +42,6 @@ create or replace view plscope_statements as
           full_text,
           origin_con_id
      from sys.dba_statements stmt -- NOSONAR: avoid public synonym
-    where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), sys_context('USERENV', 'AUTHENTICATED_IDENTITY'))
+    where owner like coalesce(sys_context('PLSCOPE', 'OWNER'), user)
       and object_type like coalesce(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')
       and object_name like coalesce(sys_context('PLSCOPE', 'OBJECT_NAME'), '%');
