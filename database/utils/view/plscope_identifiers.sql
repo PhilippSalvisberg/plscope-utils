@@ -189,6 +189,7 @@ create or replace view plscope_identifiers as
          name,
          name_path,
          path_len,
+         module_name,
          type,
          usage,
          signature,
@@ -219,6 +220,7 @@ create or replace view plscope_identifiers as
                 name,
                 '/' || name as name_path,
                 1 as path_len,
+                null as module_name,
                 type,
                 usage,
                 signature,
@@ -293,6 +295,24 @@ create or replace view plscope_identifiers as
                       || ids.name
                 end as name_path,
                 tree.path_len + 1 as path_len,
+                case
+                   when ids.type in ('FUNCTION', 'PROCEDURE')
+                      and ids.usage = 'DEFINITION'
+                   then
+                      case
+                         when tree.module_name is null then
+                            ids.name
+                         when lengthb(tree.module_name) + lengthb(':') + lengthb(ids.name) <= 4000 then
+                            tree.module_name
+                            || '.'
+                            || ids.name
+                         else
+                            -- stop adding sub-module name on overflow (very unlikely)
+                            tree.module_name
+                      end
+                   else
+                      tree.module_name
+                end as modul_name,
                 ids.type,
                 ids.usage,
                 ids.signature,
@@ -409,6 +429,7 @@ create or replace view plscope_identifiers as
           tree.name,
           tree.name_path,
           tree.path_len,
+          tree.module_name,
           tree.type,
           case
              -- make SQL_ID and SQL_STMT pseudo-usages appear as EXECUTE
