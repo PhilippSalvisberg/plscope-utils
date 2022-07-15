@@ -44,6 +44,34 @@ create or replace package body test_plscope_identifiers is
       .exclude('USAGE_CONTEXT_ID');
    end user_identifiers;
 
+   procedure plscope_identfiers_model_name is
+      c_actual   sys_refcursor;
+      c_expected sys_refcursor;
+   begin
+      -- populate actual
+      open c_actual for
+         select line, module_name
+           from plscope_identifiers
+          where object_type = 'PACKAGE BODY'
+            and object_name = 'EXAMPLE'
+            and line in (2, 11, 31);
+            
+      -- populate expected
+      open c_expected for
+         select 2 as line, null as module_name
+           from dual
+         union all
+         select 11, 'TOP_LEVEL_PROCEDURE.SECOND_LEVEL_PROCEDURE.THIRD_LEVEL_PROCEDURE.FOURTH_LEVEL_FUNCTION.FIFTH_LEVEL_PROCEDURE'
+           from dual
+         union all
+         select 31, 'FORWARD_DECLARED_PROCEDURE'
+           from dual;
+      
+      -- assert
+      ut.expect(c_actual).to_equal(c_expected).join_by('LINE');
+
+   end plscope_identfiers_model_name;
+
    procedure user_statements is
       c_actual   sys_refcursor;
       c_expected sys_refcursor;
