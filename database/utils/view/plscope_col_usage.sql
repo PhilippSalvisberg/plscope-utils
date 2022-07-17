@@ -42,38 +42,31 @@ create or replace view plscope_col_usage as
             and ids.usage != 'DECLARATION'
       ),
       missing_cols as (
-         select /*+use_hash(t) use_hash(s) use_hash(o) use_hash(c) use_hash(tc) */
-                t.owner,
+         select t.owner,
                 t.object_type,
                 t.object_name,
                 t.line,
                 t.col,
                 t.procedure_name,
                 t.operation,
-                coalesce(o.owner, t.ref_owner) as ref_owner,
-                coalesce(o.object_type, t.ref_object_type) as ref_object_type,
-                coalesce(o.object_name, t.ref_object_name) as ref_object_name,
+                t.ref_owner,
+                t.ref_object_type,
+                t.ref_object_name,
                 tc.column_name,
                 t.text
            from plscope_tab_usage t
-           left join sys.dba_synonyms s -- NOSONAR: avoid public synonym
-             on s.owner = t.ref_owner
-            and s.synonym_name = t.ref_object_name
-           left join sys.dba_objects o -- NOSONAR: avoid public synonym
-             on o.owner = s.table_owner
-            and o.object_name = s.table_name
            left join scope_cols c
              on t.owner = c.owner
             and t.object_type = c.object_type
             and t.object_name = c.object_name
             and t.procedure_name = c.procedure_name
-            and coalesce(o.owner, t.ref_owner) = c.ref_owner
-            and coalesce(o.object_type, t.ref_object_type) = c.ref_object_type
-            and coalesce(o.object_name, t.ref_object_name) = c.ref_object_name
+            and t.ref_owner = c.ref_owner
+            and t.ref_object_type = c.ref_object_type
+            and t.ref_object_name = c.ref_object_name
            join sys.dba_tab_columns tc -- NOSONAR: avoid public synonym
              on tc.owner = t.owner
-            and tc.table_name = coalesce(o.object_name, t.ref_object_name)
-          where t.direct_dependency = 'YES'
+            and tc.table_name = t.ref_object_name
+          where t.is_base_object = 'YES'
             and c.owner is null
             and t.operation in ('INSERT', 'SELECT')
       ),
