@@ -181,8 +181,7 @@ with
    ),
    -- recursive with clause to extend the list of identifiers with the columns
    -- procedure_name, procedure_scope, name_path, path_len (level), procedure_signature,
-   -- parent_statement_type, parent_statement_signature, parent_statement_path_len,
-   -- is_def_child_of_decl
+   -- parent_statement_type, parent_statement_signature, parent_statement_path_len
    tree (
       owner,
       object_type,
@@ -205,7 +204,6 @@ with
       parent_statement_type,
       parent_statement_signature,
       parent_statement_path_len,
-      is_def_child_of_decl,
       origin_con_id
    ) as (
       select owner,
@@ -238,7 +236,6 @@ with
              cast(null as varchar2(18 char)) as parent_statement_type,
              cast(null as varchar2(32 char)) as parent_statement_signature,
              cast(null as number) as parent_statement_path_len,
-             cast(null as varchar2(3 char)) as is_def_child_of_decl,
              origin_con_id
         from ids
        where usage_context_id = 0  -- top-level identifiers
@@ -333,19 +330,6 @@ with
                 else
                    tree.parent_statement_path_len
              end as parent_statement_path_len,
-             case
-                when ids.type in ('PROCEDURE', 'FUNCTION')
-                   and ids.usage = 'DEFINITION'
-                then
-                   case
-                      when tree.usage = 'DECLARATION'
-                         and ids.signature = tree.signature
-                      then
-                         'YES'
-                      else
-                         'NO'
-                   end
-             end as is_def_child_of_decl,
              ids.origin_con_id
         from tree
         join ids
@@ -354,43 +338,22 @@ with
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
    ) cycle owner, object_type, object_name, usage_id set is_cycle to 'Y' default 'N',
-   -- add the columns name_usage, is_new_proc to the list of identifiers
+   -- add the name_usage column to the list of identifiers
    tree_plus as (
       select tree.*,                                                 -- @formatter:off
              case
-                   when tree.usage = 'SQL_ID' then
-                      tree.type || ' statement (sql_id: ' || tree.name || ')'
-                   when tree.usage = 'SQL_STMT' then
-                      tree.type || ' statement'
-                   else
-                      tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
-                end as name_usage,                                      -- @formatter:on
-             case
-                when type in ('PROCEDURE', 'FUNCTION')
-                   and usage = 'DEFINITION'
-                   and nvl(
-                      lag(
-                         procedure_signature,
-                         case is_def_child_of_decl
-                            when 'YES' then
-                               2
-                            else
-                               1
-                         end
-                      ) over (
-                         partition by tree.owner, tree.object_type, tree.object_name
-                         order by usage_id asc
-                      ),
-                      '----'
-                   ) != procedure_signature
-                then
-                   'YES'
-             end as is_new_proc
+                when tree.usage = 'SQL_ID' then
+                   tree.type || ' statement (sql_id: ' || tree.name || ')'
+                when tree.usage = 'SQL_STMT' then
+                   tree.type || ' statement'
+                else
+                   tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
+             end as name_usage                                       -- @formatter:on
         from tree
    ),
    plscope_identifiers as (
-      -- add indent to column name_usage, fix column usage and adds the columns text, is_used,
-      -- proc_ends_before_line, proc_ends_before_col, ref_line, ref_col to the list of identifiers
+      -- add indent to column name_usage, fix column usage, and add the text, is_used,
+      -- ref_line, and ref_col columns to the list of identifiers
       select tree.owner,
              tree.object_type,
              tree.object_name,
@@ -461,46 +424,6 @@ with
              tree.usage_context_id,
              tree.is_fixed_context_id,
              tree.procedure_signature,
-             --tree.is_def_child_of_decl,    --uncomment if needed for debugging
-             --tree.is_new_proc,             --uncomment if needed for debugging
-             case
-                when tree.is_new_proc = 'YES' then
-                   coalesce(
-                      first_value(
-                         case
-                            when tree.is_new_proc = 'YES'
-                               or tree.usage_context_id = 1
-                            then
-                               tree.line
-                         end
-                      ) ignore nulls over (
-                         partition by tree.owner, tree.object_type, tree.object_name
-                         order by tree.usage_id
-                         rows between 1 following and unbounded following
-                      ),
-                      max(tree.line) over (
-                            partition by tree.owner, tree.object_type, tree.object_name
-                      ) + 1
-                   )
-             end as proc_ends_before_line,
-             case
-                when tree.is_new_proc = 'YES' then
-                   nvl(
-                      first_value(
-                         case
-                            when tree.is_new_proc = 'YES'
-                               or tree.usage_context_id = 1
-                            then
-                               tree.col
-                         end
-                      ) ignore nulls over (
-                         partition by tree.owner, tree.object_type, tree.object_name
-                         order by tree.usage_id
-                         rows between 1 following and unbounded following
-                      ),
-                      1
-                   )
-             end as proc_ends_before_col,
              refs.line as ref_line,         -- decl_line
              refs.col as ref_col,           -- decl_col
              tree.origin_con_id
@@ -677,8 +600,7 @@ with
    ),
    -- recursive with clause to extend the list of identifiers with the columns
    -- procedure_name, procedure_scope, name_path, path_len (level), procedure_signature,
-   -- parent_statement_type, parent_statement_signature, parent_statement_path_len,
-   -- is_def_child_of_decl
+   -- parent_statement_type, parent_statement_signature, parent_statement_path_len
    tree (
       owner,
       object_type,
@@ -701,7 +623,6 @@ with
       parent_statement_type,
       parent_statement_signature,
       parent_statement_path_len,
-      is_def_child_of_decl,
       origin_con_id
    ) as (
       select owner,
@@ -734,7 +655,6 @@ with
              cast(null as varchar2(18 char)) as parent_statement_type,
              cast(null as varchar2(32 char)) as parent_statement_signature,
              cast(null as number) as parent_statement_path_len,
-             cast(null as varchar2(3 char)) as is_def_child_of_decl,
              origin_con_id
         from ids
        where usage_context_id = 0  -- top-level identifiers
@@ -829,19 +749,6 @@ with
                 else
                    tree.parent_statement_path_len
              end as parent_statement_path_len,
-             case
-                when ids.type in ('PROCEDURE', 'FUNCTION')
-                   and ids.usage = 'DEFINITION'
-                then
-                   case
-                      when tree.usage = 'DECLARATION'
-                         and ids.signature = tree.signature
-                      then
-                         'YES'
-                      else
-                         'NO'
-                   end
-             end as is_def_child_of_decl,
              ids.origin_con_id
         from tree
         join ids
@@ -850,43 +757,22 @@ with
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
    ) cycle owner, object_type, object_name, usage_id set is_cycle to 'Y' default 'N',
-   -- add the columns name_usage, is_new_proc to the list of identifiers
+   -- add the name_usage column to the list of identifiers
    tree_plus as (
       select tree.*,                                                 -- @formatter:off
              case
-                   when tree.usage = 'SQL_ID' then
-                      tree.type || ' statement (sql_id: ' || tree.name || ')'
-                   when tree.usage = 'SQL_STMT' then
-                      tree.type || ' statement'
-                   else
-                      tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
-                end as name_usage,                                      -- @formatter:on
-             case
-                when type in ('PROCEDURE', 'FUNCTION')
-                   and usage = 'DEFINITION'
-                   and nvl(
-                      lag(
-                         procedure_signature,
-                         case is_def_child_of_decl
-                            when 'YES' then
-                               2
-                            else
-                               1
-                         end
-                      ) over (
-                         partition by tree.owner, tree.object_type, tree.object_name
-                         order by usage_id asc
-                      ),
-                      '----'
-                   ) != procedure_signature
-                then
-                   'YES'
-             end as is_new_proc
+                when tree.usage = 'SQL_ID' then
+                   tree.type || ' statement (sql_id: ' || tree.name || ')'
+                when tree.usage = 'SQL_STMT' then
+                   tree.type || ' statement'
+                else
+                   tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
+             end as name_usage                                       -- @formatter:on
         from tree
    ),
    plscope_identifiers as (
-      -- add indent to column name_usage, fix column usage and adds the columns text, is_used,
-      -- proc_ends_before_line, proc_ends_before_col, ref_line, ref_col to the list of identifiers
+      -- add indent to column name_usage, fix column usage, and add the text, is_used,
+      -- ref_line, and ref_col columns to the list of identifiers
       select tree.owner,
              tree.object_type,
              tree.object_name,
@@ -957,46 +843,6 @@ with
              tree.usage_context_id,
              tree.is_fixed_context_id,
              tree.procedure_signature,
-             --tree.is_def_child_of_decl,    --uncomment if needed for debugging
-             --tree.is_new_proc,             --uncomment if needed for debugging
-             case
-                when tree.is_new_proc = 'YES' then
-                   coalesce(
-                      first_value(
-                         case
-                            when tree.is_new_proc = 'YES'
-                               or tree.usage_context_id = 1
-                            then
-                               tree.line
-                         end
-                      ) ignore nulls over (
-                         partition by tree.owner, tree.object_type, tree.object_name
-                         order by tree.usage_id
-                         rows between 1 following and unbounded following
-                      ),
-                      max(tree.line) over (
-                            partition by tree.owner, tree.object_type, tree.object_name
-                      ) + 1
-                   )
-             end as proc_ends_before_line,
-             case
-                when tree.is_new_proc = 'YES' then
-                   nvl(
-                      first_value(
-                         case
-                            when tree.is_new_proc = 'YES'
-                               or tree.usage_context_id = 1
-                            then
-                               tree.col
-                         end
-                      ) ignore nulls over (
-                         partition by tree.owner, tree.object_type, tree.object_name
-                         order by tree.usage_id
-                         rows between 1 following and unbounded following
-                      ),
-                      1
-                   )
-             end as proc_ends_before_col,
              refs.line as ref_line,         -- decl_line
              refs.col as ref_col,           -- decl_col
              tree.origin_con_id
