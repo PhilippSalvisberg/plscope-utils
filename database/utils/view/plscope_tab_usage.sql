@@ -16,7 +16,7 @@
 
 create or replace view plscope_tab_usage as
    with
-      identifiers as (
+      table_usage_ids as (
          select /*+ materialize */
                 ids.owner,
                 ids.object_type,
@@ -54,7 +54,7 @@ create or replace view plscope_tab_usage as
                 ids.ref_object_type,
                 ids.ref_object_name,
                 0
-           from identifiers ids
+           from table_usage_ids ids
           where ids.ref_object_type in ('VIEW', 'TABLE', 'SYNONYM')
           union all
          -- indirect dependencies
@@ -162,7 +162,7 @@ create or replace view plscope_tab_usage as
              ids.text,
              dep.is_base_object,
              dep.path_len
-        from identifiers ids
+        from table_usage_ids ids
         join dep_trans_closure dep
           on dep.owner = ids.ref_owner
          and dep.type = ids.ref_object_type

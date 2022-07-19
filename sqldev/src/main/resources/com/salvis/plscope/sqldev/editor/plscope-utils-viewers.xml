@@ -1740,7 +1740,7 @@ with
          and src.name = tree.object_name
          and src.line = tree.line
    ),
-   identifiers as ( 
+   table_usage_ids as ( 
       select /*+ materialize */
              ids.owner,
              ids.object_type,
@@ -1778,7 +1778,7 @@ with
              ids.ref_object_type,
              ids.ref_object_name,
              0
-        from identifiers ids
+        from table_usage_ids ids
        where ids.ref_object_type in ('VIEW', 'TABLE', 'SYNONYM')
        union all
       -- indirect dependencies
@@ -1865,7 +1865,7 @@ with
              end as direct_dependency,
              ids.text,
              dep.path_len
-        from identifiers ids
+        from table_usage_ids ids
         join dep_trans_closure dep
           on dep.owner = ids.ref_owner
          and dep.type = ids.ref_object_type
@@ -2316,7 +2316,7 @@ with
          and src.name = tree.object_name
          and src.line = tree.line
    ),
-   identifiers as ( 
+   tableorcolumn_usage_ids as ( 
       select /*+ materialize */
              ids.owner,
              ids.object_type,
@@ -2358,7 +2358,7 @@ with
              ids.ref_object_type,
              ids.ref_object_name,
              0
-        from identifiers ids
+        from tableorcolumn_usage_ids ids
        where ids.ref_object_type in ('VIEW', 'TABLE', 'SYNONYM')
        union all
       -- indirect dependencies
@@ -2468,7 +2468,7 @@ with
              ids.text,
              dep.is_base_object,
              ids.path_len
-        from identifiers ids
+        from tableorcolumn_usage_ids ids
         join dep_trans_closure dep
           on dep.owner = ids.ref_owner
          and dep.type = ids.ref_object_type
@@ -2497,7 +2497,7 @@ with
              ids.name as column_name,
              ids.text,
              ids.path_len
-        from identifiers ids
+        from tableorcolumn_usage_ids ids
         left join sys.all_statements refs -- NOSONAR: avoid public synonym
           on refs.signature = parent_statement_signature
        where ids.type = 'COLUMN'
