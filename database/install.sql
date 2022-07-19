@@ -180,7 +180,9 @@ set define off
 alter session set plscope_settings = 'identifiers:all, statements:all';
 @./demo/synonym/source_syn.sql
 @./demo/package/etl.pks
+@./demo/package/example.pks
 show errors
 @./demo/package/etl.pkb
+@./demo/package/example.pkb
 show errors
 alter session set plscope_settings = 'identifiers:none, statements:none';
