@@ -85,13 +85,13 @@ create or replace view plscope_identifiers as
                 pls_ids.usage_context_id,
                 nvl2(sig.signature, 'PUBLIC', cast(null as varchar2(7 char))) as procedure_scope,
                 pls_ids.origin_con_id
-           from pls_ids
-           left join pls_ids sig
-             on sig.owner = pls_ids.owner
-            and sig.object_type = 'PACKAGE'
-            and sig.object_name = pls_ids.object_name
-            and sig.usage = 'DECLARATION'
-            and sig.signature = pls_ids.signature
+           from pls_ids,
+                pls_ids sig
+          where sig.owner (+) = pls_ids.owner
+            and sig.object_type (+) = 'PACKAGE'
+            and sig.object_name (+) = pls_ids.object_name
+            and sig.usage (+) = 'DECLARATION'
+            and sig.signature (+) = pls_ids.signature
          union all
          select 'YES' as is_sql_stmt,
                 owner,
@@ -133,12 +133,12 @@ create or replace view plscope_identifiers as
                 fids.usage_context_id,
                 fids.procedure_scope,
                 fids.origin_con_id
-           from fids
-           left join fids parent
-             on parent.owner = fids.owner
-            and parent.object_type = fids.object_type
-            and parent.object_name = fids.object_name
-            and parent.usage_id = fids.usage_context_id
+           from fids,
+                fids parent
+          where parent.owner (+) = fids.owner
+            and parent.object_type (+) = fids.object_type
+            and parent.object_name (+) = fids.object_name
+            and parent.usage_id (+) = fids.usage_context_id
       ),
       -- add columns usage_context_id, is_fixed_context_id to list of identifiers
       ids as (
@@ -362,9 +362,9 @@ create or replace view plscope_identifiers as
                       end
                 end as is_def_child_of_decl,
                 ids.origin_con_id
-           from tree
-           join ids
-             on tree.owner = ids.owner
+           from tree,
+                ids
+          where tree.owner = ids.owner
             and tree.object_type = ids.object_type
             and tree.object_name = ids.object_name
             and tree.usage_id = ids.usage_context_id
@@ -519,12 +519,12 @@ create or replace view plscope_identifiers as
           refs.line as ref_line,         -- decl_line
           refs.col as ref_col,           -- decl_col
           tree.origin_con_id
-     from tree_plus tree
-     left join sys.dba_identifiers refs -- must not used pls_ids to consider all identifiers
-       on refs.signature = tree.signature
-      and refs.usage = 'DECLARATION'
-     left join src
-       on src.owner = tree.owner
-      and src.type = tree.object_type
-      and src.name = tree.object_name
-      and src.line = tree.line;
+     from tree_plus tree,
+          sys.dba_identifiers refs, -- must not used pls_ids to consider all identifiers
+          src
+    where refs.signature (+) = tree.signature
+      and refs.usage (+) = 'DECLARATION'
+      and src.owner (+) = tree.owner
+      and src.type (+) = tree.object_type
+      and src.name (+) = tree.object_name
+      and src.line (+) = tree.line;

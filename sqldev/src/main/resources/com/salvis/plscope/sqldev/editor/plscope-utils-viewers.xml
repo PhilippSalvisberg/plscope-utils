@@ -90,13 +90,13 @@ with
              pls_ids.usage_context_id,
              nvl2(sig.signature, 'PUBLIC', cast(null as varchar2(7 char))) as procedure_scope,
              pls_ids.origin_con_id
-        from pls_ids
-        left join pls_ids sig
-          on sig.owner = pls_ids.owner
-         and sig.object_type = 'PACKAGE'
-         and sig.object_name = pls_ids.object_name
-         and sig.usage = 'DECLARATION'
-         and sig.signature = pls_ids.signature
+        from pls_ids,
+             pls_ids sig
+       where sig.owner (+) = pls_ids.owner
+         and sig.object_type (+) = 'PACKAGE'
+         and sig.object_name (+) = pls_ids.object_name
+         and sig.usage (+) = 'DECLARATION'
+         and sig.signature (+) = pls_ids.signature
       union all
       select 'YES' as is_sql_stmt,
              owner,
@@ -138,12 +138,12 @@ with
              fids.usage_context_id,
              fids.procedure_scope,
              fids.origin_con_id
-        from fids
-        left join fids parent
-          on parent.owner = fids.owner
-         and parent.object_type = fids.object_type
-         and parent.object_name = fids.object_name
-         and parent.usage_id = fids.usage_context_id
+        from fids,
+             fids parent
+       where parent.owner (+) = fids.owner
+         and parent.object_type (+) = fids.object_type
+         and parent.object_name (+) = fids.object_name
+         and parent.usage_id (+) = fids.usage_context_id
    ),
    -- add columns usage_context_id, is_fixed_context_id to list of identifiers
    ids as (
@@ -331,9 +331,9 @@ with
                    tree.parent_statement_path_len
              end as parent_statement_path_len,
              ids.origin_con_id
-        from tree
-        join ids
-          on tree.owner = ids.owner
+        from tree,
+             ids
+       where tree.owner = ids.owner
          and tree.object_type = ids.object_type
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
@@ -427,15 +427,15 @@ with
              refs.line as ref_line,         -- decl_line
              refs.col as ref_col,           -- decl_col
              tree.origin_con_id
-        from tree_plus tree
-        left join sys.all_identifiers refs -- must not used pls_ids to consider all identifiers
-          on refs.signature = tree.signature
-         and refs.usage = 'DECLARATION'
-        left join src
-          on src.owner = tree.owner
-         and src.type = tree.object_type
-         and src.name = tree.object_name
-         and src.line = tree.line
+        from tree_plus tree,
+             sys.all_identifiers refs, -- must not used pls_ids to consider all identifiers
+             src
+       where refs.signature (+) = tree.signature
+         and refs.usage (+) = 'DECLARATION'
+         and src.owner (+) = tree.owner
+         and src.type (+) = tree.object_type
+         and src.name (+) = tree.object_name
+         and src.line (+) = tree.line
    )
 select case
           when object_type in (
@@ -525,13 +525,13 @@ with
              pls_ids.usage_context_id,
              nvl2(sig.signature, 'PUBLIC', cast(null as varchar2(7 char))) as procedure_scope,
              pls_ids.origin_con_id
-        from pls_ids
-        left join pls_ids sig
-          on sig.owner = pls_ids.owner
-         and sig.object_type = 'PACKAGE'
-         and sig.object_name = pls_ids.object_name
-         and sig.usage = 'DECLARATION'
-         and sig.signature = pls_ids.signature
+        from pls_ids,
+             pls_ids sig
+       where sig.owner (+) = pls_ids.owner
+         and sig.object_type (+) = 'PACKAGE'
+         and sig.object_name (+) = pls_ids.object_name
+         and sig.usage (+) = 'DECLARATION'
+         and sig.signature (+) = pls_ids.signature
    ),
    -- add column sane_fk to list of identifiers
    base_ids as (
@@ -557,12 +557,12 @@ with
              fids.usage_context_id,
              fids.procedure_scope,
              fids.origin_con_id
-        from fids
-        left join fids parent
-          on parent.owner = fids.owner
-         and parent.object_type = fids.object_type
-         and parent.object_name = fids.object_name
-         and parent.usage_id = fids.usage_context_id
+        from fids,
+             fids parent
+       where parent.owner (+) = fids.owner
+         and parent.object_type (+) = fids.object_type
+         and parent.object_name (+) = fids.object_name
+         and parent.usage_id (+) = fids.usage_context_id
    ),
    -- add columns usage_context_id, is_fixed_context_id to list of identifiers
    ids as (
@@ -750,9 +750,9 @@ with
                    tree.parent_statement_path_len
              end as parent_statement_path_len,
              ids.origin_con_id
-        from tree
-        join ids
-          on tree.owner = ids.owner
+        from tree,
+             ids
+       where tree.owner = ids.owner
          and tree.object_type = ids.object_type
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
@@ -846,15 +846,15 @@ with
              refs.line as ref_line,         -- decl_line
              refs.col as ref_col,           -- decl_col
              tree.origin_con_id
-        from tree_plus tree
-        left join sys.all_identifiers refs -- must not used pls_ids to consider all identifiers
-          on refs.signature = tree.signature
-         and refs.usage = 'DECLARATION'
-        left join src
-          on src.owner = tree.owner
-         and src.type = tree.object_type
-         and src.name = tree.object_name
-         and src.line = tree.line
+        from tree_plus tree,
+             sys.all_identifiers refs, -- must not used pls_ids to consider all identifiers
+             src
+       where refs.signature (+) = tree.signature
+         and refs.usage (+) = 'DECLARATION'
+         and src.owner (+) = tree.owner
+         and src.type (+) = tree.object_type
+         and src.name (+) = tree.object_name
+         and src.line (+) = tree.line
    )
 select case
           when object_type in (
@@ -1265,13 +1265,13 @@ with
              pls_ids.usage_context_id,
              nvl2(sig.signature, 'PUBLIC', cast(null as varchar2(7 char))) as procedure_scope,
              pls_ids.origin_con_id
-        from pls_ids
-        left join pls_ids sig
-          on sig.owner = pls_ids.owner
-         and sig.object_type = 'PACKAGE'
-         and sig.object_name = pls_ids.object_name
-         and sig.usage = 'DECLARATION'
-         and sig.signature = pls_ids.signature
+        from pls_ids,
+             pls_ids sig
+       where sig.owner (+) = pls_ids.owner
+         and sig.object_type (+) = 'PACKAGE'
+         and sig.object_name (+) = pls_ids.object_name
+         and sig.usage (+) = 'DECLARATION'
+         and sig.signature (+) = pls_ids.signature
       union all
       select 'YES' as is_sql_stmt,
              owner,
@@ -1313,12 +1313,12 @@ with
              fids.usage_context_id,
              fids.procedure_scope,
              fids.origin_con_id
-        from fids
-        left join fids parent
-          on parent.owner = fids.owner
-         and parent.object_type = fids.object_type
-         and parent.object_name = fids.object_name
-         and parent.usage_id = fids.usage_context_id
+        from fids,
+             fids parent
+       where parent.owner (+) = fids.owner
+         and parent.object_type (+) = fids.object_type
+         and parent.object_name (+) = fids.object_name
+         and parent.usage_id (+) = fids.usage_context_id
    ),
    -- add columns usage_context_id, is_fixed_context_id to list of identifiers
    ids as (
@@ -1506,9 +1506,9 @@ with
                    tree.parent_statement_path_len
              end as parent_statement_path_len,
              ids.origin_con_id
-        from tree
-        join ids
-          on tree.owner = ids.owner
+        from tree,
+             ids
+       where tree.owner = ids.owner
          and tree.object_type = ids.object_type
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
@@ -1517,13 +1517,13 @@ with
    tree_plus as (
       select tree.*,                                                 -- @formatter:off
              case
-                   when tree.usage = 'SQL_ID' then
-                      tree.type || ' statement (sql_id: ' || tree.name || ')'
-                   when tree.usage = 'SQL_STMT' then
-                      tree.type || ' statement'
-                   else
-                      tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
-                end as name_usage                                    -- @formatter:on
+                when tree.usage = 'SQL_ID' then
+                   tree.type || ' statement (sql_id: ' || tree.name || ')'
+                when tree.usage = 'SQL_STMT' then
+                   tree.type || ' statement'
+                else
+                   tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
+             end as name_usage                                       -- @formatter:on
         from tree
    ),
    plscope_identifiers as (
@@ -1576,15 +1576,15 @@ with
              refs.line as ref_line,         -- decl_line
              refs.col as ref_col,           -- decl_col
              tree.origin_con_id
-        from tree_plus tree
-        left join sys.all_identifiers refs -- must not used pls_ids to consider all identifiers
-          on refs.signature = tree.signature
-         and refs.usage = 'DECLARATION'
-        left join src
-          on src.owner = tree.owner
-         and src.type = tree.object_type
-         and src.name = tree.object_name
-         and src.line = tree.line
+        from tree_plus tree,
+             sys.all_identifiers refs, -- must not used pls_ids to consider all identifiers
+             src
+       where refs.signature (+) = tree.signature
+         and refs.usage (+) = 'DECLARATION'
+         and src.owner (+) = tree.owner
+         and src.type (+) = tree.object_type
+         and src.name (+) = tree.object_name
+         and src.line (+) = tree.line
    ),
    table_usage_ids as ( 
       select /*+ materialize */
@@ -1636,12 +1636,12 @@ with
              dep.referenced_type,
              dep.referenced_name,
              par.path_len + 1
-        from dep_chains par
-        join sys.all_dependencies dep  -- NOSONAR: avoid public synonym
-          on par.ref_owner = dep.owner
+        from dep_chains par,
+             sys.all_dependencies dep  -- NOSONAR: avoid public synonym
+       where par.ref_type <> 'VIEW'    -- don't resolve table usages in views
+         and par.ref_owner = dep.owner
          and par.ref_type = dep.type
          and par.ref_name = dep.name
-       where par.ref_type <> 'VIEW'    -- don't resolve table usages in views
          and dep.referenced_type in (  -- list of referenced types of interest
             'VIEW', 
             'TABLE', 
@@ -1711,14 +1711,14 @@ with
              end as direct_dependency,
              ids.text,
              dep.path_len
-        from table_usage_ids ids
-        join dep_trans_closure dep
-          on dep.owner = ids.ref_owner
+        from table_usage_ids ids,
+             dep_trans_closure dep,
+             sys.all_statements refs        -- NOSONAR: avoid public synonym
+       where dep.base_obj_type is not null  -- drop syn. refs not leading to tables/views
+         and dep.owner = ids.ref_owner
          and dep.type = ids.ref_object_type
          and dep.name = ids.ref_object_name
-         and dep.base_obj_type is not null  -- drop syn. refs not leading to tables/views
-        left join sys.all_statements refs   -- NOSONAR: avoid public synonym
-          on refs.signature = ids.parent_statement_signature
+         and refs.signature (+) = ids.parent_statement_signature
    )
 select case
           when object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
@@ -1841,13 +1841,13 @@ with
              pls_ids.usage_context_id,
              nvl2(sig.signature, 'PUBLIC', cast(null as varchar2(7 char))) as procedure_scope,
              pls_ids.origin_con_id
-        from pls_ids
-        left join pls_ids sig
-          on sig.owner = pls_ids.owner
-         and sig.object_type = 'PACKAGE'
-         and sig.object_name = pls_ids.object_name
-         and sig.usage = 'DECLARATION'
-         and sig.signature = pls_ids.signature
+        from pls_ids,
+             pls_ids sig
+       where sig.owner (+) = pls_ids.owner
+         and sig.object_type (+) = 'PACKAGE'
+         and sig.object_name (+) = pls_ids.object_name
+         and sig.usage (+) = 'DECLARATION'
+         and sig.signature (+) = pls_ids.signature
       union all
       select 'YES' as is_sql_stmt,
              owner,
@@ -1889,12 +1889,12 @@ with
              fids.usage_context_id,
              fids.procedure_scope,
              fids.origin_con_id
-        from fids
-        left join fids parent
-          on parent.owner = fids.owner
-         and parent.object_type = fids.object_type
-         and parent.object_name = fids.object_name
-         and parent.usage_id = fids.usage_context_id
+        from fids,
+             fids parent
+       where parent.owner (+) = fids.owner
+         and parent.object_type (+) = fids.object_type
+         and parent.object_name (+) = fids.object_name
+         and parent.usage_id (+) = fids.usage_context_id
    ),
    -- add columns usage_context_id, is_fixed_context_id to list of identifiers
    ids as (
@@ -2082,9 +2082,9 @@ with
                    tree.parent_statement_path_len
              end as parent_statement_path_len,
              ids.origin_con_id
-        from tree
-        join ids
-          on tree.owner = ids.owner
+        from tree,
+             ids
+       where tree.owner = ids.owner
          and tree.object_type = ids.object_type
          and tree.object_name = ids.object_name
          and tree.usage_id = ids.usage_context_id
@@ -2093,13 +2093,13 @@ with
    tree_plus as (
       select tree.*,                                                 -- @formatter:off
              case
-                   when tree.usage = 'SQL_ID' then
-                      tree.type || ' statement (sql_id: ' || tree.name || ')'
-                   when tree.usage = 'SQL_STMT' then
-                      tree.type || ' statement'
-                   else
-                      tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
-                end as name_usage                                    -- @formatter:on
+                when tree.usage = 'SQL_ID' then
+                   tree.type || ' statement (sql_id: ' || tree.name || ')'
+                when tree.usage = 'SQL_STMT' then
+                   tree.type || ' statement'
+                else
+                   tree.name || ' (' || lower(tree.type) || ' ' || lower(tree.usage) || ')'
+             end as name_usage                                       -- @formatter:on
         from tree
    ),
    plscope_identifiers as (
@@ -2152,15 +2152,15 @@ with
              refs.line as ref_line,         -- decl_line
              refs.col as ref_col,           -- decl_col
              tree.origin_con_id
-        from tree_plus tree
-        left join sys.all_identifiers refs -- must not used pls_ids to consider all identifiers
-          on refs.signature = tree.signature
-         and refs.usage = 'DECLARATION'
-        left join src
-          on src.owner = tree.owner
-         and src.type = tree.object_type
-         and src.name = tree.object_name
-         and src.line = tree.line
+        from tree_plus tree,
+             sys.all_identifiers refs, -- must not used pls_ids to consider all identifiers
+             src
+       where refs.signature (+) = tree.signature
+         and refs.usage (+) = 'DECLARATION'
+         and src.owner (+) = tree.owner
+         and src.type (+) = tree.object_type
+         and src.name (+) = tree.object_name
+         and src.line (+) = tree.line
    ),
    tableorcolumn_usage_ids as ( 
       select /*+ materialize */
@@ -2216,12 +2216,12 @@ with
              dep.referenced_type,
              dep.referenced_name,
              par.path_len + 1
-        from dep_chains par
-        join sys.all_dependencies dep  -- NOSONAR: avoid public synonym
-          on par.ref_owner = dep.owner
+        from dep_chains par,
+             sys.all_dependencies dep  -- NOSONAR: avoid public synonym
+       where par.ref_type <> 'VIEW'    -- don't resolve table usages in views
+         and par.ref_owner = dep.owner
          and par.ref_type = dep.type
          and par.ref_name = dep.name
-       where par.ref_type <> 'VIEW'    -- don't resolve table usages in views
          and dep.referenced_type in (  -- list of referenced types of interest
                 'VIEW', 
                 'TABLE', 
@@ -2314,15 +2314,15 @@ with
              ids.text,
              dep.is_base_object,
              ids.path_len
-        from tableorcolumn_usage_ids ids
-        join dep_trans_closure dep
-          on dep.owner = ids.ref_owner
+        from tableorcolumn_usage_ids ids,
+             dep_trans_closure dep,
+             sys.all_statements refs  -- NOSONAR: avoid public synonym
+       where ids.type in ('VIEW', 'TABLE', 'SYNONYM')
+         and dep.owner = ids.ref_owner
          and dep.type = ids.ref_object_type
          and dep.name = ids.ref_object_name
-        left join sys.all_statements refs   -- NOSONAR: avoid public synonym
-          on refs.signature = ids.parent_statement_signature   
-       where ids.type in ('VIEW', 'TABLE', 'SYNONYM')
          and dep.base_obj_type is not null  -- drop syn. refs not leading to tables/views
+         and refs.signature (+) = ids.parent_statement_signature
    ),
    scope_cols as (
       select ids.owner,
@@ -2343,11 +2343,11 @@ with
              ids.name as column_name,
              ids.text,
              ids.path_len
-        from tableorcolumn_usage_ids ids
-        left join sys.all_statements refs -- NOSONAR: avoid public synonym
-          on refs.signature = parent_statement_signature
+        from tableorcolumn_usage_ids ids,
+             sys.all_statements refs -- NOSONAR: avoid public synonym
        where ids.type = 'COLUMN'
          and ids.usage != 'DECLARATION'
+         and refs.signature (+) = parent_statement_signature
    ),
    missing_cols as (
       select t.owner,
@@ -2363,21 +2363,34 @@ with
              tc.column_name,
              t.text,
              t.path_len
-        from plscope_tab_usage t
-        left join scope_cols c
-          on t.owner = c.owner
-         and t.object_type = c.object_type
-         and t.object_name = c.object_name
-         and t.procedure_name = c.procedure_name
-         and t.ref_owner = c.ref_owner
-         and t.ref_object_type = c.ref_object_type
-         and t.ref_object_name = c.ref_object_name
-        join sys.all_tab_columns tc -- NOSONAR: avoid public synonym
-          on tc.owner = t.owner
+        from (select tu.owner,
+                     tu.object_type,
+                     tu.object_name,
+                     tu.line,
+                     tu.col,
+                     tu.procedure_name,
+                     tu.operation,
+                     tu.ref_owner,
+                     tu.ref_object_type,
+                     tu.ref_object_name,
+                     tu.text,
+                     tu.path_len
+                from plscope_tab_usage tu,
+                     scope_cols c
+               where tu.operation in ('INSERT', 'SELECT')
+                 and tu.is_base_object = 'YES'
+                 and tu.owner = c.owner (+)
+                 and tu.object_type = c.object_type (+)
+                 and tu.object_name = c.object_name (+)
+                 and tu.procedure_name = c.procedure_name (+)
+                 and tu.ref_owner = c.ref_owner (+)
+                 and tu.ref_object_type = c.ref_object_type (+)
+                 and tu.ref_object_name = c.ref_object_name (+)
+                 and c.owner is null
+             ) t,
+             sys.all_tab_columns tc -- NOSONAR: avoid public synonym
+       where tc.owner = t.owner
          and tc.table_name = t.ref_object_name
-       where t.is_base_object = 'YES'
-         and c.owner is null
-         and t.operation in ('INSERT', 'SELECT')
    ),
    base_cols as (
       select owner,

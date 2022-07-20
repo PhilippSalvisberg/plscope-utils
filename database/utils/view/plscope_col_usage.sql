@@ -17,8 +17,7 @@
 create or replace view plscope_col_usage as
    with
       scope_cols as (
-         select /*+use_hash(ids) use_hash(refs) */
-                ids.owner,
+         select ids.owner,
                 ids.object_type,
                 ids.object_name,
                 ids.line,
@@ -35,11 +34,11 @@ create or replace view plscope_col_usage as
                 ids.ref_object_name,
                 ids.name as column_name,
                 ids.text
-           from plscope_identifiers ids
-           left join sys.dba_statements refs -- NOSONAR: avoid public synonym
-             on refs.signature = parent_statement_signature
+           from plscope_identifiers ids,
+                sys.dba_statements refs -- NOSONAR: avoid public synonym
           where ids.type = 'COLUMN'
             and ids.usage != 'DECLARATION'
+            and refs.signature (+) = ids.parent_statement_signature
       ),
       missing_cols as (
          select t.owner,
@@ -54,21 +53,33 @@ create or replace view plscope_col_usage as
                 t.ref_object_name,
                 tc.column_name,
                 t.text
-           from plscope_tab_usage t
-           left join scope_cols c
-             on t.owner = c.owner
-            and t.object_type = c.object_type
-            and t.object_name = c.object_name
-            and t.procedure_name = c.procedure_name
-            and t.ref_owner = c.ref_owner
-            and t.ref_object_type = c.ref_object_type
-            and t.ref_object_name = c.ref_object_name
-           join sys.dba_tab_columns tc -- NOSONAR: avoid public synonym
-             on tc.owner = t.owner
+           from (select tu.owner,
+                        tu.object_type,
+                        tu.object_name,
+                        tu.line,
+                        tu.col,
+                        tu.procedure_name,
+                        tu.operation,
+                        tu.ref_owner,
+                        tu.ref_object_type,
+                        tu.ref_object_name,
+                        tu.text
+                   from plscope_tab_usage tu,
+                        scope_cols c
+                  where tu.operation in ('INSERT', 'SELECT')
+                    and tu.is_base_object = 'YES'
+                    and tu.owner = c.owner (+)
+                    and tu.object_type = c.object_type (+)
+                    and tu.object_name = c.object_name (+)
+                    and tu.procedure_name = c.procedure_name (+)
+                    and tu.ref_owner = c.ref_owner (+)
+                    and tu.ref_object_type = c.ref_object_type (+)
+                    and tu.ref_object_name = c.ref_object_name (+)
+                    and c.owner is null
+                ) t,
+                sys.dba_tab_columns tc -- NOSONAR: avoid public synonym
+          where tc.owner = t.owner
             and tc.table_name = t.ref_object_name
-          where t.is_base_object = 'YES'
-            and c.owner is null
-            and t.operation in ('INSERT', 'SELECT')
       ),
       base_cols as (
          select owner,
@@ -129,8 +140,8 @@ create or replace view plscope_col_usage as
           d.column_name,
           'NO' as direct_dependency,
           c.text
-     from base_cols c
-    cross join table(
+     from base_cols c,
+          table(
              lineage_util.get_dep_cols_from_view(
                 in_owner       => c.ref_owner,
                 in_object_name => c.ref_object_name,

@@ -66,9 +66,9 @@ create or replace view plscope_tab_usage as
                 dep.referenced_type,
                 dep.referenced_name,
                 par.path_len + 1
-           from dep_chains par
-           join sys.dba_dependencies dep  -- NOSONAR: avoid public synonym
-             on par.ref_owner = dep.owner
+           from dep_chains par,
+                sys.dba_dependencies dep  -- NOSONAR: avoid public synonym
+          where par.ref_owner = dep.owner
             and par.ref_type = dep.type
             and par.ref_name = dep.name
             and dep.referenced_type in (  -- list of referenced types of interest
@@ -162,11 +162,11 @@ create or replace view plscope_tab_usage as
              ids.text,
              dep.is_base_object,
              dep.path_len
-        from table_usage_ids ids
-        join dep_trans_closure dep
-          on dep.owner = ids.ref_owner
+        from table_usage_ids ids,
+             dep_trans_closure dep,
+             sys.dba_statements refs   -- NOSONAR: avoid public synonym
+       where dep.owner = ids.ref_owner
          and dep.type = ids.ref_object_type
          and dep.name = ids.ref_object_name
          and dep.base_obj_type is not null  -- drop syn. refs not leading to tables/views
-        left join sys.dba_statements refs   -- NOSONAR: avoid public synonym
-          on refs.signature = ids.parent_statement_signature;
+         and refs.signature (+) = ids.parent_statement_signature;
