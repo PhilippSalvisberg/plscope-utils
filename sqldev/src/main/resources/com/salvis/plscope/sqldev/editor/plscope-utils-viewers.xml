@@ -2442,7 +2442,8 @@ with
              path_len
         from base_cols
    )
-select case
+select /*+ noparallel */
+       case
           when object_type in ('FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'PROCEDURE', 'TRIGGER', 'TYPE', 'TYPE BODY') then
              'SQLDEV:LINK:'
              || owner
