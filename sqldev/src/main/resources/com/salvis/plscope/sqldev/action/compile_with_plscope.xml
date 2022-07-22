@@ -34,7 +34,7 @@
             <label>Use DBA or ALL views?</label>
             <default><![CDATA[
 select case
-          when count(*) = 3 then
+          when count(*) = 4 then
              'Dba'
           else
              'All'
@@ -43,7 +43,8 @@ select case
  where owner = 'SYS'
    and view_name in ( 'DBA_OBJECTS',
                       'DBA_SYNONYMS',
-                      'DBA_DEPENDENCIES' )
+                      'DBA_DEPENDENCIES',
+                      'DBA_PLSQL_OBJECT_SETTINGS' )
 ]]>
             </default>
 			<value><![CDATA[STATIC:Dba:All]]></value>
@@ -69,6 +70,27 @@ begin
    else
       /* PL/Scope statements since 12.2 */
       execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#'}';
+   end if;
+
+   if '#2#' = 'Yes' then
+      /* Make sure that PLSQL_CCFLAGS is not used in the target schema */
+      <<schema_has_ccflags_check>>
+      declare
+         l_cnt number;
+      begin
+         select count(*) into l_cnt
+           from #5#_plsql_object_settings
+          where owner = q'#"OBJECT_OWNER"#'
+            and plsql_ccflags is not null;
+
+         if l_cnt > 0 then
+            /* Schemas using plsql_ccflags are not supported in this action. */
+            raise_application_error(-20000,
+               'Unsupported: PLSQL_CCFLAGS is used in the '
+               || dbms_assert.enquote_name(q'#"OBJECT_OWNER"#', false)
+               || ' schema');
+         end if;
+      end schema_has_ccflags_check;
    end if;
 
    /* Compile public synonyms */
@@ -198,7 +220,7 @@ end;
             <label>Use DBA or ALL views?</label>
             <default><![CDATA[
 select case
-          when count(*) = 3 then
+          when count(*) = 4 then
              'Dba'
           else
              'All'
@@ -207,7 +229,8 @@ select case
  where owner = 'SYS'
    and view_name in ( 'DBA_OBJECTS',
                       'DBA_SYNONYMS',
-                      'DBA_DEPENDENCIES' )
+                      'DBA_DEPENDENCIES',
+                      'DBA_PLSQL_OBJECT_SETTINGS' )
 ]]>
             </default>
 			<value><![CDATA[STATIC:Dba:All]]></value>
@@ -233,6 +256,27 @@ begin
    else
       /* PL/Scope statements since 12.2 */
       execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#'}';
+   end if;
+
+   if '#2#' = 'Yes' then
+      /* Make sure that PLSQL_CCFLAGS is not used in the target schema */
+      <<schema_has_ccflags_check>>
+      declare
+         l_cnt number;
+      begin
+         select count(*) into l_cnt
+           from #5#_plsql_object_settings
+          where owner = q'#"OBJECT_OWNER"#'
+            and plsql_ccflags is not null;
+
+         if l_cnt > 0 then
+            /* Schemas using plsql_ccflags are not supported in this action. */
+            raise_application_error(-20000,
+               'Unsupported: PLSQL_CCFLAGS is used in the '
+               || dbms_assert.enquote_name(q'#"OBJECT_OWNER"#', false)
+               || ' schema');
+         end if;
+      end schema_has_ccflags_check;
    end if;
 
    /* Compile public synonyms */
