@@ -7,23 +7,49 @@
 	<!-- first item based on title is considered independent of minversion/maxversion -->
 	<item connType="Oracle" type="CONNECTION" reload="true" minversion="11.1">
 		<title>Compile with PL/Scope...</title>
-		<prompt type="radio">
+		<prompt type="radio">                               <!-- index: 0 -->
 			<label>Identifiers</label>
 			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
 		</prompt>
-		<prompt type="radio">
+		<prompt type="radio">                               <!-- index: 1 -->
 			<label>Statements</label>
 			<value><![CDATA[STATIC:ALL:NONE]]></value>
 		</prompt>
-		<prompt>
+		<prompt>                                            <!-- index: 2 -->
 			<label>Compile Code?</label>
 			<value><![CDATA[STATIC:Yes:No]]>
 			</value>
 		</prompt>
-		<prompt>
-			<label>Compile Synonyms?</label>
+		<prompt>                                            <!-- index: 3 -->
+			<label>Compile Public Synonyms?</label>
 			<value><![CDATA[STATIC:Yes:No]]>
 			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 4 -->
+			<label>Compile Private Synonyms?</label>
+			<value><![CDATA[STATIC:Yes:No]]>
+			</value>
+		</prompt>
+        <prompt type="radio">                               <!-- index: 5 -->
+            <label>Use DBA or ALL views?</label>
+            <default><![CDATA[
+select case
+          when count(*) = 3 then
+             'Dba'
+          else
+             'All'
+       end as default_value
+  from all_views
+ where owner = 'SYS'
+   and view_name in ( 'DBA_OBJECTS',
+                      'DBA_SYNONYMS',
+                      'DBA_DEPENDENCIES' )
+]]>
+            </default>
+			<value><![CDATA[STATIC:Dba:All]]></value>
+        </prompt>
+		<prompt type="confirm">                             <!-- index: 6 -->
+			<label>Confirm actions for target schema: #"OBJECT_OWNER"# ?</label>
 		</prompt>
 		<sql>
 			<![CDATA[
@@ -39,37 +65,28 @@ begin
       dbms_db_version.version = 12 and dbms_db_version.release = 1
    then
       /* PL/Scope identifiers since 11.1 */
-      execute immediate q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#']';
+      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#'}';
    else
       /* PL/Scope statements since 12.2 */
-      execute immediate q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
+      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#'}';
    end if;
+
+   /* Compile public synonyms */
    if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#3#' = 'Yes' then
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
-      <<synonyms>>
-      for r in (
-         select synonym_name
-           from all_synonyms
-          where owner = user
-      )
-      loop
-         execute immediate 'ALTER SYNONYM "'
-            || r.synonym_name
-            || '" COMPILE';
-      end loop synonyms;
       <<public_synonyms>>
       for r in (
          select synonym_name
-           from sys.all_synonyms
+           from sys.#5#_synonyms
           where owner = 'PUBLIC'
-            and table_owner = user
+            and table_owner = q'#"OBJECT_OWNER"#'
       )
       loop
          <<compile_public_synonym>>
          begin
-            execute immediate 'ALTER PUBLIC SYNONYM "'
-               || r.synonym_name
-               || '" COMPILE';
+            execute immediate 'ALTER PUBLIC SYNONYM '
+               || dbms_assert.enquote_name(r.synonym_name, false)
+               || ' COMPILE';
          exception
             when e_no_privs then
                /* ignore when user does not have create public synonym and drop public synonym privileges */
@@ -77,32 +94,53 @@ begin
          end compile_public_synonym;
       end loop public_synonyms;
    end if;
+
+   /* Compile private synonyms */
+   if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#4#' = 'Yes' then
+      /* Compilation of synonyms have been introduced with EBR in 11.2 */
+      <<synonyms>>
+      for r in (
+         select owner, synonym_name
+           from sys.#5#_synonyms
+          where owner = q'#"OBJECT_OWNER"#'
+      )
+      loop
+         execute immediate 'ALTER SYNONYM '
+            || dbms_assert.enquote_name(r.owner, false)
+            || '.' || dbms_assert.enquote_name(r.synonym_name, false)
+            || ' COMPILE';
+      end loop synonyms;
+   end if;
+
+   /* Compile code */
    if '#2#' = 'Yes' then
       /* Compile types */
       <<types>>
       for r in (
-         select o.object_type, o.object_name, count(d.name) as priority
-           from sys.all_objects o
-           left join all_dependencies d
+         select o.owner, o.object_type, o.object_name, count(d.name) as priority
+           from sys.#5#_objects o
+           left join #5#_dependencies d
              on d.owner = o.owner
             and d.type = o.object_type
             and d.name = o.object_name
-          where o.owner = user
+          where o.owner = q'#"OBJECT_OWNER"#'
             and o.object_type in ('TYPE', 'TYPE BODY')
-          group by o.object_type, o.object_name
+          group by o.owner, o.object_type, o.object_name
           order by priority
       )
       loop
          <<compile_type>>
          begin
             if r.object_type = 'TYPE' then
-               execute immediate 'ALTER TYPE "'
-                  || r.object_name
-                  || '" COMPILE';
+               execute immediate 'ALTER TYPE '
+                  || dbms_assert.enquote_name(r.owner, false)
+                  || '.' || dbms_assert.enquote_name(r.object_name, false)
+                  || ' COMPILE';
             else
-               execute immediate 'ALTER TYPE "'
-                  || r.object_name
-                  || '" COMPILE BODY';
+               execute immediate 'ALTER TYPE '
+                  || dbms_assert.enquote_name(r.owner, false)
+                  || '.' || dbms_assert.enquote_name(r.object_name, false)
+                  || ' COMPILE BODY';
             end if;
          exception
             when e_is_not_udt then
@@ -113,9 +151,10 @@ begin
                null;
          end compile_type;
       end loop types;
-      /* Compile schema handles procedures, functions, packages, views and triggers only */
+
+      /* compile_schema handles procedures, functions, packages, views and triggers only */
       dbms_utility.compile_schema(
-         schema         => user,
+         schema         => q'#"OBJECT_OWNER"#',
          compile_all    => true,
          reuse_settings => false
       );
@@ -132,23 +171,49 @@ end;
 	<!-- Copy of the previous item. Changed type only. A menu cannot be assigned to multiple nodes. -->
 	<item connType="Oracle" type="plscope-utils-root" reload="true" minversion="11.1">
 		<title>Compile with PL/Scope...</title>
-		<prompt type="radio">
+		<prompt type="radio">                               <!-- index: 0 -->
 			<label>Identifiers</label>
 			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
 		</prompt>
-		<prompt type="radio">
+		<prompt type="radio">                               <!-- index: 1 -->
 			<label>Statements</label>
 			<value><![CDATA[STATIC:ALL:NONE]]></value>
 		</prompt>
-		<prompt>
+		<prompt>                                            <!-- index: 2 -->
 			<label>Compile Code?</label>
 			<value><![CDATA[STATIC:Yes:No]]>
 			</value>
 		</prompt>
-		<prompt>
-			<label>Compile Synonyms?</label>
+		<prompt>                                            <!-- index: 3 -->
+			<label>Compile Public Synonyms?</label>
 			<value><![CDATA[STATIC:Yes:No]]>
 			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 4 -->
+			<label>Compile Private Synonyms?</label>
+			<value><![CDATA[STATIC:Yes:No]]>
+			</value>
+		</prompt>
+        <prompt type="radio">                               <!-- index: 5 -->
+            <label>Use DBA or ALL views?</label>
+            <default><![CDATA[
+select case
+          when count(*) = 3 then
+             'Dba'
+          else
+             'All'
+       end as default_value
+  from all_views
+ where owner = 'SYS'
+   and view_name in ( 'DBA_OBJECTS',
+                      'DBA_SYNONYMS',
+                      'DBA_DEPENDENCIES' )
+]]>
+            </default>
+			<value><![CDATA[STATIC:Dba:All]]></value>
+        </prompt>
+		<prompt type="confirm">                             <!-- index: 6 -->
+			<label>Confirm actions for target schema: #"OBJECT_OWNER"# ?</label>
 		</prompt>
 		<sql>
 			<![CDATA[
@@ -164,37 +229,28 @@ begin
       dbms_db_version.version = 12 and dbms_db_version.release = 1
    then
       /* PL/Scope identifiers since 11.1 */
-      execute immediate q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#']';
+      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#'}';
    else
       /* PL/Scope statements since 12.2 */
-      execute immediate q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
+      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#'}';
    end if;
+
+   /* Compile public synonyms */
    if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#3#' = 'Yes' then
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
-      <<synonyms>>
-      for r in (
-         select synonym_name
-           from all_synonyms
-          where owner = user
-      )
-      loop
-         execute immediate 'ALTER SYNONYM "'
-            || r.synonym_name
-            || '" COMPILE';
-      end loop synonyms;
       <<public_synonyms>>
       for r in (
          select synonym_name
-           from sys.all_synonyms
+           from sys.#5#_synonyms
           where owner = 'PUBLIC'
-            and table_owner = user
+            and table_owner = q'#"OBJECT_OWNER"#'
       )
       loop
          <<compile_public_synonym>>
          begin
-            execute immediate 'ALTER PUBLIC SYNONYM "'
-               || r.synonym_name
-               || '" COMPILE';
+            execute immediate 'ALTER PUBLIC SYNONYM '
+               || dbms_assert.enquote_name(r.synonym_name, false)
+               || ' COMPILE';
          exception
             when e_no_privs then
                /* ignore when user does not have create public synonym and drop public synonym privileges */
@@ -202,32 +258,53 @@ begin
          end compile_public_synonym;
       end loop public_synonyms;
    end if;
+
+   /* Compile private synonyms */
+   if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#4#' = 'Yes' then
+      /* Compilation of synonyms have been introduced with EBR in 11.2 */
+      <<synonyms>>
+      for r in (
+         select owner, synonym_name
+           from sys.#5#_synonyms
+          where owner = q'#"OBJECT_OWNER"#'
+      )
+      loop
+         execute immediate 'ALTER SYNONYM '
+            || dbms_assert.enquote_name(r.owner, false)
+            || '.' || dbms_assert.enquote_name(r.synonym_name, false)
+            || ' COMPILE';
+      end loop synonyms;
+   end if;
+
+   /* Compile code */
    if '#2#' = 'Yes' then
       /* Compile types */
       <<types>>
       for r in (
-         select o.object_type, o.object_name, count(d.name) as priority
-           from sys.all_objects o
-           left join all_dependencies d
+         select o.owner, o.object_type, o.object_name, count(d.name) as priority
+           from sys.#5#_objects o
+           left join #5#_dependencies d
              on d.owner = o.owner
             and d.type = o.object_type
             and d.name = o.object_name
-          where o.owner = user
+          where o.owner = q'#"OBJECT_OWNER"#'
             and o.object_type in ('TYPE', 'TYPE BODY')
-          group by o.object_type, o.object_name
+          group by o.owner, o.object_type, o.object_name
           order by priority
       )
       loop
          <<compile_type>>
          begin
             if r.object_type = 'TYPE' then
-               execute immediate 'ALTER TYPE "'
-                  || r.object_name
-                  || '" COMPILE';
+               execute immediate 'ALTER TYPE '
+                  || dbms_assert.enquote_name(r.owner, false)
+                  || '.' || dbms_assert.enquote_name(r.object_name, false)
+                  || ' COMPILE';
             else
-               execute immediate 'ALTER TYPE "'
-                  || r.object_name
-                  || '" COMPILE BODY';
+               execute immediate 'ALTER TYPE '
+                  || dbms_assert.enquote_name(r.owner, false)
+                  || '.' || dbms_assert.enquote_name(r.object_name, false)
+                  || ' COMPILE BODY';
             end if;
          exception
             when e_is_not_udt then
@@ -238,9 +315,10 @@ begin
                null;
          end compile_type;
       end loop types;
-      /* Compile schema handles procedures, functions, packages, views and triggers only */
+
+      /* compile_schema handles procedures, functions, packages, views and triggers only */
       dbms_utility.compile_schema(
-         schema         => user,
+         schema         => q'#"OBJECT_OWNER"#',
          compile_all    => true,
          reuse_settings => false
       );
@@ -252,6 +330,6 @@ end;
 			<title>Confirmation</title>
 			<prompt>Compilation with PL/Scope completed.</prompt>
 		</confirmation>
-	</item>
+    </item>
 
 </items>
