@@ -7,38 +7,14 @@
 	<!-- first item based on title is considered independent of minversion/maxversion -->
 	<item connType="Oracle" type="CONNECTION" reload="true" minversion="11.1">
 		<title>Compile with PL/Scope...</title>
-		<prompt type="radio">                               <!-- index: 0 -->
-			<label>Identifiers</label>
-			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
-		</prompt>
-		<prompt type="radio">                               <!-- index: 1 -->
-			<label>Statements</label>
-			<value><![CDATA[STATIC:ALL:NONE]]></value>
-		</prompt>
-		<prompt>                                            <!-- index: 2 -->
-			<label>Compile Code?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
-			</value>
-		</prompt>
-		<prompt>                                            <!-- index: 3 -->
-			<label>Compile Public Synonyms?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
-			</value>
-		</prompt>
-		<prompt>                                            <!-- index: 4 -->
-			<label>Compile Private Synonyms?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
-			</value>
-		</prompt>
-        <prompt type="radio">                               <!-- index: 5 -->
+        <prompt required="true">                            <!-- index: 0 -->
             <label>Use DBA or ALL views?</label>
-            <default><![CDATA[
-select case
+            <default><![CDATA[select case
           when count(*) = 4 then
              'Dba'
           else
              'All'
-       end as default_value
+          end as default_value
   from all_views
  where owner = 'SYS'
    and view_name in ( 'DBA_OBJECTS',
@@ -47,8 +23,104 @@ select case
                       'DBA_PLSQL_OBJECT_SETTINGS' )
 ]]>
             </default>
-			<value><![CDATA[STATIC:Dba:All]]></value>
+            <value><![CDATA[select vlist.val
+  from ( select 'Dba' as val, 0 as rn from dual
+         union all
+         select 'All' as val, 1 as rn from dual
+       ) vlist,
+       ( select case
+                   when count(*) = 4 then
+                      1
+                   else
+                      -1
+                end as order_indic
+           from all_views
+          where owner = 'SYS'
+            and view_name in ( 'DBA_OBJECTS',
+                               'DBA_SYNONYMS',
+                               'DBA_DEPENDENCIES',
+                               'DBA_PLSQL_OBJECT_SETTINGS' )
+       ) prio
+ order by vlist.rn * prio.order_indic
+]]>
+            </value>
         </prompt>
+		<prompt type="radio">                               <!-- index: 1 -->
+			<label>Identifiers</label>
+			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
+		</prompt>
+		<prompt type="radio">                               <!-- index: 2 -->
+			<label>Statements</label>
+			<value><![CDATA[STATIC:ALL:NONE]]></value>
+		</prompt>
+		<prompt reload="true:0" required="true">            <!-- index: 3 -->
+			<label>Compile Code?</label>
+            <default><![CDATA[select case
+          when :0 is not null and count(*) > 1 then
+             'No'
+          else
+             'Yes'
+       end as default_value
+  from ( select plsql_optimize_level,
+                plsql_code_type,
+                plsql_debug,
+                plsql_warnings,
+                nls_length_semantics
+           from #0#_plsql_object_settings
+          where owner = q'#"OBJECT_OWNER"#'
+          group by plsql_optimize_level,
+                plsql_code_type,
+                plsql_debug,
+                plsql_warnings,
+                nls_length_semantics
+       )
+]]>
+			</default>
+            <value><![CDATA[select vlist.val
+       || case
+             when vlist.val = 'Yes'
+                and prio.order_indic = -1
+             then
+                '  !!! WARNING: per-module settings will be lost !!!'
+          end as val
+  from ( select 'Yes' as val, 0 as rn from dual
+          union all
+         select 'No'  as val, 1 as rn from dual
+       ) vlist,
+       ( select case
+                   when :0 is not null and count(*) > 1 then
+                      -1
+                   else
+                      1
+                end as order_indic
+           from ( select plsql_optimize_level,
+                         plsql_code_type,
+                         plsql_debug,
+                         plsql_warnings,
+                         nls_length_semantics
+                    from #0#_plsql_object_settings
+                   where owner = q'#"OBJECT_OWNER"#'
+                   group by plsql_optimize_level,
+                         plsql_code_type,
+                         plsql_debug,
+                         plsql_warnings,
+                         nls_length_semantics
+                )
+       ) prio
+ order by vlist.rn * prio.order_indic
+]]>
+			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 4 -->
+			<label>Compile Public Synonyms?</label>
+			<value><![CDATA[STATIC:Yes:No]]>
+			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 5 -->
+			<label>Compile Private Synonyms?</label>
+			<value><![CDATA[STATIC:Yes:No]]>
+			</value>
+		</prompt>
 		<prompt type="confirm">                             <!-- index: 6 -->
 			<label>Confirm actions for target schema: #"OBJECT_OWNER"# ?</label>
 		</prompt>
@@ -66,20 +138,20 @@ begin
       dbms_db_version.version = 12 and dbms_db_version.release = 1
    then
       /* PL/Scope identifiers since 11.1 */
-      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#'}';
+      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#1#'}';
    else
       /* PL/Scope statements since 12.2 */
-      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#'}';
+      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#1#, STATEMENTS:#2#'}';
    end if;
 
-   if '#2#' = 'Yes' then
+   if 'Yes' = substr('#3#', 1, 3) then
       /* Make sure that PLSQL_CCFLAGS is not used in the target schema */
       <<schema_has_ccflags_check>>
       declare
          l_cnt number;
       begin
          select count(*) into l_cnt
-           from #5#_plsql_object_settings
+           from #0#_plsql_object_settings
           where owner = q'#"OBJECT_OWNER"#'
             and plsql_ccflags is not null;
 
@@ -94,12 +166,12 @@ begin
    end if;
 
    /* Compile public synonyms */
-   if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#3#' = 'Yes' then
+   if 'Yes' = '#4#' and not (dbms_db_version.version = 11 and dbms_db_version.version = 1) then
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
       <<public_synonyms>>
       for r in (
          select synonym_name
-           from sys.#5#_synonyms
+           from sys.#0#_synonyms
           where owner = 'PUBLIC'
             and table_owner = q'#"OBJECT_OWNER"#'
       )
@@ -118,12 +190,12 @@ begin
    end if;
 
    /* Compile private synonyms */
-   if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#4#' = 'Yes' then
+   if 'Yes' = '#5#' and not (dbms_db_version.version = 11 and dbms_db_version.version = 1) then
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
       <<synonyms>>
       for r in (
          select owner, synonym_name
-           from sys.#5#_synonyms
+           from sys.#0#_synonyms
           where owner = q'#"OBJECT_OWNER"#'
       )
       loop
@@ -135,13 +207,13 @@ begin
    end if;
 
    /* Compile code */
-   if '#2#' = 'Yes' then
+   if 'Yes' = substr('#3#', 1, 3) then
       /* Compile types */
       <<types>>
       for r in (
          select o.owner, o.object_type, o.object_name, count(d.name) as priority
-           from sys.#5#_objects o
-           left join #5#_dependencies d
+           from sys.#0#_objects o
+           left join #0#_dependencies d
              on d.owner = o.owner
             and d.type = o.object_type
             and d.name = o.object_name
@@ -193,38 +265,14 @@ end;
 	<!-- Copy of the previous item. Changed type only. A menu cannot be assigned to multiple nodes. -->
 	<item connType="Oracle" type="plscope-utils-root" reload="true" minversion="11.1">
 		<title>Compile with PL/Scope...</title>
-		<prompt type="radio">                               <!-- index: 0 -->
-			<label>Identifiers</label>
-			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
-		</prompt>
-		<prompt type="radio">                               <!-- index: 1 -->
-			<label>Statements</label>
-			<value><![CDATA[STATIC:ALL:NONE]]></value>
-		</prompt>
-		<prompt>                                            <!-- index: 2 -->
-			<label>Compile Code?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
-			</value>
-		</prompt>
-		<prompt>                                            <!-- index: 3 -->
-			<label>Compile Public Synonyms?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
-			</value>
-		</prompt>
-		<prompt>                                            <!-- index: 4 -->
-			<label>Compile Private Synonyms?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
-			</value>
-		</prompt>
-        <prompt type="radio">                               <!-- index: 5 -->
+        <prompt required="true">                            <!-- index: 0 -->
             <label>Use DBA or ALL views?</label>
-            <default><![CDATA[
-select case
+            <default><![CDATA[select case
           when count(*) = 4 then
              'Dba'
           else
              'All'
-       end as default_value
+          end as default_value
   from all_views
  where owner = 'SYS'
    and view_name in ( 'DBA_OBJECTS',
@@ -233,8 +281,104 @@ select case
                       'DBA_PLSQL_OBJECT_SETTINGS' )
 ]]>
             </default>
-			<value><![CDATA[STATIC:Dba:All]]></value>
+            <value><![CDATA[select vlist.val
+  from ( select 'Dba' as val, 0 as rn from dual
+         union all
+         select 'All' as val, 1 as rn from dual
+       ) vlist,
+       ( select case
+                   when count(*) = 4 then
+                      1
+                   else
+                      -1
+                end as order_indic
+           from all_views
+          where owner = 'SYS'
+            and view_name in ( 'DBA_OBJECTS',
+                               'DBA_SYNONYMS',
+                               'DBA_DEPENDENCIES',
+                               'DBA_PLSQL_OBJECT_SETTINGS' )
+       ) prio
+ order by vlist.rn * prio.order_indic
+]]>
+            </value>
         </prompt>
+		<prompt type="radio">                               <!-- index: 1 -->
+			<label>Identifiers</label>
+			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
+		</prompt>
+		<prompt type="radio">                               <!-- index: 2 -->
+			<label>Statements</label>
+			<value><![CDATA[STATIC:ALL:NONE]]></value>
+		</prompt>
+		<prompt reload="true:0" required="true">            <!-- index: 3 -->
+			<label>Compile Code?</label>
+            <default><![CDATA[select case
+          when :0 is not null and count(*) > 1 then
+             'No'
+          else
+             'Yes'
+       end as default_value
+  from ( select plsql_optimize_level,
+                plsql_code_type,
+                plsql_debug,
+                plsql_warnings,
+                nls_length_semantics
+           from #0#_plsql_object_settings
+          where owner = q'#"OBJECT_OWNER"#'
+          group by plsql_optimize_level,
+                plsql_code_type,
+                plsql_debug,
+                plsql_warnings,
+                nls_length_semantics
+       )
+]]>
+			</default>
+            <value><![CDATA[select vlist.val
+       || case
+             when vlist.val = 'Yes'
+                and prio.order_indic = -1
+             then
+                '  !!! WARNING: per-module settings will be lost !!!'
+          end as val
+  from ( select 'Yes' as val, 0 as rn from dual
+          union all
+         select 'No'  as val, 1 as rn from dual
+       ) vlist,
+       ( select case
+                   when :0 is not null and count(*) > 1 then
+                      -1
+                   else
+                      1
+                end as order_indic
+           from ( select plsql_optimize_level,
+                         plsql_code_type,
+                         plsql_debug,
+                         plsql_warnings,
+                         nls_length_semantics
+                    from #0#_plsql_object_settings
+                   where owner = q'#"OBJECT_OWNER"#'
+                   group by plsql_optimize_level,
+                         plsql_code_type,
+                         plsql_debug,
+                         plsql_warnings,
+                         nls_length_semantics
+                )
+       ) prio
+ order by vlist.rn * prio.order_indic
+]]>
+			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 4 -->
+			<label>Compile Public Synonyms?</label>
+			<value><![CDATA[STATIC:Yes:No]]>
+			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 5 -->
+			<label>Compile Private Synonyms?</label>
+			<value><![CDATA[STATIC:Yes:No]]>
+			</value>
+		</prompt>
 		<prompt type="confirm">                             <!-- index: 6 -->
 			<label>Confirm actions for target schema: #"OBJECT_OWNER"# ?</label>
 		</prompt>
@@ -252,20 +396,20 @@ begin
       dbms_db_version.version = 12 and dbms_db_version.release = 1
    then
       /* PL/Scope identifiers since 11.1 */
-      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#'}';
+      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#1#'}';
    else
       /* PL/Scope statements since 12.2 */
-      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#'}';
+      execute immediate q'{ALTER SESSION SET plscope_settings='IDENTIFIERS:#1#, STATEMENTS:#2#'}';
    end if;
 
-   if '#2#' = 'Yes' then
+   if 'Yes' = substr('#3#', 1, 3) then
       /* Make sure that PLSQL_CCFLAGS is not used in the target schema */
       <<schema_has_ccflags_check>>
       declare
          l_cnt number;
       begin
          select count(*) into l_cnt
-           from #5#_plsql_object_settings
+           from #0#_plsql_object_settings
           where owner = q'#"OBJECT_OWNER"#'
             and plsql_ccflags is not null;
 
@@ -280,12 +424,12 @@ begin
    end if;
 
    /* Compile public synonyms */
-   if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#3#' = 'Yes' then
+   if 'Yes' = '#4#' and not (dbms_db_version.version = 11 and dbms_db_version.version = 1) then
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
       <<public_synonyms>>
       for r in (
          select synonym_name
-           from sys.#5#_synonyms
+           from sys.#0#_synonyms
           where owner = 'PUBLIC'
             and table_owner = q'#"OBJECT_OWNER"#'
       )
@@ -304,12 +448,12 @@ begin
    end if;
 
    /* Compile private synonyms */
-   if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#4#' = 'Yes' then
+   if 'Yes' = '#5#' and not (dbms_db_version.version = 11 and dbms_db_version.version = 1) then
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
       <<synonyms>>
       for r in (
          select owner, synonym_name
-           from sys.#5#_synonyms
+           from sys.#0#_synonyms
           where owner = q'#"OBJECT_OWNER"#'
       )
       loop
@@ -321,13 +465,13 @@ begin
    end if;
 
    /* Compile code */
-   if '#2#' = 'Yes' then
+   if 'Yes' = substr('#3#', 1, 3) then
       /* Compile types */
       <<types>>
       for r in (
          select o.owner, o.object_type, o.object_name, count(d.name) as priority
-           from sys.#5#_objects o
-           left join #5#_dependencies d
+           from sys.#0#_objects o
+           left join #0#_dependencies d
              on d.owner = o.owner
             and d.type = o.object_type
             and d.name = o.object_name
