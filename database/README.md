@@ -29,7 +29,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 
    * execute the script [database/utils/user/plscope.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/utils/user/plscope.sql)
 
-        ```sql
+        ```
         @database/utils/user/plscope.sql
         exit
         ```
@@ -44,7 +44,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 
    * execute the script [database/install.sql](https://github.com/PhilippSalvisberg/plscope-utils/blob/main/database/install.sql)
 
-        ```sql
+        ```
         @database/install.sql
         exit
         ```
@@ -56,7 +56,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 #### Enable PL/Scope in the current session
 
 ```sql
-alter session set plscope_settings='identifiers:all, statements:all';
+alter session set plscope_settings = 'identifiers:all, statements:all';
 ```
 
 #### Create/compile a procedure
