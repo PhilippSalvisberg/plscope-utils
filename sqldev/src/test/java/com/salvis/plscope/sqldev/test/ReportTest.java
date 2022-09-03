@@ -28,7 +28,7 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query122() {
-            var node = xmlTools.getNode(doc, "/displays/folder/display[name='Duplicate SQL Statements']/query[@minversion='12.2']/sql");
+            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='Duplicate SQL Statements']/query[@minversion='12.2']/sql");
             var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
@@ -45,7 +45,7 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query122() {
-            var node = xmlTools.getNode(doc, "/displays/folder/display[name='UDF Calls in SQL Statements']/query[@minversion='12.2']/sql");
+            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='UDF Calls in SQL Statements']/query[@minversion='12.2']/sql");
             var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
@@ -69,7 +69,7 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query122() {
-            var node = xmlTools.getNode(doc, "/displays/folder/display[name='CRUD Operations']/query[@minversion='12.2']/sql");
+            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='CRUD Operations']/query[@minversion='12.2']/sql");
             var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
@@ -92,7 +92,7 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query122() {
-            var node = xmlTools.getNode(doc, "/displays/folder/display[name='Unused Local Identifiers']/query[@minversion='12.2']/sql");
+            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='Unused Local Identifiers']/query[@minversion='12.2']/sql");
             var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
@@ -106,7 +106,7 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query111() {
-            var node = xmlTools.getNode(doc, "/displays/folder/display[name='Unused Local Identifiers']/query[@minversion='11.1']/sql");
+            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='Unused Local Identifiers']/query[@minversion='11.1']/sql");
             var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
@@ -143,7 +143,7 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query111() {
-            var node = xmlTools.getNode(doc, "/displays/folder/display[name='PL/SQL Naming Conventions']/query[@minversion='11.1']/sql");
+            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='PL/SQL Naming Conventions']/query[@minversion='11.1']/sql");
             var query = node.getTextContent()
                     .replaceAll(":LOCAL_VARIABLE_REGEX", "'^x_.*'")
                     .replaceAll(":[A-Z_]+", "null");

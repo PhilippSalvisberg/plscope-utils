@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <displays>
 <folder>
-	<name><![CDATA[plscope-utils Reports]]></name>
-	<tooltip><![CDATA[PL/Scope reports]]></tooltip>
-	<description><![CDATA[PL/Scope reports provided by plscope-utils, see https://github.com/PhilippSalvisberg/plscope-utils ]]></description>
-		<display id="1dc49f53-015d-1000-8001-c0a8011251fe" type="" style="Table" enable="true">
-		<name><![CDATA[Duplicate SQL Statements]]></name>
-		<description><![CDATA[Reports duplicate static SQL statements within packages, procedures, functions, triggers and types. ]]></description>
-		<tooltip><![CDATA[Reports duplicate static SQL statements]]></tooltip>
-		<drillclass><![CDATA[]]></drillclass>
-		<CustomValues>
-			<TYPE><![CDATA[horizontal]]></TYPE>
-		</CustomValues>
-		<query minversion="12.2">
-			<sql><![CDATA[
+    <name><![CDATA[plscope-utils Reports]]></name>
+    <tooltip><![CDATA[PL/Scope reports]]></tooltip>
+    <description><![CDATA[PL/Scope reports provided by plscope-utils, see https://github.com/PhilippSalvisberg/plscope-utils ]]></description>
+    <folder>
+        <name><![CDATA[Main reports]]></name>
+        <tooltip><![CDATA[Main PL/Scope reports (for unprivileged users)]]></tooltip>
+        <description><![CDATA[Main sub-folder, containing reports which do not require special privileges]]></description>
+        <display id="1dc49f53-015d-1000-8001-c0a8011251fe" type="" style="Table" enable="true">
+            <name><![CDATA[Duplicate SQL Statements]]></name>
+            <description><![CDATA[Reports duplicate static SQL statements within packages, procedures, functions, triggers and types. ]]></description>
+            <tooltip><![CDATA[Reports duplicate static SQL statements]]></tooltip>
+            <drillclass><![CDATA[]]></drillclass>
+            <CustomValues>
+                <TYPE><![CDATA[horizontal]]></TYPE>
+            </CustomValues>
+            <query minversion="12.2">
+                <sql><![CDATA[
 with
    plscope_statements as (
       select owner,
@@ -75,16 +79,16 @@ select case
  where is_duplicate = 'YES'
  order by owner, object_type, object_name, sql_id, line, col
 ]]>
-         </sql>
-			<binds>
-				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner like]]></prompt>
-					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
-					<value><![CDATA[NULL_VALUE]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-			</binds>
-		</query>
+                </sql>
+                <binds>
+                    <bind id="OBJECT_OWNER">
+                        <prompt><![CDATA[Owner like]]></prompt>
+                        <tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                </binds>
+            </query>
 			<pdf version="VERSION_1_7" compression="CONTENT">
 				<docproperty title="" author="" subject="" keywords="" />
 				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
@@ -105,17 +109,17 @@ select case
 				</footer>
 				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
 			</pdf>
-	</display>
-	<display id="27802dea-015d-1000-8001-c0a80106a1a4" type="" style="Table" enable="true">
-		<name><![CDATA[UDF Calls in SQL Statements]]></name>
-		<description><![CDATA[Reports static SELECT, INSERT, UPDATE, DELETE and MERGE statements within packages, procedures, functions, triggers and types using user-defined function calls.]]></description>
-		<tooltip><![CDATA[Reports user-defined function calls in SQL statements]]></tooltip>
-		<drillclass><![CDATA[]]></drillclass>
-		<CustomValues>
-			<TYPE><![CDATA[horizontal]]></TYPE>
-		</CustomValues>
-		<query minversion="12.2">
-			<sql><![CDATA[
+        </display>
+        <display id="27802dea-015d-1000-8001-c0a80106a1a4" type="" style="Table" enable="true">
+            <name><![CDATA[UDF Calls in SQL Statements]]></name>
+            <description><![CDATA[Reports static SELECT, INSERT, UPDATE, DELETE and MERGE statements within packages, procedures, functions, triggers and types using user-defined function calls.]]></description>
+            <tooltip><![CDATA[Reports user-defined function calls in SQL statements]]></tooltip>
+            <drillclass><![CDATA[]]></drillclass>
+            <CustomValues>
+                <TYPE><![CDATA[horizontal]]></TYPE>
+            </CustomValues>
+            <query minversion="12.2">
+                <sql><![CDATA[
    with
       -- database source filtered by user
       src as (
@@ -644,16 +648,16 @@ select case
    and not (ref_owner = 'SYS' and ref_object_type = 'PACKAGE' and ref_object_name = 'STANDARD')
  order by owner, object_type, object_name, line, col
  ]]>
-            </sql>
-			<binds>
-				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner like]]></prompt>
-					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
-					<value><![CDATA[NULL_VALUE]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-			</binds>
-		</query>
+                </sql>
+                <binds>
+                    <bind id="OBJECT_OWNER">
+                        <prompt><![CDATA[Owner like]]></prompt>
+                        <tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                </binds>
+            </query>
 			<pdf version="VERSION_1_7" compression="CONTENT">
 				<docproperty title="" author="" subject="" keywords="" />
 				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
@@ -673,17 +677,17 @@ select case
 				</footer>
 				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
 			</pdf>
-	</display>
-	<display id="27d1dbe9-015d-1000-8001-c0a801060752" type="" style="Table" enable="true">
-		<name><![CDATA[CRUD Operations]]></name>
-		<description><![CDATA[Reports static usages of tables/views/synonyms within packages, procedures, functions, triggers and types. Reports number of SELECT, INSERT, UPDATE, DELETE, MERGE, REFERENCE usages per PL/SQL unit ]]></description>
-		<tooltip><![CDATA[Number of select, insert, update, delete, merge, reference usages per PL/SQL unit.]]></tooltip>
-		<drillclass><![CDATA[]]></drillclass>
-		<CustomValues>
-			<TYPE><![CDATA[horizontal]]></TYPE>
-		</CustomValues>
-		<query minversion="12.2">
-			<sql><![CDATA[
+        </display>
+        <display id="27d1dbe9-015d-1000-8001-c0a801060752" type="" style="Table" enable="true">
+            <name><![CDATA[CRUD Operations]]></name>
+            <description><![CDATA[Reports static usages of tables/views/synonyms within packages, procedures, functions, triggers and types. Reports number of SELECT, INSERT, UPDATE, DELETE, MERGE, REFERENCE usages per PL/SQL unit ]]></description>
+            <tooltip><![CDATA[Number of select, insert, update, delete, merge, reference usages per PL/SQL unit.]]></tooltip>
+            <drillclass><![CDATA[]]></drillclass>
+            <CustomValues>
+                <TYPE><![CDATA[horizontal]]></TYPE>
+            </CustomValues>
+            <query minversion="12.2">
+                <sql><![CDATA[
 with
    -- database source filtered by user
    src as (
@@ -1374,16 +1378,16 @@ select case
  group by owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name
  order by owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name
 ]]>
-         </sql>
-			<binds>
-				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner like]]></prompt>
-					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
-					<value><![CDATA[NULL_VALUE]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-			</binds>
-		</query>
+                </sql>
+                <binds>
+                    <bind id="OBJECT_OWNER">
+                        <prompt><![CDATA[Owner like]]></prompt>
+                        <tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                </binds>
+            </query>
 			<pdf version="VERSION_1_7" compression="CONTENT">
 				<docproperty title="" author="" subject="" keywords="" />
 				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
@@ -1402,17 +1406,17 @@ select case
 				</footer>
 				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
 			</pdf>
-	</display>
-	<display id="2e3cb6a6-015d-1000-8001-c0a801126c36" type="" style="Table" enable="true">
-		<name><![CDATA[Unused Local Identifiers]]></name>
-		<description><![CDATA[Reports locally declared identifiers in within packages, procedures, functions, triggers and types which are not referenced.]]></description>
-		<tooltip><![CDATA[Reports unreferenced locally defined identifiers]]></tooltip>
-		<drillclass><![CDATA[]]></drillclass>
-		<CustomValues>
-			<TYPE><![CDATA[horizontal]]></TYPE>
-		</CustomValues>
-		<query minversion="12.2">
-			<sql><![CDATA[
+        </display>
+        <display id="2e3cb6a6-015d-1000-8001-c0a801126c36" type="" style="Table" enable="true">
+            <name><![CDATA[Unused Local Identifiers]]></name>
+            <description><![CDATA[Reports locally declared identifiers in within packages, procedures, functions, triggers and types which are not referenced.]]></description>
+            <tooltip><![CDATA[Reports unreferenced locally defined identifiers]]></tooltip>
+            <drillclass><![CDATA[]]></drillclass>
+            <CustomValues>
+                <TYPE><![CDATA[horizontal]]></TYPE>
+            </CustomValues>
+            <query minversion="12.2">
+                <sql><![CDATA[
 with
    -- database source filtered by user
    src as (
@@ -1937,18 +1941,18 @@ select case
    and is_used = 'NO'
  order by owner, object_type, object_name, line, col
  ]]>
-         </sql>
-			<binds>
-				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner like]]></prompt>
-					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
-					<value><![CDATA[NULL_VALUE]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-			</binds>
-		</query>
-		<query minversion="11.1">
-			<sql><![CDATA[
+                </sql>
+                <binds>
+                    <bind id="OBJECT_OWNER">
+                        <prompt><![CDATA[Owner like]]></prompt>
+                        <tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                </binds>
+            </query>
+            <query minversion="11.1">
+                <sql><![CDATA[
 with
    -- database source filtered by user
    src as (
@@ -2442,16 +2446,16 @@ select case
    and is_used = 'NO'
  order by owner, object_type, object_name, line, col
  ]]>
-			</sql>
-			<binds>
-				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner like]]></prompt>
-					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
-					<value><![CDATA[NULL_VALUE]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-			</binds>
-		</query>
+                </sql>
+                <binds>
+                    <bind id="OBJECT_OWNER">
+                        <prompt><![CDATA[Owner like]]></prompt>
+                        <tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                </binds>
+            </query>
 			<pdf version="VERSION_1_7" compression="CONTENT">
 				<docproperty title="" author="" subject="" keywords="" />
 				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
@@ -2471,17 +2475,17 @@ select case
 				</footer>
 				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
 			</pdf>
-	</display>
-	<display id="9f38924a-015d-1000-8001-c0a80112c4cd" type="" style="Table" enable="true">
-		<name><![CDATA[PL/SQL Naming Conventions]]></name>
-		<description><![CDATA[Check PL/SQL identifiers based on the Trivadis PL/SQL & SQL Coding Guidelines V3.2]]></description>
-		<tooltip><![CDATA[Reports PL/SQL identifiers violationg naming conventions]]></tooltip>
-		<drillclass><![CDATA[]]></drillclass>
-		<CustomValues>
-			<TYPE><![CDATA[horizontal]]></TYPE>
-		</CustomValues>
-		<query minversion="11.1">
-			<sql><![CDATA[
+        </display>
+        <display id="9f38924a-015d-1000-8001-c0a80112c4cd" type="" style="Table" enable="true">
+            <name><![CDATA[PL/SQL Naming Conventions]]></name>
+            <description><![CDATA[Check PL/SQL identifiers based on the Trivadis PL/SQL & SQL Coding Guidelines V3.2]]></description>
+            <tooltip><![CDATA[Reports PL/SQL identifiers violationg naming conventions]]></tooltip>
+            <drillclass><![CDATA[]]></drillclass>
+            <CustomValues>
+                <TYPE><![CDATA[horizontal]]></TYPE>
+            </CustomValues>
+            <query minversion="11.1">
+                <sql><![CDATA[
 with
    src as (
       select /*+ materialize */
@@ -2946,106 +2950,106 @@ select case
  where message != 'OK'
  order by owner, object_type, object_name, line, col
  ]]>
-         </sql>
-			<binds>
-				<bind id="OBJECT_OWNER">
-					<prompt><![CDATA[Owner like]]></prompt>
-					<tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
-					<value><![CDATA[NULL_VALUE]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="GLOBAL_VARIABLE_REGEX">
-					<prompt><![CDATA[Global variable regex]]></prompt>
-					<tooltip><![CDATA[GLOBAL_VARIABLE_REGEX]]></tooltip>
-					<value><![CDATA[^g_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="LOCAL_RECORD_VARIABLE_REGEX">
-					<prompt><![CDATA[Local record variable regex]]></prompt>
-					<tooltip><![CDATA[LOCAL_RECORD_VARIABLE_REGEX]]></tooltip>
-					<value><![CDATA[^r_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="LOCAL_ARRAY_VARIABLE_REGEX">
-					<prompt><![CDATA[Local array/table variable regex]]></prompt>
-					<tooltip><![CDATA[LOCAL_ARRAY_VARIABLE_REGEX]]></tooltip>
-					<value><![CDATA[^t_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="LOCAL_OBJECT_VARIABLE_REGEX">
-					<prompt><![CDATA[Local object variable regex]]></prompt>
-					<tooltip><![CDATA[LOCAL_OBJECT_VARIABLE_REGEX]]></tooltip>
-					<value><![CDATA[^o_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="LOCAL_VARIABLE_REGEX">
-					<prompt><![CDATA[Local variable regex]]></prompt>
-					<tooltip><![CDATA[LOCAL_VARIABLE_REGEX]]></tooltip>
-					<value><![CDATA[^(l|c)_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="CURSOR_REGEX">
-					<prompt><![CDATA[Cursor regex]]></prompt>
-					<tooltip><![CDATA[CURSOR_REGEX]]></tooltip>
-					<value><![CDATA[^c_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="CURSOR_PARAMETER_REGEX">
-					<prompt><![CDATA[Cursor parameter regex]]></prompt>
-					<tooltip><![CDATA[CURSOR_PARAMETER_REGEX]]></tooltip>
-					<value><![CDATA[^p_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="IN_PARAMETER_REGEX">
-					<prompt><![CDATA[IN parameter regex]]></prompt>
-					<tooltip><![CDATA[IN_PARAMETER_REGEX]]></tooltip>
-					<value><![CDATA[^in_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="OUT_PARAMETER_REGEX">
-					<prompt><![CDATA[OUT parameter regex]]></prompt>
-					<tooltip><![CDATA[OUT_PARAMETER_REGEX]]></tooltip>
-					<value><![CDATA[^out_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="IN_OUT_PARAMETER_REGEX">
-					<prompt><![CDATA[IN OUT_parameter regex]]></prompt>
-					<tooltip><![CDATA[IN_OUT_PARAMETER_REGEX]]></tooltip>
-					<value><![CDATA[^io_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="RECORD_REGEX">
-					<prompt><![CDATA[Record regex]]></prompt>
-					<tooltip><![CDATA[RECORD_REGEX]]></tooltip>
-					<value><![CDATA[^r_.*_type$]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="ARRAY_REGEX">
-					<prompt><![CDATA[Array/table regex]]></prompt>
-					<tooltip><![CDATA[ARRAY_REGEX]]></tooltip>
-					<value><![CDATA[^t_.*_type$|^.*_ct$]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="EXCEPTION_REGEX">
-					<prompt><![CDATA[Exception regex]]></prompt>
-					<tooltip><![CDATA[EXCEPTION_REGEX]]></tooltip>
-					<value><![CDATA[^e_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="CONSTANT_REGEX">
-					<prompt><![CDATA[Constant regex]]></prompt>
-					<tooltip><![CDATA[CONSTANT_REGEX]]></tooltip>
-					<value><![CDATA[^co_.*]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-				<bind id="SUBTYPE_REGEX">
-					<prompt><![CDATA[Subtype regex]]></prompt>
-					<tooltip><![CDATA[SUBTYPE_REGEX]]></tooltip>
-					<value><![CDATA[.*_type$]]></value>
-					<bracket><![CDATA[null]]></bracket>
-				</bind>
-			</binds>
-		</query>
+                </sql>
+                <binds>
+                    <bind id="OBJECT_OWNER">
+                        <prompt><![CDATA[Owner like]]></prompt>
+                        <tooltip><![CDATA[OBJECT_OWNER]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="GLOBAL_VARIABLE_REGEX">
+                        <prompt><![CDATA[Global variable regex]]></prompt>
+                        <tooltip><![CDATA[GLOBAL_VARIABLE_REGEX]]></tooltip>
+                        <value><![CDATA[^g_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="LOCAL_RECORD_VARIABLE_REGEX">
+                        <prompt><![CDATA[Local record variable regex]]></prompt>
+                        <tooltip><![CDATA[LOCAL_RECORD_VARIABLE_REGEX]]></tooltip>
+                        <value><![CDATA[^r_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="LOCAL_ARRAY_VARIABLE_REGEX">
+                        <prompt><![CDATA[Local array/table variable regex]]></prompt>
+                        <tooltip><![CDATA[LOCAL_ARRAY_VARIABLE_REGEX]]></tooltip>
+                        <value><![CDATA[^t_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="LOCAL_OBJECT_VARIABLE_REGEX">
+                        <prompt><![CDATA[Local object variable regex]]></prompt>
+                        <tooltip><![CDATA[LOCAL_OBJECT_VARIABLE_REGEX]]></tooltip>
+                        <value><![CDATA[^o_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="LOCAL_VARIABLE_REGEX">
+                        <prompt><![CDATA[Local variable regex]]></prompt>
+                        <tooltip><![CDATA[LOCAL_VARIABLE_REGEX]]></tooltip>
+                        <value><![CDATA[^(l|c)_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="CURSOR_REGEX">
+                        <prompt><![CDATA[Cursor regex]]></prompt>
+                        <tooltip><![CDATA[CURSOR_REGEX]]></tooltip>
+                        <value><![CDATA[^c_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="CURSOR_PARAMETER_REGEX">
+                        <prompt><![CDATA[Cursor parameter regex]]></prompt>
+                        <tooltip><![CDATA[CURSOR_PARAMETER_REGEX]]></tooltip>
+                        <value><![CDATA[^p_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="IN_PARAMETER_REGEX">
+                        <prompt><![CDATA[IN parameter regex]]></prompt>
+                        <tooltip><![CDATA[IN_PARAMETER_REGEX]]></tooltip>
+                        <value><![CDATA[^in_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="OUT_PARAMETER_REGEX">
+                        <prompt><![CDATA[OUT parameter regex]]></prompt>
+                        <tooltip><![CDATA[OUT_PARAMETER_REGEX]]></tooltip>
+                        <value><![CDATA[^out_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="IN_OUT_PARAMETER_REGEX">
+                        <prompt><![CDATA[IN OUT_parameter regex]]></prompt>
+                        <tooltip><![CDATA[IN_OUT_PARAMETER_REGEX]]></tooltip>
+                        <value><![CDATA[^io_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="RECORD_REGEX">
+                        <prompt><![CDATA[Record regex]]></prompt>
+                        <tooltip><![CDATA[RECORD_REGEX]]></tooltip>
+                        <value><![CDATA[^r_.*_type$]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="ARRAY_REGEX">
+                        <prompt><![CDATA[Array/table regex]]></prompt>
+                        <tooltip><![CDATA[ARRAY_REGEX]]></tooltip>
+                        <value><![CDATA[^t_.*_type$|^.*_ct$]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="EXCEPTION_REGEX">
+                        <prompt><![CDATA[Exception regex]]></prompt>
+                        <tooltip><![CDATA[EXCEPTION_REGEX]]></tooltip>
+                        <value><![CDATA[^e_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="CONSTANT_REGEX">
+                        <prompt><![CDATA[Constant regex]]></prompt>
+                        <tooltip><![CDATA[CONSTANT_REGEX]]></tooltip>
+                        <value><![CDATA[^co_.*]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="SUBTYPE_REGEX">
+                        <prompt><![CDATA[Subtype regex]]></prompt>
+                        <tooltip><![CDATA[SUBTYPE_REGEX]]></tooltip>
+                        <value><![CDATA[.*_type$]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                </binds>
+            </query>
 			<pdf version="VERSION_1_7" compression="CONTENT">
 				<docproperty title="" author="" subject="" keywords="" />
 				<cell toppadding="2" bottompadding="2" leftpadding="2" rightpadding="2" horizontalalign="LEFT" verticalalign="TOP" wrap="true" />
@@ -3064,6 +3068,246 @@ select case
 				</footer>
 				<pagesetup papersize="LETTER" orientation="1" measurement="in" margintop="1.0" marginbottom="1.0" marginleft="1.0" marginright="1.0" />
 			</pdf>
-	</display>
+        </display>
+    </folder>
+    <folder>
+        <name><![CDATA[Other reports]]></name>
+        <tooltip><![CDATA[Other PL/Scope reports (may require DBA privileges)]]></tooltip>
+        <description><![CDATA[Sub-folder for reports of secondary interest, or which require DBA-level privileges]]></description>
+        <display id="18e04d5a-19e6-4f76-9991-5d2118dab487" type="" style="Table" enable="true">
+            <name><![CDATA[Synonyms with/wo PL/Scope]]></name>
+            <description><![CDATA[This reports helps find out which synonyms have been compiled with or without PL/Scope.
+Note: this report requires DBA privileges.]]></description>
+            <tooltip><![CDATA[Synonyms compiled with or without PL/Scope  ## DBA privileges needed ##]]></tooltip>
+            <drillclass><![CDATA[]]></drillclass>
+            <CustomValues>
+                <TYPE><![CDATA[horizontal]]></TYPE>
+            </CustomValues>
+            <query>
+                <sql><![CDATA[select owner            as synonym_owner,
+       synonym_name     as synonym_name,
+       table_owner,
+       table_name,
+       object_type      as target_object_type,
+       is_with_plscope,
+       created          as synonym_created,
+       last_ddl_time    as synonym_last_ddl_time
+  from (
+          select osrc.owner,
+                 syn.synonym_name,
+                 syn.table_owner,
+                 syn.table_name,
+                 nvl(odst.object_type, 'NON-EXISTENT')  as object_type,
+                 case
+                    when pli.signature is not null then
+                       'YES'
+                 end                                    as is_with_plscope,
+                 osrc.created,
+                 osrc.last_ddl_time
+            from sys.dba_synonyms        syn,
+                 sys.dba_objects         osrc,
+                 sys.dba_objects         odst,
+                 sys.plscope_identifier$ pli
+           where syn.table_owner = odst.owner (+)
+             and syn.table_name = odst.object_name (+)
+             and odst.subobject_name (+) is null
+             and odst.namespace (+) = 1
+             and syn.owner = osrc.owner
+             and syn.synonym_name = osrc.object_name
+             and osrc.object_type = 'SYNONYM'
+             and osrc.object_id = pli.obj# (+)
+             and osrc.object_name = pli.symrep (+)
+             and pli.type# (+) = 37 /* synonym */
+             and /* positive filters on synonym name */
+                 case
+                    when :B_SYN_LIKE is null
+                       and :B_SYN_RE is null
+                    then
+                       'Y'
+                    when (:B_SYN_LIKE is not null
+                          and upper(syn.synonym_name) like upper(:B_SYN_LIKE))
+                       or (:B_SYN_RE is not null
+                          and regexp_like(syn.synonym_name, :B_SYN_RE, 'i'))
+                    then
+                       'Y'
+                 end = 'Y'
+             and /* negative filters on synonym name */
+                 case
+                    when :B_SYN_NOT_LIKE is null
+                       and :B_SYN_NEG_RE is null
+                    then
+                       'Y'
+                    when (:B_SYN_NOT_LIKE is not null
+                          and upper(syn.synonym_name) like upper(:B_SYN_NOT_LIKE))
+                       or (:B_SYN_NEG_RE is not null
+                          and regexp_like(syn.synonym_name, :B_SYN_NEG_RE, 'i'))
+                    then
+                       'N'
+                    else
+                       'Y'
+                 end = 'Y'
+             and /* filter on object type */
+                 case
+                    when :B_OBJ_TYPE_LIKE is null then
+                       'Y'
+                    when :B_OBJ_TYPE_LIKE is not null
+                       and upper(odst.object_type) like upper(:B_OBJ_TYPE_LIKE)
+                    then
+                       'Y'
+                    when :B_OBJ_TYPE_LIKE is not null
+                       and odst.object_type is null
+                    then /* missing target */
+                       case
+                          when lnnvl(upper(substr(trim(:B_INCL_NON_EXISTENT), 1, 1)) = 'N') then
+                             'Y'
+                       end
+                 end = 'Y'
+             and /* 
+                    filters on the synonym's owner (private synonyms)
+                    and the target object's owner (public synonyms) 
+                  */
+                 case
+                    when lnnvl(upper(substr(trim(:B_WITH_PUBSYN), 1, 1)) = 'N')
+                       and osrc.owner = 'PUBLIC'
+                    then
+                       /* public synonyms */
+                       case
+                          when ((:B_OWNER_LIKE is null and :B_OWNER_RE is null)
+                                or (:B_OWNER_LIKE is not null 
+                                      and upper(syn.table_owner) like upper(:B_OWNER_LIKE))
+                                or (:B_OWNER_RE is not null 
+                                      and regexp_like(syn.table_owner, :B_OWNER_RE, 'i'))
+                             )
+                             and not
+                             ((:B_OWNER_NOT_LIKE is not null 
+                                  and upper(syn.table_owner) like upper(:B_OWNER_NOT_LIKE))
+                                or (:B_OWNER_NEG_RE is not null 
+                                      and regexp_like(syn.table_owner, :B_OWNER_NEG_RE, 'i'))
+                             )
+                          then
+                             'Y'
+                       end
+                    when lnnvl(upper(substr(trim(:B_WITH_PRIVSYN), 1, 1)) = 'N')
+                       and osrc.owner != 'PUBLIC'
+                    then
+                       /* private synonyms */
+                       case
+                          when ((:B_OWNER_LIKE is null and :B_OWNER_RE is null)
+                                or (:B_OWNER_LIKE is not null and upper(osrc.owner) like upper(:B_OWNER_LIKE))
+                                or (:B_OWNER_RE is not null and regexp_like(osrc.owner, :B_OWNER_RE, 'i'))
+                             )
+                             and not
+                             ((:B_OWNER_NOT_LIKE is not null and upper(osrc.owner) like upper(:B_OWNER_NOT_LIKE))
+                                or (:B_OWNER_NEG_RE is not null and regexp_like(osrc.owner, :B_OWNER_NEG_RE, 'i'))
+                             )
+                          then
+                             'Y'
+                       end
+                 end = 'Y'
+             and /* include or hide synonyms with non-existent target */
+                 (odst.owner is not null or lnnvl(upper(substr(trim(:B_INCL_NON_EXISTENT), 1, 1)) = 'N'))
+       )
+ where
+       /* filter on with or without PL/Scope */
+       case
+          when :B_IS_WITH_PLSCOPE is null then
+             'Y'
+          when upper(trim(:B_IS_WITH_PLSCOPE)) in ('Y', 'YES')
+             and is_with_plscope = 'YES'
+          then
+             'Y'
+          when upper(trim(:B_IS_WITH_PLSCOPE)) in ('N', 'NO')
+             and is_with_plscope is null
+          then
+             'Y'
+       end = 'Y'
+ order by owner,
+       table_owner,
+       synonym_name
+]]>
+                </sql>
+                <binds>
+                    <bind id="B_WITH_PUBSYN">
+                        <prompt><![CDATA[Include public synonyms?]]></prompt>
+                        <tooltip><![CDATA[Include public synonyms? (Y or null: include; N: exclude)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_WITH_PRIVSYN">
+                        <prompt><![CDATA[Include private synonyms?]]></prompt>
+                        <tooltip><![CDATA[Include private synonyms? (Y or null: include; N: exclude)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_IS_WITH_PLSCOPE">
+                        <prompt><![CDATA[Is compiled with PL/Scope?]]></prompt>
+                        <tooltip><![CDATA[Y: show only synonyms compiled with PL/Scope; N: without; null: both]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_INCL_NON_EXISTENT">
+                        <prompt><![CDATA[Include non-existent targets?]]></prompt>
+                        <tooltip><![CDATA[Include synonyms with non-existent targets? (Y or null: include; N: exclude)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_OWNER_LIKE">
+                        <prompt><![CDATA[Owner like?]]></prompt>
+                        <tooltip><![CDATA[Show only public synonyms into, and private synonyms in, the matching schema (LIKE pattern, CI)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_OWNER_RE">
+                        <prompt><![CDATA[Owner regexp?]]></prompt>
+                        <tooltip><![CDATA[Show only public synonyms into, and private synonyms in, the matching schema (regexp, CI)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_OWNER_NOT_LIKE">
+                        <prompt><![CDATA[Owner not like?]]></prompt>
+                        <tooltip><![CDATA[Exclude public synonyms into, and private synonyms in, the matching schema (LIKE pattern, CI)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_OWNER_NEG_RE">
+                        <prompt><![CDATA[Owner negative regexp?]]></prompt>
+                        <tooltip><![CDATA[Exclude public synonyms into, and private synonyms in, the matching schema (regexp, CI)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_OBJ_TYPE_LIKE">
+                        <prompt><![CDATA[Target object type like?]]></prompt>
+                        <tooltip><![CDATA[Filter on the type of the target object (LIKE pattern, CI)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_SYN_LIKE">
+                        <prompt><![CDATA[Synonym name like?]]></prompt>
+                        <tooltip><![CDATA[Show only matching synonyms (LIKE pattern, CI)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_SYN_RE">
+                        <prompt><![CDATA[Synonym name RE?]]></prompt>
+                        <tooltip><![CDATA[Show only matching synonyms (regexp, CI)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_SYN_NOT_LIKE">
+                        <prompt><![CDATA[Synonym name not like?]]></prompt>
+                        <tooltip><![CDATA[Exclude matching synonyms (LIKE pattern, CI)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                    <bind id="B_SYN_NEG_RE">
+                        <prompt><![CDATA[Synonym name negative RE?]]></prompt>
+                        <tooltip><![CDATA[Exclude matching synonyms (regexp, CI)]]></tooltip>
+                        <value><![CDATA[NULL_VALUE]]></value>
+                        <bracket><![CDATA[null]]></bracket>
+                    </bind>
+                </binds>
+            </query>
+        </display>
+    </folder>
 </folder>
 </displays>
