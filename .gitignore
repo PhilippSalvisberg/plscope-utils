@@ -28,3 +28,15 @@ code_coverage.html
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# SonarQube and utPLSQL
+junit_test_results.xml
+test_results.xml
+coverage.xml
+coverage.html
+coverage.html_assets
+.scannerwork
+tvdcc_report.json
+
+# sqlcl, utplsql-cli, db* COODECOP
+.tools
