@@ -26,7 +26,7 @@ jobs:
         env:
           PLSCOPE_PW: ${{ secrets.PLSCOPE_PW }}
       - name: Create db* CODECOP Issues
-        run: .github/workflows/run_codecop.sh
+        run: .github/workflows/create_codecop_issues.sh
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         with:
