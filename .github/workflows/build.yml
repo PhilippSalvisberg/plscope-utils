@@ -22,11 +22,9 @@ jobs:
           TVDCC_LIC: ${{ secrets.TVDCC_LIC }}
           WALLET: ${{ secrets.WALLET }}
       - name: Run Tests with Code Coverage
-        run: .github/workflows/run_tests.sh
+        run: .github/workflows/build.sh
         env:
           PLSCOPE_PW: ${{ secrets.PLSCOPE_PW }}
-      - name: Create db* CODECOP Issues
-        run: .github/workflows/create_codecop_issues.sh
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         with:
