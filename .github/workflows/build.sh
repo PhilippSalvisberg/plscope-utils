@@ -64,7 +64,7 @@ fi
 cd $BUILD_DIR/../../database
 if [ "$CI" == "true" ]; then
     echo "SonarCloud using ATP (via GitHub Actions)"
-    run_tests "$DB_USER" "$PLSCLOPE_PW" "atp21_high" "../.tools/wallet"
+    run_tests "$DB_USER" "$PLSCOPE_PW" "atp21_high" "../.tools/wallet"
     echo "Creating db* CODECOP issues"
     create_codecop_issues
 elif [ "$SONAR_PORT" == "cloud" ] ; then
