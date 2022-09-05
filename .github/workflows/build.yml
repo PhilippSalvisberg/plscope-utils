@@ -1,0 +1,34 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+      - bugfix/**
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  sonarcloud:
+    if: github.repository == 'philippsalvisberg/plscope-utils'
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Install Tools
+        run: .github/workflows/install_tools.sh
+        env:
+          TVDCC_LIC: ${{ secrets.TVDCC_LIC }}
+          WALLET: ${{ secrets.WALLET }}
+      - name: Run Tests with Code Coverage
+        run: .github/workflows/build.sh
+        env:
+          PLSCOPE_PW: ${{ secrets.PLSCOPE_PW }}
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: database
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
