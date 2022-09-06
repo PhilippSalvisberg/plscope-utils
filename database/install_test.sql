@@ -31,9 +31,9 @@ PROMPT
 PROMPT Connect to the plscope user.
 PROMPT ====================================================================
 
-@./install/scripts/schema_sanity_check
--- Note: the above will change the whenever sqlerror directive, then reset
+-- The sanity check will change the whenever sqlerror directive, then reset
 -- it to continue none if successful.
+@@schema_sanity_check
 
 PROMPT ====================================================================
 PROMPT Disable PL/Scope for this session

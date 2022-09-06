@@ -29,9 +29,9 @@ prompt Connect to the target user (schema) of your choice.
 prompt See utils/user/plscope.sql for required privileges.
 prompt ====================================================================
 
-@./install/scripts/schema_sanity_check
--- Note: the above will change the whenever sqlerror directive, then reset
+-- The sanity check will change the whenever sqlerror directive, then reset
 -- it to continue none if successful.
+@@schema_sanity_check
 
 prompt ====================================================================
 prompt Disable PL/Scope for this session
