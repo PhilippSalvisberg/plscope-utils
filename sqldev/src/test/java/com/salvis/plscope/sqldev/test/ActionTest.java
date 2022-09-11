@@ -30,9 +30,10 @@ public class ActionTest extends AbstractJdbcTest{
                     .replaceAll("#0#", "All")
                     .replaceAll("#1#", "ALL")
                     .replaceAll("#2#", "ALL")
-                    .replaceAll("#3#", "Yes")
+                    .replaceAll("#3#", "Yes, reuse settings")
                     .replaceAll("#4#", "Yes")
                     .replaceAll("#5#", "Yes")
+                    .replaceAll("#6#", "On - All details")
                     .replaceAll("#\"OBJECT_OWNER\"#", "\"" + dataSource.getUsername() + "\"");
             // ok if no exception is thrown
             jdbcTemplate.update(query);
@@ -48,6 +49,7 @@ public class ActionTest extends AbstractJdbcTest{
                     .replaceAll("#3#", "No")
                     .replaceAll("#4#", "No")
                     .replaceAll("#5#", "No")
+                    .replaceAll("#6#", "Off")
                     .replaceAll("#\"OBJECT_OWNER\"#", "\"" + dataSource.getUsername() + "\"");
             // ok if no exception is thrown
             jdbcTemplate.update(query);
