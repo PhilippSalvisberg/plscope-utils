@@ -3090,11 +3090,13 @@ Note: this report requires DBA privileges.]]></description>
        table_name,
        object_type      as target_object_type,
        is_with_plscope,
+       status           as syn_status,
        created          as synonym_created,
        last_ddl_time    as synonym_last_ddl_time
   from (
           select osrc.owner,
                  syn.synonym_name,
+                 osrc.status,
                  syn.table_owner,
                  syn.table_name,
                  nvl(odst.object_type, 'NON-EXISTENT')  as object_type,
