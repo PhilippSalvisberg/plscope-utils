@@ -21,12 +21,19 @@ set linesize 200
 set pagesize 100
 set serveroutput on size 1000000
 
+-- Handling of SQL exceptions: use the default behaviour of continuing.
+whenever sqlerror continue none
+
 PROMPT ====================================================================
 PROMPT This script installs test packages for plscope-utils.
 PROMPT Tests require an installed utPLSQL v3.
 PROMPT
 PROMPT Connect to the plscope user.
 PROMPT ====================================================================
+
+-- The sanity check will change the whenever sqlerror directive, then reset
+-- it to continue none if successful.
+@@schema_sanity_check
 
 PROMPT ====================================================================
 PROMPT Disable PL/Scope for this session
