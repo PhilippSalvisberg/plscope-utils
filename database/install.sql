@@ -18,12 +18,20 @@ set define off
 set echo off
 set serveroutput on size 100000
 
+-- Handling of SQL exceptions: use the default behaviour of continuing
+-- no matter what, so the readout should be checked carefully in the end.
+whenever sqlerror continue none
+
 prompt ====================================================================
 prompt This script installs plscope-utils.
 prompt
 prompt Connect to the target user (schema) of your choice.
 prompt See utils/user/plscope.sql for required privileges.
 prompt ====================================================================
+
+-- The sanity check will change the whenever sqlerror directive, then reset
+-- it to continue none if successful.
+@@schema_sanity_check
 
 prompt ====================================================================
 prompt Disable PL/Scope for this session
