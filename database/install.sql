@@ -84,6 +84,7 @@ show errors
 show errors
 @./utils/view/plscope_naming.sql
 show errors
+@./utils/view/plscope_naming-post.sql
 
 prompt ====================================================================
 prompt Grants
