@@ -54,7 +54,30 @@ create or replace view plscope_col_usage as
                 t.ref_object_name,
                 tc.column_name,
                 t.text
-           from plscope_tab_usage t
+           from ( select tu.owner,
+                         tu.object_type,
+                         tu.object_name,
+                         tu.line,
+                         tu.col,
+                         tu.procedure_name,
+                         tu.operation,
+                         tu.ref_owner,
+                         tu.ref_object_type,
+                         tu.ref_object_name,
+                         tu.text
+                    from plscope_tab_usage tu
+                    left join sys.dba_tables tab -- NOSONAR: avoid public synonyms
+                      on tu.ref_object_type = 'TABLE'
+                     and tab.owner = tu.owner
+                     and tab.table_name = tu.ref_object_name
+                   where tu.is_base_object = 'YES'
+                     and tu.operation in ('INSERT', 'SELECT')
+                      -- PL/Scope records references to "columns" of object tables, not as
+                      -- column references, but as object attribute references instead.
+                      -- The scope_cols subquery cannot handle that, so we must exclude
+                      -- object tables here too.
+                     and not (tu.ref_object_type = 'TABLE' and tab.owner is null)
+                ) t
            left join scope_cols c
              on t.owner = c.owner
             and t.object_type = c.object_type
@@ -66,9 +89,7 @@ create or replace view plscope_col_usage as
            join sys.dba_tab_columns tc -- NOSONAR: avoid public synonym
              on tc.owner = t.owner
             and tc.table_name = t.ref_object_name
-          where t.is_base_object = 'YES'
-            and c.owner is null
-            and t.operation in ('INSERT', 'SELECT')
+          where c.owner is null
       ),
       base_cols as (
          select owner,
