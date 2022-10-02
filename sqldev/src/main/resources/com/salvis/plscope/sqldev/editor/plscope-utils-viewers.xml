@@ -1109,20 +1109,6 @@ select case
 			<query minversion="11.1">
 				<sql><![CDATA[
 with
-   src as (
-      select /*+ materialize */
-             owner,
-             type,
-             name,
-             line,
-             text
-        from sys.all_source
-       where owner = :OBJECT_OWNER
-         and type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
-             )
-         and name = :OBJECT_NAME
-   ),
    refs as (
       select /*+materialize */
              signature
@@ -1162,7 +1148,7 @@ select case
   from refs
   join sys.all_identifiers ids
     on ids.signature = refs.signature
-  left join src
+  left join sys.all_source src
     on src.owner = ids.owner
    and src.type = ids.object_type
    and src.name = ids.object_name
