@@ -5,7 +5,8 @@ create or replace package body dd_util is
    --
    function resolve_synonym(
       in_parse_user in varchar2,
-      in_obj        in obj_type
+      in_obj        in obj_type,
+      in_in_depth   in number default 1
    ) return obj_type is
       o_obj obj_type;
       cursor c_lookup is
@@ -18,14 +19,44 @@ create or replace package body dd_util is
            join sys.dba_objects o -- NOSONAR: avoid public synonym
              on o.owner = s.table_owner
             and o.object_name = s.table_name
+            and o.subobject_name is null
+            and o.namespace = 1
           where s.owner = o_obj.owner
             and s.synonym_name = o_obj.object_name;
+
+      -- For loop detection
+      subtype qualified_name_type is varchar2(261 char);
+      type map_qualified_name_type is table of pls_integer index by qualified_name_type;
+      l_map_syn_names map_qualified_name_type;
+      l_qual_syn_name qualified_name_type;
    begin
       o_obj := get_object(in_parse_user => in_parse_user, in_obj => in_obj);
       if o_obj.object_type = 'SYNONYM' then
-         open c_lookup;
-         fetch c_lookup into o_obj;
-         close c_lookup;
+         l_qual_syn_name := '"' || o_obj.owner || '"."' || o_obj.object_name || '"';
+         l_map_syn_names(l_qual_syn_name) := 1;
+         <<resolve_syn_chain>>
+         while o_obj.object_type = 'SYNONYM' loop
+            open c_lookup;
+            fetch c_lookup into o_obj;
+            if c_lookup%notfound then
+               -- synonym of a non-existent object
+               o_obj.owner := null;
+               o_obj.object_type := null;
+               o_obj.object_name := null;
+            else
+               l_qual_syn_name := '"' || o_obj.owner || '"."' || o_obj.object_name || '"';
+               if l_map_syn_names.exists(l_qual_syn_name) then
+                  -- synonym loop
+                  o_obj.owner := null;
+                  o_obj.object_type := null;
+                  o_obj.object_name := null;
+               else
+                  l_map_syn_names(l_qual_syn_name) := 1;
+               end if;
+            end if;
+            close c_lookup;
+            exit resolve_syn_chain when in_in_depth <> 1;
+         end loop resolve_syn_chain;
       end if;
       return o_obj;
    end resolve_synonym;
@@ -35,7 +66,8 @@ create or replace package body dd_util is
    --
    function get_object(
       in_parse_user in varchar2,
-      in_obj        in obj_type
+      in_obj        in obj_type,
+      in_namespace  in number default 1
    ) return obj_type is
       o_obj obj_type;
       cursor c_lookup is
@@ -45,16 +77,28 @@ create or replace package body dd_util is
                    object_name => o.object_name
                 )
            from sys.dba_objects o -- NOSONAR: avoid public synonym
-          where o.owner = coalesce(in_obj.owner, in_parse_user, 'PUBLIC')
+          where o.namespace = in_namespace
+            and o.owner in (
+                   -- if in_obj.owner is specified, the search is limited to that schema
+                   -- otherwise the scope is the parsing schema and (possibly) public synonyms
+                   coalesce(in_obj.owner, in_parse_user),
+                   case
+                      when in_obj.owner is null 
+                         and (in_obj.object_type is null or in_obj.object_type = 'SYNONYM')
+                      then 'PUBLIC'
+                   end
+                )
             and o.object_name = in_obj.object_name
+            and o.subobject_name is null
+            and (in_obj.object_type is null or o.object_type = in_obj.object_type)
           order by case o.owner
-                      when in_obj.owner then
-                         1
-                      when in_parse_user then
-                         2
-                      else
-                         3
-                   end,
+                     when in_obj.owner then
+                        1
+                     when in_parse_user then
+                        2
+                     else
+                        3
+                  end,
                 case o.object_type
                    when in_obj.object_type then
                       1
@@ -75,7 +119,8 @@ create or replace package body dd_util is
    --
    function get_objects(
       in_parse_user in varchar2,
-      in_t_obj      in t_obj_type
+      in_t_obj      in t_obj_type,
+      in_namespace  in number default 1
    ) return t_obj_type is
       o_obj obj_type;
       t_obj t_obj_type := t_obj_type();
@@ -86,7 +131,8 @@ create or replace package body dd_util is
          loop
             o_obj := get_object(
                         in_parse_user => in_parse_user,
-                        in_obj        => in_t_obj(i)
+                        in_obj        => in_t_obj(i),
+                        in_namespace  => in_namespace
                      );
             if o_obj.owner is not null then
                t_obj.extend;

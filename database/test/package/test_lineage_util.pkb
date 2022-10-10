@@ -1,5 +1,7 @@
 create or replace package body test_lineage_util is
 
+   co_plsql_unit_owner constant user_users.username%type := $$PLSQL_UNIT_OWNER;
+
    --
    -- test_set_get_recursive
    --
@@ -22,7 +24,7 @@ create or replace package body test_lineage_util is
    begin
       -- non-recursive
       t_actual   := lineage_util.get_dep_cols_from_query(
-                       in_parse_user => user,
+                       in_parse_user => co_plsql_unit_owner,
                        in_query      => q'[
                           select /*+ordered */
                                  d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
@@ -36,13 +38,13 @@ create or replace package body test_lineage_util is
                     );
       ut.expect(t_actual.count).to_equal(2);
       t_expected := t_col_type(
-                       col_type(user, 'TABLE', 'EMP', 'COMM'),
-                       col_type(user, 'TABLE', 'EMP', 'SAL')
+                       col_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'COMM'),
+                       col_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'SAL')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
       -- recursive
       t_actual   := lineage_util.get_dep_cols_from_query(
-                       in_parse_user => user,
+                       in_parse_user => co_plsql_unit_owner,
                        in_query      => q'[
                           select dept_no, dept_name, salary
                             from source_view
@@ -52,9 +54,9 @@ create or replace package body test_lineage_util is
                     );
       ut.expect(t_actual.count).to_equal(3);
       t_expected := t_col_type(
-                       col_type(user, 'TABLE', 'EMP', 'COMM'),
-                       col_type(user, 'TABLE', 'EMP', 'SAL'),
-                       col_type(user, 'VIEW', 'SOURCE_VIEW', 'SALARY')
+                       col_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'COMM'),
+                       col_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'SAL'),
+                       col_type(co_plsql_unit_owner, 'VIEW', 'SOURCE_VIEW', 'SALARY')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
    end test_get_dep_cols_from_query;
@@ -67,15 +69,15 @@ create or replace package body test_lineage_util is
       t_expected t_col_type;
    begin
       t_actual   := lineage_util.get_dep_cols_from_view(
-                       in_owner       => user,
+                       in_owner       => co_plsql_unit_owner,
                        in_object_name => 'SOURCE_VIEW',
                        in_column_name => 'SALARY',
                        in_recursive   => 0
                     );
       ut.expect(t_actual.count).to_equal(2);
       t_expected := t_col_type(
-                       col_type(user, 'TABLE', 'EMP', 'COMM'),
-                       col_type(user, 'TABLE', 'EMP', 'SAL')
+                       col_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'COMM'),
+                       col_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'SAL')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
    end test_get_dep_cols_from_view;
@@ -90,15 +92,17 @@ create or replace package body test_lineage_util is
    begin
       select signature -- NOSONAR: G-5060
         into l_signature
-        from sys.user_statements -- NOSONAR: avoid public synonym
-       where text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
+        from sys.all_statements -- NOSONAR: avoid public synonym
+       where owner = co_plsql_unit_owner
+         and object_name = 'ETL'
+         and text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
       -- non-recursive
       t_actual   := lineage_util.get_dep_cols_from_insert(in_signature => l_signature, in_recursive => 0);
       ut.expect(t_actual.count).to_equal(3);
       t_expected := t_col_lineage_type(
-                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'SALARY', user, 'TABLE', 'DEPTSAL', 'SALARY')
+                       col_lineage_type(co_plsql_unit_owner, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_lineage_type(co_plsql_unit_owner, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_lineage_type(co_plsql_unit_owner, 'VIEW', 'SOURCE_VIEW', 'SALARY', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected))
       .join_by('FROM_COLUMN_NAME');
@@ -106,13 +110,13 @@ create or replace package body test_lineage_util is
       t_actual   := lineage_util.get_dep_cols_from_insert(in_signature => l_signature, in_recursive => 1);
       ut.expect(t_actual.count).to_equal(7);
       t_expected := t_col_lineage_type(
-                       col_lineage_type(user, 'TABLE', 'DEPT', 'DEPTNO', user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_lineage_type(user, 'TABLE', 'DEPT', 'DNAME', user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_lineage_type(user, 'TABLE', 'EMP', 'COMM', user, 'TABLE', 'DEPTSAL', 'SALARY'),
-                       col_lineage_type(user, 'TABLE', 'EMP', 'SAL', user, 'TABLE', 'DEPTSAL', 'SALARY'),
-                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_lineage_type(user, 'VIEW', 'SOURCE_VIEW', 'SALARY', user, 'TABLE', 'DEPTSAL', 'SALARY')
+                       col_lineage_type(co_plsql_unit_owner, 'TABLE', 'DEPT', 'DEPTNO', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_lineage_type(co_plsql_unit_owner, 'TABLE', 'DEPT', 'DNAME', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_lineage_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'COMM', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'SALARY'),
+                       col_lineage_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'SAL', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'SALARY'),
+                       col_lineage_type(co_plsql_unit_owner, 'VIEW', 'SOURCE_VIEW', 'DEPT_NAME', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_lineage_type(co_plsql_unit_owner, 'VIEW', 'SOURCE_VIEW', 'DEPT_NO', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_lineage_type(co_plsql_unit_owner, 'VIEW', 'SOURCE_VIEW', 'SALARY', co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
    end test_get_dep_cols_from_insert;
@@ -128,27 +132,31 @@ create or replace package body test_lineage_util is
       -- explicit target columns
       select signature -- NOSONAR: G-5060
         into l_signature
-        from sys.user_statements -- NOSONAR: avoid public synonym
-       where text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
+        from sys.all_statements -- NOSONAR: avoid public synonym
+       where owner = co_plsql_unit_owner
+         and object_name = 'ETL'
+         and text = 'INSERT INTO DEPTSAL (DEPT_NO, DEPT_NAME, SALARY) SELECT DEPT_NO, DEPT_NAME, SALARY FROM SOURCE_SYN';
       t_actual   := lineage_util.get_target_cols_from_insert(l_signature);
       ut.expect(t_actual.count).to_equal(3);
       t_expected := t_col_type(
-                       col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_type(user, 'TABLE', 'DEPTSAL', 'SALARY')
+                       col_type(co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_type(co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_type(co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
       -- implicit target columns
       select signature -- NOSONAR: G-5060
         into l_signature
-        from sys.user_statements -- NOSONAR: avoid public synonym
-       where text = 'INSERT INTO DEPTSAL SELECT T.* FROM SOURCE_SYN T';
+        from sys.all_statements -- NOSONAR: avoid public synonym
+       where owner = co_plsql_unit_owner
+         and object_name = 'ETL'
+         and text = 'INSERT INTO DEPTSAL SELECT T.* FROM SOURCE_SYN T';
       t_actual   := lineage_util.get_target_cols_from_insert(l_signature);
       ut.expect(t_actual.count).to_equal(3);
       t_expected := t_col_type(
-                       col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
-                       col_type(user, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
-                       col_type(user, 'TABLE', 'DEPTSAL', 'SALARY')
+                       col_type(co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NO'),
+                       col_type(co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'DEPT_NAME'),
+                       col_type(co_plsql_unit_owner, 'TABLE', 'DEPTSAL', 'SALARY')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
    end test_get_target_cols_from_insert;

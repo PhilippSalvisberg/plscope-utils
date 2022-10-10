@@ -1,5 +1,7 @@
 create or replace package body test_parse_util is
 
+   co_plsql_unit_owner constant user_users.username%type := $$PLSQL_UNIT_OWNER;
+
    --
    -- test_parse_query
    --
@@ -25,7 +27,7 @@ create or replace package body test_parse_util is
   </FROM>
 </QUERY>
 ]';
-      l_actual   := parse_util.parse_query(in_parse_user => user, in_query => 'select ename from emp');
+      l_actual   := parse_util.parse_query(in_parse_user => co_plsql_unit_owner, in_query => 'select ename from emp');
       ut.expect(l_actual.getclobval()).to_equal(l_expected);
    end test_parse_query;
 
@@ -39,7 +41,7 @@ create or replace package body test_parse_util is
       -- single table insert
       t_expected := t_obj_type(obj_type(null, null, 'DEPT'));
       t_actual   := parse_util.get_insert_targets(
-                       in_parse_user => user,
+                       in_parse_user => co_plsql_unit_owner,
                        in_sql        => q'[
                           insert into dept values (50, 'TRAINING', 'ZURICH')
                        ]'
@@ -51,7 +53,7 @@ create or replace package body test_parse_util is
                        obj_type(null, null, 'DEPT')
                     );
       t_actual   := parse_util.get_insert_targets(
-                       in_parse_user => user,
+                       in_parse_user => co_plsql_unit_owner,
                        in_sql        => q'[
                            insert all
                               when rec_type = 'EMP' then
@@ -148,7 +150,7 @@ create or replace package body test_parse_util is
       l_expected   clob;
    begin
       l_parse_tree := parse_util.parse_query(
-                         in_parse_user => user,
+                         in_parse_user => co_plsql_unit_owner,
                          in_query      => q'[
                             select /*+ordered */
                                    d.deptno, d.dname, sum(e.sal + nvl(e.comm, 0)) as sal
