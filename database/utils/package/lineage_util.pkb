@@ -15,10 +15,20 @@ create or replace package body lineage_util is
    * limitations under the License.
    */
    
+   subtype fixed_view_name_type is 
+      sys.gv_$fixed_view_definition.view_name %type; -- NOSONAR: avoid public synonym
+   type map_fixed_view_names_type is table of pls_integer index by fixed_view_name_type;
+      
    --
    -- global variable recursive, used by get_dep_cols_from_insert
    --
    g_recursive integer default 1;
+
+   --
+   -- global associative array for caching the names of fixed views
+   -- (initialized at package init. time, see begin block)
+   --
+   g_map_fixed_views map_fixed_view_names_type;
 
    --
    -- set_recursive
@@ -53,6 +63,7 @@ create or replace package body lineage_util is
       l_dep_cols   sys.xmltype;
       o_obj        obj_type;
       t_col        t_col_type := t_col_type();
+      l_is_skipped_recursion boolean;
    begin
       -- parse query
       l_parse_tree := parse_util.parse_query(
@@ -79,14 +90,26 @@ create or replace package body lineage_util is
                       )
             )
             loop
-               o_obj              := dd_util.resolve_synonym(
-                                        in_parse_user => in_parse_user,
-                                        in_obj        => obj_type(
-                                                            owner       => r_dep.schema_name,
-                                                            object_type => null,
-                                                            object_name => r_dep.table_name
-                                                         )
-                                     );
+               if in_parse_user = 'SYS' and g_map_fixed_views.exists(r_dep.table_name) then
+                  -- The present table name resolves to a fixed view; stop the recursion 
+                  -- in order to prevent from entering an infinite recursion loop
+                  l_is_skipped_recursion := true;
+                  o_obj := obj_type(
+                              owner       => in_parse_user,
+                              object_type => 'VIEW',
+                              object_name => r_dep.table_name
+                           );
+               else
+                  l_is_skipped_recursion := false;
+                  o_obj := dd_util.resolve_synonym(
+                              in_parse_user => in_parse_user,
+                              in_obj        => obj_type(
+                                                  owner       => r_dep.schema_name,
+                                                  object_type => null,
+                                                  object_name => r_dep.table_name
+                                               )
+                           );
+               end if;
                t_col.extend;
                t_col(t_col.count) := col_type(
                                         owner       => o_obj.owner,
@@ -94,7 +117,7 @@ create or replace package body lineage_util is
                                         object_name => o_obj.object_name,
                                         column_name => r_dep.column_name
                                      );
-               if in_recursive = 1 then
+               if in_recursive = 1 and not l_is_skipped_recursion then
                   <<second_level_dependencies>>
                   for r_dep2 in (
                      select value(p) as col
@@ -374,5 +397,19 @@ create or replace package body lineage_util is
       return t_result;
    end get_target_cols_from_insert;
 
+begin
+   <<get_fixed_view_names>>
+   declare
+      type t_fixed_view_names_type is table of fixed_view_name_type index by pls_integer;
+      l_fixed_view_names t_fixed_view_names_type;
+   begin
+      select fv.view_name bulk collect into l_fixed_view_names
+        from sys.gv_$fixed_view_definition fv; -- NOSONAR: avoid public synonym
+      if l_fixed_view_names.count > 0 then
+         for i in l_fixed_view_names.first .. l_fixed_view_names.last loop
+            g_map_fixed_views(l_fixed_view_names(i)) := 1;
+         end loop;
+      end if;
+   end get_fixed_view_names;
 end lineage_util;
 /
