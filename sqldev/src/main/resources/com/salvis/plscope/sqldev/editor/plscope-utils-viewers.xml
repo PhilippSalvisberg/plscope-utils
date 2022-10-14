@@ -1109,20 +1109,6 @@ select case
 			<query minversion="11.1">
 				<sql><![CDATA[
 with
-   src as (
-      select /*+ materialize */
-             owner,
-             type,
-             name,
-             line,
-             text
-        from sys.all_source
-       where owner = :OBJECT_OWNER
-         and type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
-             )
-         and name = :OBJECT_NAME
-   ),
    refs as (
       select /*+materialize */
              signature
@@ -1162,7 +1148,7 @@ select case
   from refs
   join sys.all_identifiers ids
     on ids.signature = refs.signature
-  left join src
+  left join sys.all_source src
     on src.owner = ids.owner
    and src.type = ids.object_type
    and src.name = ids.object_name
@@ -1715,6 +1701,8 @@ with
              dep_trans_closure dep,
              sys.all_statements refs        -- NOSONAR: avoid public synonym
        where dep.base_obj_type is not null  -- drop syn. refs not leading to tables/views
+         and (dep.ref_type <> 'SYNONYM'     -- ignore synonyms unless directly referenced
+                or dep.path_len = 0)
          and dep.owner = ids.ref_owner
          and dep.type = ids.ref_object_type
          and dep.name = ids.ref_object_name
@@ -2321,6 +2309,8 @@ with
          and dep.owner = ids.ref_owner
          and dep.type = ids.ref_object_type
          and dep.name = ids.ref_object_name
+         and (dep.ref_type <> 'SYNONYM'     -- ignore synonyms unless directly referenced
+                or dep.path_len = 0)
          and dep.base_obj_type is not null  -- drop syn. refs not leading to tables/views
          and refs.signature (+) = ids.parent_statement_signature
    ),
@@ -2376,9 +2366,23 @@ with
                      tu.text,
                      tu.path_len
                 from plscope_tab_usage tu,
+                     sys.all_tables tab, -- NOSONAR: avoid public synonyms
                      scope_cols c
                where tu.operation in ('INSERT', 'SELECT')
                  and tu.is_base_object = 'YES'
+                 and tu.ref_object_type = case
+                                             when tab.owner (+) is not null then
+                                                'TABLE'
+                                             else
+                                                'TABLE'
+                                          end
+                 and tu.owner = tab.owner (+)
+                 and tu.ref_object_name = tab.table_name (+)
+                 -- PL/Scope records references to "columns" of object tables, not as
+                 -- column references, but as object attribute references instead.
+                 -- The scope_cols subquery cannot handle that, so we must exclude
+                 -- object tables here too.
+                 and not (tu.ref_object_type = 'TABLE' and tab.owner is null)
                  and tu.owner = c.owner (+)
                  and tu.object_type = c.object_type (+)
                  and tu.object_name = c.object_name (+)

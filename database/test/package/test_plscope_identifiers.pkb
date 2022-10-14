@@ -1,5 +1,21 @@
 create or replace package body test_plscope_identifiers is
 
+   co_plsql_unit_owner constant user_users.username%type := $$PLSQL_UNIT_OWNER;
+
+   procedure set_context is
+   begin
+      if sys_context('USERENV', 'CURRENT_USER') <> co_plsql_unit_owner then
+         plscope_context.set_attr('OWNER', co_plsql_unit_owner);
+      end if;
+   end set_context;
+   
+   procedure clear_context is
+   begin
+      if sys_context('USERENV', 'CURRENT_USER') <> co_plsql_unit_owner then
+         plscope_context.remove_all;
+      end if;
+   end clear_context;
+
    procedure user_identifiers is
       c_actual   sys_refcursor;
       c_expected sys_refcursor;
@@ -35,8 +51,9 @@ create or replace package body test_plscope_identifiers is
                 usage_id,
                 usage_context_id,
                 origin_con_id
-           from sys.user_identifiers -- NOSONAR: avoid public synonym
-          where object_name = 'DD_UTIL'
+           from sys.all_identifiers -- NOSONAR: avoid public synonym
+          where owner = co_plsql_unit_owner
+            and object_name = 'DD_UTIL'
           order by object_type, object_name, line, col, usage, usage_id;
 
       -- assert
@@ -104,7 +121,8 @@ create or replace package body test_plscope_identifiers is
                 usage_id,
                 usage_context_id,
                 origin_con_id
-           from sys.user_statements -- NOSONAR: avoid public synonym
+           from sys.all_statements -- NOSONAR: avoid public synonym
+          where owner = co_plsql_unit_owner 
           order by object_type, object_name, line, col, usage_id;
 
       -- assert

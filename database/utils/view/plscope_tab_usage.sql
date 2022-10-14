@@ -168,5 +168,7 @@ create or replace view plscope_tab_usage as
        where dep.owner = ids.ref_owner
          and dep.type = ids.ref_object_type
          and dep.name = ids.ref_object_name
+         and (dep.ref_type <> 'SYNONYM'     -- ignore synonyms unless directly referenced
+                or dep.path_len = 0)
          and dep.base_obj_type is not null  -- drop syn. refs not leading to tables/views
          and refs.signature (+) = ids.parent_statement_signature;

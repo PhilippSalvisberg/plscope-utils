@@ -65,9 +65,23 @@ create or replace view plscope_col_usage as
                         tu.ref_object_name,
                         tu.text
                    from plscope_tab_usage tu,
+                        sys.dba_tables tab, -- NOSONAR: avoid public synonyms
                         scope_cols c
                   where tu.operation in ('INSERT', 'SELECT')
                     and tu.is_base_object = 'YES'
+                    and tu.ref_object_type = case
+                                                when tab.owner (+) is null then
+                                                   'TABLE'
+                                                else
+                                                   'TABLE'
+                                             end
+                    and tu.owner = tab.owner (+)
+                    and tu.ref_object_name = tab.table_name (+)
+                    -- PL/Scope records references to "columns" of object tables, not as
+                    -- column references, but as object attribute references instead.
+                    -- The scope_cols subquery cannot handle that, so we must exclude
+                    -- object tables here too.
+                    and not (tu.ref_object_type = 'TABLE' and tab.owner is null)
                     and tu.owner = c.owner (+)
                     and tu.object_type = c.object_type (+)
                     and tu.object_name = c.object_name (+)

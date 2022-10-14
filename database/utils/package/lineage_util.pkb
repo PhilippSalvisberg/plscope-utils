@@ -157,7 +157,7 @@ create or replace package body lineage_util is
                   select value(p) as col
                     from table(
                             lineage_util.get_dep_cols_from_query(
-                               in_parse_user => in_owner,
+                               in_parse_user => o_obj.owner,
                                in_query      => l_query,
                                in_column_pos => l_column_id,
                                in_recursive  => in_recursive
