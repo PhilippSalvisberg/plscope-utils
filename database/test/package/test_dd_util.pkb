@@ -34,6 +34,12 @@ create or replace package body test_dd_util is
       wrap_dyn_exec('create or replace synonym s1 for p1');
       wrap_dyn_exec('create or replace synonym s2 for s1');
       wrap_dyn_exec('create or replace synonym s3 for s2');
+      
+      wrap_dyn_exec('create public synonym weird_test_pubsyn1 for s3');
+      wrap_dyn_exec('create public synonym weird_test_pubsyn2 for '
+         || sys_context('USERENV', 'CURRENT_SCHEMA') || '.weird_test_pubsyn1');
+      wrap_dyn_exec('create public synonym weird_test_pubsyn3 for '
+         || sys_context('USERENV', 'CURRENT_SCHEMA') || '.weird_test_pubsyn2');
 
       wrap_dyn_exec('create or replace synonym syn_loop1 for p1');
       wrap_dyn_exec('create or replace synonym syn_loop2 for syn_loop1');
@@ -61,6 +67,9 @@ create or replace package body test_dd_util is
       wrap_dyn_exec('drop synonym s3');
       wrap_dyn_exec('drop synonym s2');
       wrap_dyn_exec('drop synonym s1');
+      wrap_dyn_exec('drop public synonym weird_test_pubsyn3');
+      wrap_dyn_exec('drop public synonym weird_test_pubsyn2');
+      wrap_dyn_exec('drop public synonym weird_test_pubsyn1');
       wrap_dyn_exec('drop procedure p1');
    end teardown;
 
@@ -86,6 +95,13 @@ create or replace package body test_dd_util is
       ut.expect(o_actual.object_type).to_equal('PROCEDURE');
       ut.expect(o_actual.object_name).to_equal('P1');
       
+      -- resolve chain of synonyms, including public synonyms
+      o_input  := obj_type(null, null, 'WEIRD_TEST_PUBSYN3');
+      o_actual := dd_util.resolve_synonym(in_parse_user => l_current_schema, in_obj => o_input);
+      ut.expect(o_actual.owner).to_equal(l_current_schema);
+      ut.expect(o_actual.object_type).to_equal('PROCEDURE');
+      ut.expect(o_actual.object_name).to_equal('P1');
+
       -- shallow resolution (1st-level only)
       o_input  := obj_type(null, null, 'S3');
       o_actual := dd_util.resolve_synonym(in_parse_user => l_current_schema, 
