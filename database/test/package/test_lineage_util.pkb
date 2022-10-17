@@ -42,6 +42,7 @@ create or replace package body test_lineage_util is
                        col_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'SAL')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
+
       -- recursive
       t_actual   := lineage_util.get_dep_cols_from_query(
                        in_parse_user => co_plsql_unit_owner,
@@ -59,6 +60,23 @@ create or replace package body test_lineage_util is
                        col_type(co_plsql_unit_owner, 'VIEW', 'SOURCE_VIEW', 'SALARY')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
+
+      -- recursive, with recursion not attempted into fixed views
+      t_actual   := lineage_util.get_dep_cols_from_query(
+                       in_parse_user => 'SYS',
+                       in_query      => q'[
+                          select substr(parameter, 1, 30),
+                                 substr(value, 1, 64)
+                            from v$nls_parameters
+                           where parameter != 'NLS_CHARACTERSET'
+                             and parameter != 'NLS_NCHAR_CHARACTERSET'
+                       ]',
+                       in_column_pos => 2,
+                       in_recursive  => 1
+                    );
+      ut.expect(t_actual.count).to_equal(1);
+      t_expected := t_col_type(col_type('SYS', 'VIEW', 'V$NLS_PARAMETERS', 'VALUE'));
+      ut.expect(sys.anydata.convertobject(t_actual(1))).to_equal(sys.anydata.convertobject(t_expected(1)));
    end test_get_dep_cols_from_query;
 
    --
@@ -80,6 +98,39 @@ create or replace package body test_lineage_util is
                        col_type(co_plsql_unit_owner, 'TABLE', 'EMP', 'SAL')
                     );
       ut.expect(sys.anydata.convertcollection(t_actual)).to_equal(sys.anydata.convertcollection(t_expected)).unordered;
+
+      -- Column of a view built on top of a fixed view (aka a v$ view)
+      <<view_on_top_of_fixed_view>>
+      declare
+         l_is_view_found      number;
+         l_is_view_text_avail number;
+      begin
+         select count(*),
+                count(case
+                         when v.text is not null then
+                            1
+                      end)
+                -- Don't ask why the TEXT column may be null. Unfortunately, on my 19.9
+                -- test PDB, it is! (For this view, and for many other in the data dictionary.)
+                -- It is not null, however, if querying from the CDB root  :-(
+           into l_is_view_found,
+                l_is_view_text_avail
+           from sys.dba_views v
+          where v.owner = 'SYS'
+            and v.view_name = 'NLS_SESSION_PARAMETERS';
+         ut.expect(l_is_view_found).to_equal(1);
+         t_actual := lineage_util.get_dep_cols_from_view(
+                        in_owner       => 'SYS',
+                        in_object_name => 'NLS_SESSION_PARAMETERS',
+                        in_column_name => 'VALUE',
+                        in_recursive   => 1
+                     );
+         ut.expect(t_actual.count).to_equal(l_is_view_text_avail);
+         if l_is_view_text_avail = 1 then
+            t_expected := t_col_type(col_type('SYS', 'VIEW', 'V$NLS_PARAMETERS', 'VALUE'));
+            ut.expect(sys.anydata.convertobject(t_actual(1))).to_equal(sys.anydata.convertobject(t_expected(1)));
+         end if;
+      end view_on_top_of_fixed_view;
    end test_get_dep_cols_from_view;
 
    --

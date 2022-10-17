@@ -9,8 +9,11 @@ create or replace package body dd_util is
       in_in_depth   in number default 1
    ) return obj_type is
       o_obj obj_type;
+      
+      -- Resolve the target as an object in the schema specified as the "table owner"
       cursor c_lookup is
-         select obj_type(
+         select /*+ noparallel */
+                obj_type(
                    owner       => o.owner,
                    object_type => o.object_type,
                    object_name => o.object_name
@@ -21,6 +24,24 @@ create or replace package body dd_util is
             and o.object_name = s.table_name
             and o.subobject_name is null
             and o.namespace = 1
+          where s.owner = o_obj.owner
+            and s.synonym_name = o_obj.object_name;
+      
+      -- Failing the above, resolve the target as a public synonym
+      cursor c_lookup_pubsyn is
+         select /*+ noparallel */
+                obj_type(
+                   owner       => o.owner,
+                   object_type => o.object_type,
+                   object_name => o.object_name
+                )
+           from sys.dba_synonyms s -- NOSONAR: avoid public synonym
+           join sys.dba_objects o -- NOSONAR: avoid public synonym
+             on o.owner = 'PUBLIC'
+            and o.object_name = s.table_name
+            and o.subobject_name is null
+            and o.namespace = 1
+            and o.object_type = 'SYNONYM'
           where s.owner = o_obj.owner
             and s.synonym_name = o_obj.object_name;
 
@@ -39,6 +60,10 @@ create or replace package body dd_util is
             open c_lookup;
             fetch c_lookup into o_obj;
             if c_lookup%notfound then
+               open c_lookup_pubsyn;
+               fetch c_lookup_pubsyn into o_obj;
+            end if;
+            if c_lookup%notfound and c_lookup_pubsyn%notfound then
                -- synonym of a non-existent object
                o_obj.owner := null;
                o_obj.object_type := null;
@@ -53,6 +78,9 @@ create or replace package body dd_util is
                else
                   l_map_syn_names(l_qual_syn_name) := 1;
                end if;
+            end if;
+            if c_lookup_pubsyn%isopen then
+               close c_lookup_pubsyn;
             end if;
             close c_lookup;
             exit resolve_syn_chain when in_in_depth <> 1;
