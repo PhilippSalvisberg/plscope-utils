@@ -82,8 +82,12 @@ show errors
 show errors
 @./utils/view/plscope_tab_usage.sql
 show errors
+
+set sqlterminator off
 @./utils/view/plscope_naming.sql
 show errors
+
+set sqlterminator on
 
 prompt ====================================================================
 prompt Grants
