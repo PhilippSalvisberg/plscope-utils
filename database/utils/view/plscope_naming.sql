@@ -485,4 +485,5 @@ create or replace view plscope_naming as
           col,
           text
      from checked
-    where message is not null;
+    where message is not null
+/
