@@ -15,35 +15,36 @@
 */
 create or replace view plscope_naming as
    with
-      --
-      -- You may configure regular expressions for every name check. 
-      -- Here's an example for overriding every attribute used in this view
-      -- to combine various naming conventions:
-      --
-      --    begin
-      --       plscope_context.set_attr('GLOBAL_VARIABLE_REGEX',       '^(g|m)_.*');
-      --       plscope_context.set_attr('LOCAL_RECORD_VARIABLE_REGEX', '^(r|l|v)_.*');
-      --       plscope_context.set_attr('LOCAL_ARRAY_VARIABLE_REGEX',  '^(t|l|v)_.*');
-      --       plscope_context.set_attr('LOCAL_OBJECT_VARIABLE_REGEX', '^(o|l|v)_.*');
-      --       plscope_context.set_attr('LOCAL_VARIABLE_REGEX',        '(^(l|v|c)_.*)|(^[ij]$)');
-      --       plscope_context.set_attr('CURSOR_REGEX',                '^(c|l)_.*');
-      --       plscope_context.set_attr('CURSOR_PARAMETER_REGEX',      '(^(p|in|out|io)_.*)|(.*_(in|out|io)$)');
-      --       plscope_context.set_attr('IN_PARAMETER_REGEX',          '(^(in|p)_.*)|(.*_in$)');
-      --       plscope_context.set_attr('OUT_PARAMETER_REGEX',         '(^(out|p)_.*)|(.*_out$)');
-      --       plscope_context.set_attr('IN_OUT_PARAMETER_REGEX',      '(^(io|p)_.*)|(.*_io$)');
-      --       plscope_context.set_attr('RECORD_REGEX',                '^(r|tp?)_.*');
-      --       plscope_context.set_attr('ARRAY_REGEX',                 '(^tp?_.*)|(^.*_(type?|l(ist)?|tab(type)?|t(able)?|arr(ay)?|ct|nt|ht)$)');
-      --       plscope_context.set_attr('EXCEPTION_REGEX',             '(^ex?_.*)|(.*_exc(eption)?$)');
-      --       plscope_context.set_attr('CONSTANT_REGEX',              '^(co?|gc?|m|l|k)_.*');
-      --       plscope_context.set_attr('SUBTYPE_REGEX',               '(^tp?_.*$)|(.*_type?$)');
-      --    end;
-      --
-      -- To restore default-settings call: 
-      --
-      --    begin
-      --       plscope_context.remove_all;
-      --    end;
-      --
+      /* 
+      * You may configure regular expressions for every name check. 
+      * Here's an example for overriding every attribute used in this view
+      * to combine various naming conventions:
+      *
+           begin
+              plscope_context.set_attr('GLOBAL_VARIABLE_REGEX',       '^(g|m)_.*');
+              plscope_context.set_attr('LOCAL_RECORD_VARIABLE_REGEX', '^(r|l|v)_.*');
+              plscope_context.set_attr('LOCAL_ARRAY_VARIABLE_REGEX',  '^(t|l|v)_.*');
+              plscope_context.set_attr('LOCAL_OBJECT_VARIABLE_REGEX', '^(o|l|v)_.*');
+              plscope_context.set_attr('LOCAL_VARIABLE_REGEX',        '(^(l|v|c)_.*)|(^[ij]$)');
+              plscope_context.set_attr('CURSOR_REGEX',                '^(c|l)_.*');
+              plscope_context.set_attr('CURSOR_PARAMETER_REGEX',      '(^(p|in|out|io)_.*)|(.*_(in|out|io)$)');
+              plscope_context.set_attr('IN_PARAMETER_REGEX',          '(^(in|p)_.*)|(.*_in$)');
+              plscope_context.set_attr('OUT_PARAMETER_REGEX',         '(^(out|p)_.*)|(.*_out$)');
+              plscope_context.set_attr('IN_OUT_PARAMETER_REGEX',      '(^(io|p)_.*)|(.*_io$)');
+              plscope_context.set_attr('RECORD_REGEX',                '^(r|tp?)_.*');
+              plscope_context.set_attr('ARRAY_REGEX',                 '(^tp?_.*)|(^.*_(type?|l(ist)?|tab(type)?|t(able)?|arr(ay)?|ct|nt|ht)$)');
+              plscope_context.set_attr('EXCEPTION_REGEX',             '(^ex?_.*)|(.*_exc(eption)?$)');
+              plscope_context.set_attr('CONSTANT_REGEX',              '^(co?|gc?|m|l|k)_.*');
+              plscope_context.set_attr('SUBTYPE_REGEX',               '(^tp?_.*$)|(.*_type?$)');
+           end;
+      *
+      * To restore default-settings call: 
+      *
+           begin
+              plscope_context.remove_all;
+           end;
+      * 
+      */
       src as (
          select /*+ materialize */
                 owner,
@@ -484,4 +485,5 @@ create or replace view plscope_naming as
           col,
           text
      from checked
-    where message is not null;
+    where message is not null
+/
