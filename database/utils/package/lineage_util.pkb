@@ -246,7 +246,7 @@ create or replace package body lineage_util is
             end loop column_dendencies;
             if t_col.count > 0 then
                <<populate_result>>
-               for i in 1..t_col.count
+               for i in 1..t_col.count -- NOSONAR: t_col is always dense
                loop
                   t_result.extend;
                   t_result(t_result.count) := col_lineage_type(
