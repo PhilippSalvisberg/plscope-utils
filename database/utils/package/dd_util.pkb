@@ -79,10 +79,13 @@ create or replace package body dd_util is
    ) return t_obj_type is
       o_obj obj_type;
       t_obj t_obj_type := t_obj_type();
+      i     pls_integer;
    begin
       if in_t_obj is not null and in_t_obj.count > 0 then
+         -- in_t_obj could be sparse
+         i := in_t_obj.first;
          <<input_objects>>
-         for i in 1..in_t_obj.count
+         while (i is not null)
          loop
             o_obj := get_object(
                         in_parse_user => in_parse_user,
@@ -92,6 +95,7 @@ create or replace package body dd_util is
                t_obj.extend;
                t_obj(t_obj.count) := o_obj;
             end if;
+            i     := in_t_obj.next(i);
          end loop input_objects;
       end if;
 
