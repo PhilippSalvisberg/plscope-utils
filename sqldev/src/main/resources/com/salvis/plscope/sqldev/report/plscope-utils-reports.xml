@@ -696,7 +696,7 @@ with
         from sys.all_source -- NOSONAR: avoid public synonym
        where owner like nvl(:OBJECT_OWNER, user)
    ),
-   -- PL/SQL identifiers filtered by PLSCOPE context attributes
+   -- PL/SQL identifiers filtered by user
    pls_ids as (
       select /*+ materialize */
              owner,
