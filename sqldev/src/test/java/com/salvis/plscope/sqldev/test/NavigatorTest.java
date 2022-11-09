@@ -135,14 +135,14 @@ public class NavigatorTest extends AbstractJdbcTest{
     }
 
     @Nested
-    class plscope_utils_synonym {
+    class plscope_utils_priv_syn {
 
         @Test
         public void query111() {
-            var node = xmlTools.getNode(doc, "/navigator/objectType[@id='plscope-utils-synonym']/folder/queries/query[@minversion='11.1']/sql");
+            var node = xmlTools.getNode(doc, "/navigator/objectType[@id='plscope-utils-priv-syn']/folder/queries/query[@minversion='11.1']/sql");
             var query = node.getTextContent()
                     .replaceAll(":SCHEMA", "user")
-                    .replaceAll(":TYPE", "'plscope-utils-synonym'");
+                    .replaceAll(":TYPE", "'plscope-utils-priv-syn'");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select i.object_name
@@ -152,8 +152,34 @@ public class NavigatorTest extends AbstractJdbcTest{
                            and i.object_name = s.synonym_name
                          where i.usage = 'DECLARATION'
                            and i.usage_context_id = 0
-                           and (i.owner = user or s.table_owner = user)
+                           and i.owner = user
                            and i.object_type = 'SYNONYM'
+                    """);
+            Assertions.assertEquals(expected.size(), actual.size());
+        }
+    }
+
+    @Nested
+    class plscope_utils_pub_syn {
+
+        @Test
+        public void query111() {
+            var node = xmlTools.getNode(doc, "/navigator/objectType[@id='plscope-utils-pub-syn']/folder/queries/query[@minversion='11.1']/sql");
+            var query = node.getTextContent()
+                    .replaceAll(":SCHEMA", "user")
+                    .replaceAll(":TYPE", "'plscope-utils-pub-syn'");
+            var actual = jdbcTemplate.queryForList(query);
+            var expected = jdbcTemplate.queryForList("""
+                        select i.object_name
+                          from sys.all_identifiers i
+                          join sys.all_synonyms s
+                            on i.owner = s.owner
+                           and i.object_name = s.synonym_name
+                         where i.usage = 'DECLARATION'
+                           and i.usage_context_id = 0
+                           and i.owner = 'PUBLIC'
+                           and i.object_type = 'SYNONYM'
+                           and s.table_owner = user
                     """);
             Assertions.assertEquals(expected.size(), actual.size());
         }

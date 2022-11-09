@@ -87,7 +87,7 @@ select object_name
 			<icon RSKEY="OracleIcons.DOMAIN" />
 		</node>
 	</objectType>
-	<objectType connType="Oracle" id="plscope-utils-synonym" weight="201.6" category="plscope-utils-root">
+	<objectType connType="Oracle" id="plscope-utils-priv-syn" weight="201.60" category="plscope-utils-root">
 		<folder>
 			<icon RSKEY="SYNONYM_FOLDER_ICON" />
 			<label RSKEY="SYNONYM_FOLDER_LABEL" />
@@ -101,10 +101,46 @@ select object_name
             join sys.all_synonyms s
               on i.owner = s.owner
              and i.object_name = s.synonym_name
-           where i.usage = 'DECLARATION'
-             and i.usage_context_id = 0
-             and (i.owner = :SCHEMA or s.table_owner = :SCHEMA)
+           where i.owner = :SCHEMA
              and i.object_type = 'SYNONYM'
+             and i.usage = 'DECLARATION'
+             and i.usage_context_id = 0
+       )
+]]>
+					</sql>
+					<columns>
+						<column filterable="true" sortable="true" id="NAME">
+							<colName>
+								<![CDATA[OBJECT_NAME]]>
+							</colName>
+						</column>
+					</columns>
+				</query>
+			</queries>
+		</folder>
+		<node>
+			<icon RSKEY="OracleIcons.SYNONYM" />
+		</node>
+	</objectType>
+	<objectType connType="Oracle" id="plscope-utils-pub-syn" weight="201.65" category="plscope-utils-root">
+		<folder>
+			<icon RSKEY="SYNONYM_FOLDER_ICON" />
+			<label RSKEY="PUBLIC_SYN_FOLDER_LABEL" />
+			<queries>
+				<query minversion="11.1">
+					<sql><![CDATA[
+select object_name
+  from (
+          select i.object_name
+            from sys.all_identifiers i
+            join sys.all_synonyms s
+              on i.owner = s.owner
+             and i.object_name = s.synonym_name
+           where i.owner = 'PUBLIC'
+             and i.object_type = 'SYNONYM'
+             and i.usage = 'DECLARATION'
+             and i.usage_context_id = 0
+             and s.table_owner = :SCHEMA
        )
 ]]>
 					</sql>

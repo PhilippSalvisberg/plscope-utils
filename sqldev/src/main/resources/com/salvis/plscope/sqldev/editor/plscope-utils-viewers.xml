@@ -8,7 +8,7 @@
 	<!-- used sys.all_ instead of dba_ - SQL Developer uses dba_ views, if the connected user has the privileges -->
 	<!-- Use case sensitive result columns including spaces -->
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view,plscope-utils-sequence">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-pub-syn,plscope-utils-priv-syn,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view,plscope-utils-sequence">
 		<name><![CDATA[Identifiers]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -29,7 +29,32 @@ with
              text
         from sys.all_source -- NOSONAR: avoid public synonym
        where owner = :OBJECT_OWNER
-         and type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and type in (
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE', 
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
+             )
          and name = :OBJECT_NAME
    ),
    -- PL/SQL identifiers filtered by SQLDEV bind variables
@@ -48,9 +73,46 @@ with
              usage_context_id,
              origin_con_id
         from sys.all_identifiers -- NOSONAR: avoid public synonym
-       where (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
+       where owner = case
+                        when :OBJECT_TYPE = 'plscope-utils-pub-syn' then
+                           'PUBLIC'
+                        else
+                           :OBJECT_OWNER
+                     end
          and object_type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER', 'TABLE', 'VIEW',
+                                         'SEQUENCE', 'SYNONYM') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger',
+                                         'plscope-utils-table',
+                                         'plscope-utils-view',
+                                         'plscope-utils-sequence')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                   when :OBJECT_TYPE in ('plscope-utils-pub-syn',
+                                         'plscope-utils-priv-syn')
+                   then
+                      'SYNONYM'
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
+             )
          and object_name = :OBJECT_NAME
    ),
    -- SQL identifiers filtered by SQLDEV bind variables
@@ -69,9 +131,34 @@ with
              usage_context_id,
              origin_con_id
         from sys.all_statements -- NOSONAR: avoid public synonym
-       where (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
+       -- Note: same filters as in the src CTE
+       where owner = :OBJECT_OWNER
          and object_type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
+             )
          and object_name = :OBJECT_NAME
    ),
    -- full list of identifiers (PL/SQL and SQL) with columns is_sql_stmt and procedure_scope
@@ -562,7 +649,32 @@ with
              text
         from sys.all_source -- NOSONAR: avoid public synonym
        where owner = :OBJECT_OWNER
-         and type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and type in (
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE', 
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
+             )
          and name = :OBJECT_NAME
    ),
    -- PL/SQL identifiers filtered by SQLDEV bind variables
@@ -581,9 +693,46 @@ with
              usage_context_id,
              0 as origin_con_id
         from sys.all_identifiers -- NOSONAR: avoid public synonym
-       where (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
+       where owner = case
+                        when :OBJECT_TYPE = 'plscope-utils-pub-syn' then
+                           'PUBLIC'
+                        else
+                           :OBJECT_OWNER
+                     end
          and object_type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER', 'TABLE', 'VIEW',
+                                         'SEQUENCE', 'SYNONYM') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger',
+                                         'plscope-utils-table',
+                                         'plscope-utils-view',
+                                         'plscope-utils-sequence')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                   when :OBJECT_TYPE in ('plscope-utils-pub-syn',
+                                         'plscope-utils-priv-syn')
+                   then
+                      'SYNONYM'
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
+             )
          and object_name = :OBJECT_NAME
    ),
    -- full list of identifiers (PL/SQL and SQL) with columns is_sql_stmt and procedure_scope
@@ -1089,7 +1238,30 @@ with
         from sys.all_statements stmt -- NOSONAR: avoid public synonym
        where owner = :OBJECT_OWNER
          and object_type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
              )
          and object_name = :OBJECT_NAME
    )
@@ -1153,7 +1325,30 @@ with
         from sys.all_source
        where owner = :OBJECT_OWNER
          and type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE', 
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
              )
          and name = :OBJECT_NAME
    ),
@@ -1170,9 +1365,32 @@ with
              col
         from sys.all_identifiers
        where usage in ('CALL', 'REFERENCE')
-         and (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
+         and owner = :OBJECT_OWNER
          and object_type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
              )
          and object_name = :OBJECT_NAME
    )
@@ -1232,12 +1450,41 @@ select case
   left join sys.all_objects o
     on o.owner = s.table_owner
    and o.object_name = s.table_name
+   and o.namespace = 1
+   and o.subobject_name is null
  where refs.usage = 'DECLARATION'
    and not (
           refs.owner = :OBJECT_OWNER
-          and refs.object_type in (
-             upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
-          )
+          and (refs.object_type =
+                 case
+                    when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                          'TYPE', 'TRIGGER') 
+                    then
+                       :OBJECT_TYPE
+                    when :OBJECT_TYPE in ('plscope-utils-function',
+                                          'plscope-utils-procedure',
+                                          'plscope-utils-package',
+                                          'plscope-utils-type',
+                                          'plscope-utils-trigger')
+                    then
+                       upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                 end
+                 or (
+                    -- things which have a BODY
+                    :OBJECT_TYPE in ('PACKAGE', 'TYPE', 
+                                     'plscope-utils-package', 'plscope-utils-type')
+                    and refs.object_type =
+                       case
+                          when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                          then
+                             :OBJECT_TYPE || ' BODY'
+                          when :OBJECT_TYPE in ('plscope-utils-package',
+                                                'plscope-utils-type')
+                          then
+                            upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                       end
+                    )
+              )
           and refs.object_name = :OBJECT_NAME
        )
    and not (
@@ -1252,7 +1499,7 @@ select case
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-synonym,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view,plscope-utils-sequence">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-pub-syn,plscope-utils-priv-syn,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view,plscope-utils-sequence">
 		<name><![CDATA[Used by]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -1263,27 +1510,50 @@ select case
 			<query minversion="11.1">
 				<sql><![CDATA[
 with
-   src as (
-      select /*+ materialize */
-             owner,
-             type,
-             name,
-             line,
-             text
-        from sys.all_source
-       where owner = :OBJECT_OWNER
-         and type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
-             )
-         and name = :OBJECT_NAME
-   ),
    refs as (
-      select /*+materialize */
-             signature
+      select signature
         from sys.all_identifiers refs
        where usage = 'DECLARATION'
-         and (owner = :OBJECT_OWNER or upper(replace(:OBJECT_TYPE, 'plscope-utils-')) = 'SYNONYM')
-         and object_type = upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+         and owner = case
+                        when :OBJECT_TYPE = 'plscope-utils-pub-syn' then
+                           'PUBLIC'
+                        else
+                           :OBJECT_OWNER
+                     end
+         and object_type in (
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER', 'TABLE', 'VIEW',
+                                         'SEQUENCE', 'SYNONYM') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger',
+                                         'plscope-utils-table',
+                                         'plscope-utils-view',
+                                         'plscope-utils-sequence')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                   when :OBJECT_TYPE in ('plscope-utils-pub-syn',
+                                         'plscope-utils-priv-syn')
+                   then
+                      'SYNONYM'
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
+             )
          and object_name = :OBJECT_NAME
    )
 select case
@@ -1316,16 +1586,56 @@ select case
   from refs
   join sys.all_identifiers ids
     on ids.signature = refs.signature
-  left join src
+  left join sys.all_source src
     on src.owner = ids.owner
    and src.type = ids.object_type
    and src.name = ids.object_name
    and src.line = ids.line
  where not (
-          ids.owner = :OBJECT_OWNER
-          and ids.object_type in (
-             upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
-          )
+          ids.owner = case
+                         when :OBJECT_TYPE = 'plscope-utils-pub-syn' then
+                            'PUBLIC'
+                         else
+                            :OBJECT_OWNER
+                      end
+          and (ids.object_type =
+                 case
+                    when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                          'TYPE', 'TRIGGER', 'TABLE', 'VIEW',
+                                          'SEQUENCE', 'SYNONYM') 
+                    then
+                       :OBJECT_TYPE
+                    when :OBJECT_TYPE in ('plscope-utils-function',
+                                          'plscope-utils-procedure',
+                                          'plscope-utils-package',
+                                          'plscope-utils-type',
+                                          'plscope-utils-trigger',
+                                          'plscope-utils-table',
+                                          'plscope-utils-view',
+                                          'plscope-utils-sequence')
+                    then
+                       upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                    when :OBJECT_TYPE in ('plscope-utils-pub-syn',
+                                          'plscope-utils-priv-syn')
+                    then
+                       'SYNONYM'
+                 end
+                 or (
+                    -- things which have a BODY
+                    :OBJECT_TYPE in ('PACKAGE', 'TYPE', 
+                                     'plscope-utils-package', 'plscope-utils-type')
+                    and ids.object_type =
+                       case
+                          when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                          then
+                             :OBJECT_TYPE || ' BODY'
+                          when :OBJECT_TYPE in ('plscope-utils-package',
+                                                'plscope-utils-type')
+                          then
+                             upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                       end
+                    )
+              )
           and ids.object_name = :OBJECT_NAME
        )
  order by ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
@@ -1356,7 +1666,32 @@ with
              text
         from sys.all_source -- NOSONAR: avoid public synonym
        where owner = :OBJECT_OWNER
-         and type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and type in (
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE', 
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
+             )
          and name = :OBJECT_NAME
    ),
    -- PL/SQL identifiers filtered by SQLDev bind variables
@@ -1377,7 +1712,30 @@ with
         from sys.all_identifiers -- NOSONAR: avoid public synonym
        where owner = :OBJECT_OWNER
          and object_type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
              )
          and object_name = :OBJECT_NAME
    ),
@@ -1397,9 +1755,33 @@ with
              usage_context_id,
              origin_con_id
         from sys.all_statements -- NOSONAR: avoid public synonym
+       -- Note: same filters as in the src CTE
        where owner = :OBJECT_OWNER
          and object_type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
              )
          and object_name = :OBJECT_NAME
    ),
@@ -2041,7 +2423,32 @@ with
              text
         from sys.all_source -- NOSONAR: avoid public synonym
        where owner = :OBJECT_OWNER
-         and type in (upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY')
+         and type in (
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE', 
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
+             )
          and name = :OBJECT_NAME
    ),
    -- PL/SQL identifiers filtered by SQLDev bind variables
@@ -2062,7 +2469,30 @@ with
         from sys.all_identifiers -- NOSONAR: avoid public synonym
        where owner = :OBJECT_OWNER
          and object_type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
              )
          and object_name = :OBJECT_NAME
    ),
@@ -2082,9 +2512,33 @@ with
              usage_context_id,
              origin_con_id
         from sys.all_statements -- NOSONAR: avoid public synonym
+       -- Note: same filters as in the src CTE
        where owner = :OBJECT_OWNER
          and object_type in (
-                upper(replace(:OBJECT_TYPE, 'plscope-utils-')), upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                case
+                   when :OBJECT_TYPE in ('FUNCTION', 'PROCEDURE', 'PACKAGE',
+                                         'TYPE', 'TRIGGER') 
+                   then
+                      :OBJECT_TYPE
+                   when :OBJECT_TYPE in ('plscope-utils-function',
+                                         'plscope-utils-procedure',
+                                         'plscope-utils-package',
+                                         'plscope-utils-type',
+                                         'plscope-utils-trigger')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
+                end,
+                -- things that have a BODY
+                case
+                   when :OBJECT_TYPE in ('PACKAGE', 'TYPE')
+                   then
+                      :OBJECT_TYPE || ' BODY'
+                   when :OBJECT_TYPE in ('plscope-utils-package',
+                                         'plscope-utils-type')
+                   then
+                      upper(replace(:OBJECT_TYPE, 'plscope-utils-')) || ' BODY'
+                   -- otherwise null
+                end
              )
          and object_name = :OBJECT_NAME
    ),
