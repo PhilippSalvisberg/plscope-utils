@@ -15,20 +15,6 @@ plscope-utils is based on PL/Scope which is available in the Oracle Database sin
 
 Binary releases are provided for the SQL Extension only. You find them [here](https://github.com/PhilippSalvisberg/plscope-utils/releases).
 
-## Issues
-
-Please file your bug reports, enhancement requests, questions and other support requests within [Github's issue tracker](https://help.github.com/articles/about-issues/):
-
-* [Existing issues](https://github.com/PhilippSalvisberg/plscope-utils/issues)
-* [submit new issue](https://github.com/PhilippSalvisberg/plscope-utils/issues/new)
-
-## How to Contribute
-
-1. Describe your idea by [submitting an issue](https://github.com/PhilippSalvisberg/plscope-utils/issues/new)
-2. [Fork the plsql-utils respository](https://github.com/PhilippSalvisberg/plscope-utils/fork)
-3. [Create a branch](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/), commit and publish your changes and enhancements
-4. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/)
-
 ## License
 
 plscope-utils is licensed under the Apache License, Version 2.0. You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>.
