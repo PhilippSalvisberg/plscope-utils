@@ -1,7 +1,13 @@
-create or replace package test_plscope_identifiers is
+create or replace package test_plscope_identifiers authid current_user is
 
    --%suite
    --%suitepath(plscope.test)
+
+   --%beforeeach
+   procedure set_context;
+
+   --%aftereach
+   procedure clear_context;
 
    --%test
    procedure user_identifiers;

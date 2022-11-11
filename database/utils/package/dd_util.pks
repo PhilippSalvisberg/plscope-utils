@@ -27,23 +27,27 @@ create or replace package dd_util is
    *
    * @param in_parse_user parsing user
    * @param in_obj partially qualified object (synonym)
+   * @param in_in_depth resolve synonym chains in depth? 1=true (default), 0=false
    * @returns fully qualifed object
    */
    function resolve_synonym(
       in_parse_user in varchar2,
-      in_obj        in obj_type
+      in_obj        in obj_type,
+      in_in_depth   in number default 1
    ) return obj_type;
 
    /**
    * Gets the fully qualified object.
    *
-   * @param in_parse_user parsing user
+   * @param in_parse_user parsing schema
    * @param in_obj partially qualified object
+   * @param in_namespace the namespace where the object must be found (default: 1)
    * @returns fully qualifed object
    */
    function get_object(
       in_parse_user in varchar2,
-      in_obj        in obj_type
+      in_obj        in obj_type,
+      in_namespace  in number default 1
    ) return obj_type;
    
    /**
@@ -53,11 +57,13 @@ create or replace package dd_util is
    *
    * @param in_parse_user parsing user
    * @param in_t_obj list of partially qualified objects
+   * @param in_namespace the namespace where the objects must be found (default: 1)
    * @returns table of objects
    */
    function get_objects(
       in_parse_user in varchar2,
-      in_t_obj      in t_obj_type
+      in_t_obj      in t_obj_type,
+      in_namespace  in number default 1
    ) return t_obj_type;
    
    /**
