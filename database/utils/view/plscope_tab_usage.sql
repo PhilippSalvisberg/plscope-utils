@@ -16,136 +16,159 @@
 
 create or replace view plscope_tab_usage as
    with
-      dep as (
-         select owner as owner,
-                'TABLE' as type,
-                table_name as name,
-                null as referenced_owner,
-                null as referenced_type,
-                null as referenced_name
-           from sys.dba_tables -- NOSONAR: avoid public synonym
-         union all
-         select owner,
-                type,
-                name,
-                referenced_owner,
-                referenced_type,
-                referenced_name
-           from sys.dba_dependencies -- NOSONAR: avoid public synonym
-          where type in ('VIEW', 'MATERIALIZED VIEW', 'SYNONYM')
-      ),
-      -- recursive with clause to calculate ref_object_type_path
-      dep_graph_base (
-         owner,
-         object_type,
-         object_name,
-         ref_owner,
-         ref_object_type,
-         ref_object_name,
-         ref_object_type_path,
-         path_len
-      ) as (
-         select owner,
-                type,
-                name,
-                owner as ref_owner,
-                type as ref_object_type,
-                name as ref_object_name,
-                '/' || type as ref_object_type_path,
-                1 as path_len
-           from dep
-         union all
-         select dep.owner,
-                dep.type,
-                dep.name,
-                dep_graph_base.ref_owner,
-                dep_graph_base.ref_object_type,
-                dep_graph_base.ref_object_name,
-                case
-                   when lengthb(dep_graph_base.ref_object_type_path) + lengthb('/') + lengthb(dep.type) <= 4000 then
-                      dep_graph_base.ref_object_type_path
-                      || '/'
-                      || dep.type
-                   else
-                      -- prevent ref_object_type_path from overflowing: keep the first 3 elements, then
-                      -- remove enough elements to accomodate "..." + "/" + the tail end
-                      regexp_substr(dep_graph_base.ref_object_type_path, '^(/([^/]+/){3})')
-                      || '...'
-                      || regexp_replace(
-                         substr(dep_graph_base.ref_object_type_path, instr(dep_graph_base.ref_object_type_path, '/', 1, 4) + 1
-                            + lengthb('.../') + lengthb(dep.type)),
-                         '^[^/]*')
-                      || '/'
-                      || dep.type
-                end as ref_object_type_path,
-                dep_graph_base.path_len + 1 as path_len
-           from dep_graph_base
-           join dep
-             on dep_graph_base.owner = dep.referenced_owner
-            and dep_graph_base.object_type = dep.referenced_type
-            and dep_graph_base.object_name = dep.referenced_name
-      ) cycle owner, object_type, object_name set is_cycle to 'Y' default 'N',
-      -- remove duplicate rows
-      dep_graph as (
-         select distinct
-                owner,
-                object_type,
-                object_name,
-                ref_owner,
-                ref_object_type,
-                ref_object_name,
-                ref_object_type_path,
-                path_len
-           from dep_graph_base
-      ),
-      tab_usage as (
-         select /*+use_hash(ids) use_hash(dep_graph) use_hash(refs)*/
+      table_usage_ids as (
+         select /*+ materialize */
                 ids.owner,
                 ids.object_type,
                 ids.object_name,
+                ids.procedure_name,
+                ids.usage,
                 ids.line,
                 ids.col,
-                ids.procedure_name,
-                case
-                   when refs.type is not null then
-                      refs.type
-                   else
-                      ids.usage
-                end as operation,
-                dep_graph.ref_owner,
-                dep_graph.ref_object_type,
-                dep_graph.ref_object_name,
-                case
-                   when dep_graph.path_len = 1 then
-                      'YES'
-                   else
-                      'NO'
-                end as direct_dependency,
-                dep_graph.ref_object_type_path,
-                lead(dep_graph.ref_object_type_path) over (
-                   order by ids.owner, ids.object_type, ids.object_name, ids.line, ids.col, dep_graph.path_len
-                ) as next_ref_object_type_path,
+                ids.ref_owner,
+                ids.ref_object_type,
+                ids.ref_object_name,
+                ids.parent_statement_signature,
                 ids.text
            from plscope_identifiers ids
-           join dep_graph
-             on dep_graph.owner = ids.ref_owner
-            and dep_graph.object_type = ids.ref_object_type
-            and dep_graph.object_name = ids.ref_object_name
-           left join sys.dba_statements refs -- NOSONAR: avoid public synonym
-             on refs.signature = parent_statement_signature
           where ids.type in ('VIEW', 'TABLE', 'SYNONYM')
+      ),
+      -- direct and indirect dependencies; path_len = 0 for direct dependencies, 
+      -- otherwise the length of the dependency chain, i.e. level - 1; cycles are
+      -- possible here (with help from synonyms) so we need to detect them 
+      dep_chains (
+         owner,
+         type,
+         name,
+         ref_owner,
+         ref_type,
+         ref_name,
+         path_len
+      ) as (
+         -- direct dependencies
+         select distinct
+                ids.ref_owner,
+                ids.ref_object_type,
+                ids.ref_object_name,
+                ids.ref_owner,
+                ids.ref_object_type,
+                ids.ref_object_name,
+                0
+           from table_usage_ids ids
+          where ids.ref_object_type in ('VIEW', 'TABLE', 'SYNONYM')
+          union all
+         -- indirect dependencies
+         select /*+ no_merge(dep) */ 
+                par.owner,
+                par.type,
+                par.name,
+                dep.referenced_owner,
+                dep.referenced_type,
+                dep.referenced_name,
+                par.path_len + 1
+           from dep_chains par
+           join sys.dba_dependencies dep  -- NOSONAR: avoid public synonym
+             on par.ref_owner = dep.owner
+            and par.ref_type = dep.type
+            and par.ref_name = dep.name
+            and dep.referenced_type in (  -- list of referenced types of interest
+                   'VIEW', 
+                   'TABLE', 
+                   'SYNONYM',
+                   'MATERIALIZED VIEW'    -- does MATERIALIZED VIEW belong here?
+                )
       )
-   select owner,
-          object_type,
-          object_name,
-          line,
-          col,
-          procedure_name,
-          operation,
-          ref_owner,
-          ref_object_type,
-          ref_object_name,
-          direct_dependency,
-          text
-     from tab_usage
-    where (ref_object_type != 'SYNONYM' or next_ref_object_type_path in ('/VIEW/SYNONYM', '/TABLE/SYNONYM'));
+      cycle ref_owner, ref_type, ref_name set is_cycle to 'Y' default 'N',
+      -- eliminate duplicate dependencies, keeping the minimum path_len; add the 
+      -- base_object_type column, which is the type of the first object (if any)
+      -- which is not a synonym, in case we're going down a chain of synonyms;
+      -- the is_base_object flag is set to 'YES' for that object, otherwise null
+      dep_trans_closure as (
+         select owner,
+                type,
+                name,
+                ref_owner,
+                ref_type,
+                ref_name,
+                min(path_len)  as path_len,
+                nullif(                            -- @formatter:off
+                   min(ref_type)
+                   keep (
+                      dense_rank first
+                      order by 
+                         case
+                            when ref_type = 'SYNONYM' then
+                               null
+                            else
+                               min(path_len)
+                         end asc nulls last,
+                         min(path_len)
+                   )
+                   over (
+                      partition by owner, type, name
+                   ),
+                   'SYNONYM'
+                )  as base_obj_type,               -- @formatter:on
+                case                               -- @formatter:off
+                   -- remark: disregarding the case when there are only SYNONYMs in the 
+                   -- dependency chain: such chains are filtered out in the main query
+                   when min(path_len) = min(min(path_len))
+                         keep (
+                            dense_rank first
+                            order by 
+                               case
+                                  when ref_type = 'SYNONYM' then
+                                     null
+                                  else
+                                     min(path_len)
+                               end asc nulls last,
+                               min(path_len)
+                         )
+                         over (
+                            partition by owner, type, name
+                         ) 
+                   then
+                      cast('YES' as varchar2(3 char))
+                end  as is_base_object             -- @formatter:on
+           from dep_chains
+          group by owner,
+                type,
+                name,
+                ref_owner,
+                ref_type,
+                ref_name
+      )
+      select ids.owner,
+             ids.object_type,
+             ids.object_name,
+             ids.line,
+             ids.col,
+             ids.procedure_name,
+             case
+                when refs.type is not null then
+                   refs.type
+                else
+                   ids.usage
+             end as operation,
+             dep.ref_owner,
+             dep.ref_type  as ref_object_type,
+             dep.ref_name  as ref_object_name,
+             case
+                when dep.path_len = 0 then
+                   'YES'
+                else
+                   'NO'
+             end as direct_dependency,
+             ids.text,
+             dep.is_base_object,
+             dep.path_len
+        from table_usage_ids ids
+        join dep_trans_closure dep
+          on dep.owner = ids.ref_owner
+         and dep.type = ids.ref_object_type
+         and dep.name = ids.ref_object_name
+         and (dep.ref_type <> 'SYNONYM'     -- ignore synonyms unless directly referenced
+                or dep.path_len = 0)
+         and dep.base_obj_type is not null  -- drop syn. refs not leading to tables/views
+        left join sys.dba_statements refs   -- NOSONAR: avoid public synonym
+          on refs.signature = ids.parent_statement_signature;
