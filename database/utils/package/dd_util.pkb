@@ -79,10 +79,13 @@ create or replace package body dd_util is
    ) return t_obj_type is
       o_obj obj_type;
       t_obj t_obj_type := t_obj_type();
+      i     pls_integer;
    begin
       if in_t_obj is not null and in_t_obj.count > 0 then
+         -- in_t_obj could be sparse
+         i := in_t_obj.first;
          <<input_objects>>
-         for i in 1..in_t_obj.count
+         while (i is not null)
          loop
             o_obj := get_object(
                         in_parse_user => in_parse_user,
@@ -92,6 +95,7 @@ create or replace package body dd_util is
                t_obj.extend;
                t_obj(t_obj.count) := o_obj;
             end if;
+            i     := in_t_obj.next(i);
          end loop input_objects;
       end if;
 
@@ -129,19 +133,31 @@ create or replace package body dd_util is
    ) return clob is
       l_source      long; -- NOSONAR, have to deal with LONG
       l_source_clob clob;
-      cursor c_lookup is
+      cursor c_view_lookup is
          select text
            from sys.dba_views -- NOSONAR: avoid public synonym
           where owner = in_obj.owner
             and view_name = in_obj.object_name;
+      cursor c_mview_lookup is
+         select query
+           from sys.dba_mviews -- NOSONAR: avoid public synonym
+          where owner = in_obj.owner
+            and mview_name = in_obj.object_name;
    begin
-      -- TODO: handle materialized views
-      if in_obj.object_type = 'VIEW' then
-         open c_lookup;
-         fetch c_lookup into l_source;
-         close c_lookup;
-         l_source_clob := l_source;
-      end if;
+      case in_obj.object_type
+         when 'VIEW' then
+            open c_view_lookup;
+            fetch c_view_lookup into l_source;
+            close c_view_lookup;
+            l_source_clob := l_source;
+         when 'MATERIALIZED VIEW' then
+            open c_mview_lookup;
+            fetch c_mview_lookup into l_source;
+            close c_mview_lookup;
+            l_source_clob := l_source;
+         else
+            l_source := null;
+      end case;
       return l_source_clob;
    end get_view_source;
 

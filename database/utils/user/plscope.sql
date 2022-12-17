@@ -70,6 +70,7 @@ prompt ====================================================================
 grant connect                        to &&username;
 grant resource                       to &&username;
 grant create view to &&username;
+grant create materialized view to &&username;
 grant create synonym                 to &&username;
 grant create public synonym          to &&username;
 grant drop public synonym            to &&username;
@@ -88,6 +89,7 @@ grant select on sys.dba_identifiers  to &&username with grant option;
 grant select on sys.dba_statements   to &&username with grant option;
 grant select on sys.dba_tables       to &&username with grant option;
 grant select on sys.dba_views        to &&username with grant option;
+grant select on sys.dba_mviews       to &&username with grant option;
 grant select on sys.dba_dependencies to &&username with grant option;
 grant select on sys.dba_synonyms     to &&username with grant option;
 grant select on sys.dba_objects      to &&username with grant option;

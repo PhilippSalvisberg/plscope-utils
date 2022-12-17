@@ -412,7 +412,7 @@ create or replace view plscope_identifiers as
           tree.col,
           tree.procedure_name,
           tree.procedure_scope,
-          cast(
+          cast( -- NOSONAR: G-9030, false positive, will be truncated, default cannot be applied here
              -- left indent name_usage according to path_len, wrapping to the left
              -- if necessary so as not to exceed a limit of 250 characters
              case
@@ -520,7 +520,7 @@ create or replace view plscope_identifiers as
           refs.col as ref_col,           -- decl_col
           tree.origin_con_id
      from tree_plus tree
-     left join sys.dba_identifiers refs -- must not used pls_ids to consider all identifiers
+     left join sys.dba_identifiers refs -- must not use pls_ids to consider all identifiers, NOSONAR: G-8210
        on refs.signature = tree.signature
       and refs.usage = 'DECLARATION'
      left join src

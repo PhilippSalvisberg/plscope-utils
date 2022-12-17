@@ -14,6 +14,19 @@ create or replace package body test_dd_util is
       execute immediate 'create or replace synonym s1 for p1'; -- NOSONAR: G-6010
       -- issue 31: fix ORA-6550 that occurs from time to time while querying dba_synonyms
       ut_runner.rebuild_annotation_cache(user);
+      <<create_mview>>
+      declare
+         e_mview_exists exception;
+         pragma exception_init(e_mview_exists, -12006);
+      begin
+         execute immediate q'[ -- NOSONAR: G-6010
+            create materialized view mv1 as
+               select deptno from dept]';
+      exception
+         when e_mview_exists then
+            null;
+      end create_mview;
+
    end setup;
    
    --
@@ -23,6 +36,7 @@ create or replace package body test_dd_util is
    begin
       execute immediate 'drop synonym s1';   -- NOSONAR: G-6010
       execute immediate 'drop procedure P1'; -- NOSONAR: G-6010
+      execute immediate 'drop materialized view mv1'; -- NOSONAR: G-6010
    end teardown;
 
    --
@@ -140,6 +154,35 @@ create or replace package body test_dd_util is
       l_actual := dd_util.get_view_source(o_input);
       ut.expect(l_actual).to_(be_null);
    end test_get_view_source;
+
+   --
+   -- test_get_view_source
+   --
+   procedure test_get_mview_source is
+      o_input    obj_type;
+      l_actual   clob;
+      l_expected clob := 'select deptno from dept';
+   begin
+      -- act
+      o_input  := obj_type(user, 'MATERIALIZED VIEW', 'MV1');
+      l_actual := dd_util.get_view_source(o_input);      
+      -- assert
+      ut.expect(l_actual).to_equal(l_expected);
+   end test_get_mview_source;
+
+   --
+   -- test_get_table_source
+   --
+   procedure test_get_table_source is
+      o_input  obj_type;
+      l_actual clob;
+   begin
+      -- act
+      o_input  := obj_type(user, 'TABLE', 'DEPT');
+      l_actual := dd_util.get_view_source(o_input);      
+      -- assert
+      ut.expect(l_actual).to_be_null;
+   end test_get_table_source;
 
 end test_dd_util;
 /
