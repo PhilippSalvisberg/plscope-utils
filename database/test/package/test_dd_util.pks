@@ -39,6 +39,9 @@ create or replace package test_dd_util authid current_user is
    
    -- %test
    procedure test_get_view_source;
+   
+   -- %test
+   procedure test_get_mview_source;
 
 end test_dd_util;
 /
