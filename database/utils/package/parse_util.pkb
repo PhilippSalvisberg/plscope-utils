@@ -137,8 +137,8 @@ create or replace package body parse_util is
    ) return sys.xmltype is
       l_result sys.xmltype;
    begin
-      -- TODO: handle <LITERAL>*</LITERAL> in SELECT_LIST_ITEM
-      -- Note: "select t.* from emp t" leads to a parse tree without literals!
+      -- Note 1: column wildcard is not handled (<LITERAL>*</LITERAL> in SELECT_LIST_ITEM).
+      -- Note 2: aliased colunm wildcard is lost, e.g. "select t.* from emp t" leads to a parse tree without literals!
       select xmlquery(
                 q'{
                   declare function local:analyze-col($col as element()) as element()* {
