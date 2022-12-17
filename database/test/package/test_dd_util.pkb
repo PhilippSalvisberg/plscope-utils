@@ -170,5 +170,19 @@ create or replace package body test_dd_util is
       ut.expect(l_actual).to_equal(l_expected);
    end test_get_mview_source;
 
+   --
+   -- test_get_table_source
+   --
+   procedure test_get_table_source is
+      o_input  obj_type;
+      l_actual clob;
+   begin
+      -- act
+      o_input  := obj_type(user, 'TABLE', 'DEPT');
+      l_actual := dd_util.get_view_source(o_input);      
+      -- assert
+      ut.expect(l_actual).to_be_null;
+   end test_get_table_source;
+
 end test_dd_util;
 /
