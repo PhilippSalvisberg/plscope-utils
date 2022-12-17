@@ -155,6 +155,8 @@ create or replace package body dd_util is
             fetch c_mview_lookup into l_source;
             close c_mview_lookup;
             l_source_clob := l_source;
+         else
+            l_source := null;
       end case;
       return l_source_clob;
    end get_view_source;
