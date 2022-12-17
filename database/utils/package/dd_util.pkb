@@ -144,17 +144,18 @@ create or replace package body dd_util is
           where owner = in_obj.owner
             and mview_name = in_obj.object_name;
    begin
-      if in_obj.object_type = 'VIEW' then
-         open c_view_lookup;
-         fetch c_view_lookup into l_source;
-         close c_view_lookup;
-         l_source_clob := l_source;
-      elsif in_obj.object_type = 'MATERIALIZED VIEW' then
-         open c_mview_lookup;
-         fetch c_mview_lookup into l_source;
-         close c_mview_lookup;
-         l_source_clob := l_source;
-      end if;
+      case in_obj.object_type
+         when 'VIEW' then
+            open c_view_lookup;
+            fetch c_view_lookup into l_source;
+            close c_view_lookup;
+            l_source_clob := l_source;
+         when 'MATERIALIZED VIEW' then
+            open c_mview_lookup;
+            fetch c_mview_lookup into l_source;
+            close c_mview_lookup;
+            l_source_clob := l_source;
+      end case;
       return l_source_clob;
    end get_view_source;
 
