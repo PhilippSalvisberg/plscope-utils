@@ -70,6 +70,7 @@ prompt ====================================================================
 grant connect                        to &&username;
 grant resource                       to &&username;
 grant create view to &&username;
+grant create materialized view to &&username;
 grant create synonym                 to &&username;
 grant create public synonym          to &&username;
 grant drop public synonym            to &&username;
