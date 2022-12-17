@@ -88,6 +88,7 @@ grant select on sys.dba_identifiers  to &&username with grant option;
 grant select on sys.dba_statements   to &&username with grant option;
 grant select on sys.dba_tables       to &&username with grant option;
 grant select on sys.dba_views        to &&username with grant option;
+grant select on sys.dba_mviews       to &&username with grant option;
 grant select on sys.dba_dependencies to &&username with grant option;
 grant select on sys.dba_synonyms     to &&username with grant option;
 grant select on sys.dba_objects      to &&username with grant option;

@@ -133,17 +133,26 @@ create or replace package body dd_util is
    ) return clob is
       l_source      long; -- NOSONAR, have to deal with LONG
       l_source_clob clob;
-      cursor c_lookup is
+      cursor c_view_lookup is
          select text
            from sys.dba_views -- NOSONAR: avoid public synonym
           where owner = in_obj.owner
             and view_name = in_obj.object_name;
+      cursor c_mview_lookup is
+         select query
+           from sys.dba_mviews -- NOSONAR: avoid public synonym
+          where owner = in_obj.owner
+            and mview_name = in_obj.object_name;
    begin
-      -- TODO: handle materialized views
       if in_obj.object_type = 'VIEW' then
-         open c_lookup;
-         fetch c_lookup into l_source;
-         close c_lookup;
+         open c_view_lookup;
+         fetch c_view_lookup into l_source;
+         close c_view_lookup;
+         l_source_clob := l_source;
+      elsif in_obj.object_type = 'MATERIALIZED VIEW' then
+         open c_mview_lookup;
+         fetch c_mview_lookup into l_source;
+         close c_mview_lookup;
          l_source_clob := l_source;
       end if;
       return l_source_clob;
